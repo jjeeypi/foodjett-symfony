@@ -1,0 +1,8 @@
+# Local migration documentation
+/docs/
+
+# Root-level OS and editor files
+/.DS_Store
+/Thumbs.db
+/.vscode/
+/.idea/
