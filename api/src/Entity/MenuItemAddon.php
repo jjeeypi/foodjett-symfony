@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -34,6 +36,15 @@ class MenuItemAddon
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    /** @var Collection<int, OrderItemAddon> */
+    #[ORM\OneToMany(mappedBy: 'menuItemAddon', targetEntity: OrderItemAddon::class, cascade: ['persist'])]
+    private Collection $orderItemAddons;
+
+    public function __construct()
+    {
+        $this->orderItemAddons = new ArrayCollection();
+    }
 
     public function getId(): ?string
     {
@@ -110,5 +121,11 @@ class MenuItemAddon
         $this->updatedAt = $updatedAt;
 
         return $this;
+    }
+
+    /** @return Collection<int, OrderItemAddon> */
+    public function getOrderItemAddons(): Collection
+    {
+        return $this->orderItemAddons;
     }
 }

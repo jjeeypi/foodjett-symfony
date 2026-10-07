@@ -81,10 +81,15 @@ class Rider
     #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderPoolDecline::class, cascade: ['persist'])]
     private Collection $poolDeclines;
 
+    /** @var Collection<int, Order> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: Order::class, cascade: ['persist'])]
+    private Collection $orders;
+
     public function __construct()
     {
         $this->documents = new ArrayCollection();
         $this->poolDeclines = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -310,6 +315,22 @@ class Rider
         if (!$this->poolDeclines->contains($poolDecline)) {
             $this->poolDeclines->add($poolDecline);
             $poolDecline->setRider($this);
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Order> */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): self
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setRider($this);
         }
 
         return $this;

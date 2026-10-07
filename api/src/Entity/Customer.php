@@ -32,9 +32,14 @@ class Customer
     #[ORM\OneToMany(mappedBy: 'customer', targetEntity: CustomerAddress::class, cascade: ['persist'])]
     private Collection $addresses;
 
+    /** @var Collection<int, Order> */
+    #[ORM\OneToMany(mappedBy: 'customer', targetEntity: Order::class, cascade: ['persist'])]
+    private Collection $orders;
+
     public function __construct()
     {
         $this->addresses = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -93,6 +98,22 @@ class Customer
         if (!$this->addresses->contains($address)) {
             $this->addresses->add($address);
             $address->setCustomer($this);
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Order> */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): self
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setCustomer($this);
         }
 
         return $this;

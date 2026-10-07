@@ -101,11 +101,16 @@ class Restaurant
     #[ORM\OrderBy(['sortOrder' => 'ASC'])]
     private Collection $menuCategories;
 
+    /** @var Collection<int, Order> */
+    #[ORM\OneToMany(mappedBy: 'restaurant', targetEntity: Order::class, cascade: ['persist'])]
+    private Collection $orders;
+
     public function __construct()
     {
         $this->documents = new ArrayCollection();
         $this->operatingHours = new ArrayCollection();
         $this->menuCategories = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -414,6 +419,22 @@ class Restaurant
         if (!$this->menuCategories->contains($menuCategory)) {
             $this->menuCategories->add($menuCategory);
             $menuCategory->setRestaurant($this);
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Order> */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): self
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setRestaurant($this);
         }
 
         return $this;

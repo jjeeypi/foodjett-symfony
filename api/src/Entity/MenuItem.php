@@ -65,10 +65,15 @@ class MenuItem
     #[ORM\OneToMany(mappedBy: 'menuItem', targetEntity: MenuItemAddon::class, cascade: ['persist'])]
     private Collection $addons;
 
+    /** @var Collection<int, OrderItem> */
+    #[ORM\OneToMany(mappedBy: 'menuItem', targetEntity: OrderItem::class, cascade: ['persist'])]
+    private Collection $orderItems;
+
     public function __construct()
     {
         $this->variants = new ArrayCollection();
         $this->addons = new ArrayCollection();
+        $this->orderItems = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -238,5 +243,11 @@ class MenuItem
         }
 
         return $this;
+    }
+
+    /** @return Collection<int, OrderItem> */
+    public function getOrderItems(): Collection
+    {
+        return $this->orderItems;
     }
 }
