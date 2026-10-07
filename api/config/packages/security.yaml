@@ -5,27 +5,38 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        foodjett_users:
+            id: App\Security\UserProvider
 
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
-        main:
-            lazy: true
-            provider: users_in_memory
-
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+        login:
+            pattern: ^/api/login$
+            stateless: true
+            provider: foodjett_users
+            user_checker: App\Security\UserChecker
+            json_login:
+                check_path: api_login
+                username_path: login
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: App\Security\JsonAuthenticationFailureHandler
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: foodjett_users
+            user_checker: App\Security\UserChecker
+            jwt: ~
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/register(?:/restaurant|/rider)?$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/(?:forgot-password|reset-password)$, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: ROLE_USER }
 
 when@test:
     security:
