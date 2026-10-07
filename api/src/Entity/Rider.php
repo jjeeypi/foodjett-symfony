@@ -85,11 +85,26 @@ class Rider
     #[ORM\OneToMany(mappedBy: 'rider', targetEntity: Order::class, cascade: ['persist'])]
     private Collection $orders;
 
+    /** @var Collection<int, RiderEarning> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderEarning::class, cascade: ['persist'])]
+    private Collection $earnings;
+
+    /** @var Collection<int, RiderPayout> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderPayout::class, cascade: ['persist'])]
+    private Collection $payouts;
+
+    /** @var Collection<int, RiderCashRemittance> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderCashRemittance::class, cascade: ['persist'])]
+    private Collection $cashRemittances;
+
     public function __construct()
     {
         $this->documents = new ArrayCollection();
         $this->poolDeclines = new ArrayCollection();
         $this->orders = new ArrayCollection();
+        $this->earnings = new ArrayCollection();
+        $this->payouts = new ArrayCollection();
+        $this->cashRemittances = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -334,5 +349,23 @@ class Rider
         }
 
         return $this;
+    }
+
+    /** @return Collection<int, RiderEarning> */
+    public function getEarnings(): Collection
+    {
+        return $this->earnings;
+    }
+
+    /** @return Collection<int, RiderPayout> */
+    public function getPayouts(): Collection
+    {
+        return $this->payouts;
+    }
+
+    /** @return Collection<int, RiderCashRemittance> */
+    public function getCashRemittances(): Collection
+    {
+        return $this->cashRemittances;
     }
 }

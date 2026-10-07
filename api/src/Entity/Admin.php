@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -28,6 +30,15 @@ class Admin
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    /** @var Collection<int, RiderCashRemittance> */
+    #[ORM\OneToMany(mappedBy: 'confirmedByAdmin', targetEntity: RiderCashRemittance::class)]
+    private Collection $confirmedCashRemittances;
+
+    public function __construct()
+    {
+        $this->confirmedCashRemittances = new ArrayCollection();
+    }
 
     public function getId(): ?string
     {
@@ -84,5 +95,11 @@ class Admin
         $this->updatedAt = $updatedAt;
 
         return $this;
+    }
+
+    /** @return Collection<int, RiderCashRemittance> */
+    public function getConfirmedCashRemittances(): Collection
+    {
+        return $this->confirmedCashRemittances;
     }
 }

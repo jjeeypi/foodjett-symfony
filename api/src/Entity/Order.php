@@ -142,6 +142,12 @@ class Order
     #[ORM\OneToOne(mappedBy: 'order', targetEntity: RiderPoolOffer::class, cascade: ['persist'])]
     private ?RiderPoolOffer $riderPoolOffer = null;
 
+    #[ORM\OneToOne(mappedBy: 'order', targetEntity: Payment::class, cascade: ['persist'])]
+    private ?Payment $payment = null;
+
+    #[ORM\OneToOne(mappedBy: 'order', targetEntity: RiderEarning::class, cascade: ['persist'])]
+    private ?RiderEarning $riderEarning = null;
+
     /** @var Collection<int, RiderPoolDecline> */
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: RiderPoolDecline::class, cascade: ['persist'])]
     private Collection $riderPoolDeclines;
@@ -232,6 +238,10 @@ class Order
     public function addStatusHistory(OrderStatusHistory $history): self { if (!$this->statusHistory->contains($history)) { $this->statusHistory->add($history); $history->setOrder($this); } return $this; }
     public function getRiderPoolOffer(): ?RiderPoolOffer { return $this->riderPoolOffer; }
     public function setRiderPoolOffer(?RiderPoolOffer $offer): self { $this->riderPoolOffer = $offer; if ($offer !== null && $offer->getOrder() !== $this) { $offer->setOrder($this); } return $this; }
+    public function getPayment(): ?Payment { return $this->payment; }
+    public function setPayment(?Payment $payment): self { $this->payment = $payment; if ($payment !== null && $payment->getOrder() !== $this) { $payment->setOrder($this); } return $this; }
+    public function getRiderEarning(): ?RiderEarning { return $this->riderEarning; }
+    public function setRiderEarning(?RiderEarning $earning): self { $this->riderEarning = $earning; if ($earning !== null && $earning->getOrder() !== $this) { $earning->setOrder($this); } return $this; }
     /** @return Collection<int, RiderPoolDecline> */
     public function getRiderPoolDeclines(): Collection { return $this->riderPoolDeclines; }
     public function addRiderPoolDecline(RiderPoolDecline $decline): self { if (!$this->riderPoolDeclines->contains($decline)) { $this->riderPoolDeclines->add($decline); $decline->setOrder($this); } return $this; }
