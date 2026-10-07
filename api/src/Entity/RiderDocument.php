@@ -33,7 +33,7 @@ class RiderDocument
     #[ORM\Column(length: 32, enumType: DocumentStatus::class, options: ['default' => 'pending'])]
     private DocumentStatus $status = DocumentStatus::PENDING;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $rejectionReason = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

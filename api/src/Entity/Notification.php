@@ -27,7 +27,7 @@ class Notification
     #[ORM\Column(length: 255)]
     private string $title;
 
-    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $body;
 
     /** @var array<string, mixed>|null */

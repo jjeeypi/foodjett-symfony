@@ -36,13 +36,13 @@ class OrderReport
     #[ORM\Column(length: 32, enumType: OrderReportType::class)]
     private OrderReportType $type;
 
-    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $description;
 
     #[ORM\Column(length: 32, enumType: OrderReportStatus::class, options: ['default' => 'open'])]
     private OrderReportStatus $status = OrderReportStatus::OPEN;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $resolution = null;
 
     #[ORM\ManyToOne(inversedBy: 'resolvedOrderReports', targetEntity: Admin::class)]

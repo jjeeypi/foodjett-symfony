@@ -27,7 +27,7 @@ class MenuItem
     #[ORM\Column(length: 255)]
     private string $name;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]

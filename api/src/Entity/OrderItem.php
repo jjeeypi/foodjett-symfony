@@ -39,7 +39,7 @@ class OrderItem
     #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
     private string $unitPrice;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $specialInstructions = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

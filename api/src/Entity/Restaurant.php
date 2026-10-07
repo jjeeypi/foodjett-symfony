@@ -34,7 +34,7 @@ class Restaurant
     #[ORM\Column(length: 255, unique: true)]
     private string $slug;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -67,7 +67,7 @@ class Restaurant
     #[ORM\Column(length: 32, enumType: ApprovalStatus::class, options: ['default' => 'pending'])]
     private ApprovalStatus $approvalStatus = ApprovalStatus::PENDING;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $rejectionReason = null;
 
     #[ORM\Column(length: 32, enumType: RestaurantOperatingStatus::class, options: ['default' => 'closed'])]

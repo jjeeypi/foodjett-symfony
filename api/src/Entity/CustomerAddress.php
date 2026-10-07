@@ -32,7 +32,7 @@ class CustomerAddress
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $landmark = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $deliveryInstructions = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]

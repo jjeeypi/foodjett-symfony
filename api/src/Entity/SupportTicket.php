@@ -25,7 +25,7 @@ class SupportTicket
     #[ORM\Column(length: 255)]
     private string $subject;
 
-    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $message;
 
     #[ORM\Column(length: 16, enumType: SupportTicketStatus::class, options: ['default' => 'open'])]

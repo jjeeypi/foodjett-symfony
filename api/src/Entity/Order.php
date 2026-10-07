@@ -77,13 +77,13 @@ class Order
     #[ORM\Column(length: 16, enumType: PaymentMethod::class)]
     private PaymentMethod $paymentMethod;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $customerNotes = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $rejectionReason = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $cancellationReason = null;
 
     #[ORM\Column(length: 32, nullable: true, enumType: OrderActor::class)]

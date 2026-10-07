@@ -26,7 +26,7 @@ class Message
     #[ORM\JoinColumn(name: 'sender_user_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private User $sender;
 
-    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
+    #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $body;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
