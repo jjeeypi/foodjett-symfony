@@ -1,4 +1,6 @@
 {
+    "name": "foodjett/api",
+    "description": "Stateless Symfony JSON API for the Foodjett platform.",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
