@@ -109,6 +109,10 @@ class Restaurant
     #[ORM\OneToMany(mappedBy: 'restaurant', targetEntity: RestaurantPayout::class, cascade: ['persist'])]
     private Collection $payouts;
 
+    /** @var Collection<int, Voucher> */
+    #[ORM\OneToMany(mappedBy: 'restaurant', targetEntity: Voucher::class, cascade: ['persist'])]
+    private Collection $vouchers;
+
     public function __construct()
     {
         $this->documents = new ArrayCollection();
@@ -116,6 +120,7 @@ class Restaurant
         $this->menuCategories = new ArrayCollection();
         $this->orders = new ArrayCollection();
         $this->payouts = new ArrayCollection();
+        $this->vouchers = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -449,5 +454,11 @@ class Restaurant
     public function getPayouts(): Collection
     {
         return $this->payouts;
+    }
+
+    /** @return Collection<int, Voucher> */
+    public function getVouchers(): Collection
+    {
+        return $this->vouchers;
     }
 }

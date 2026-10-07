@@ -36,10 +36,15 @@ class Customer
     #[ORM\OneToMany(mappedBy: 'customer', targetEntity: Order::class, cascade: ['persist'])]
     private Collection $orders;
 
+    /** @var Collection<int, VoucherRedemption> */
+    #[ORM\OneToMany(mappedBy: 'customer', targetEntity: VoucherRedemption::class, cascade: ['persist'])]
+    private Collection $voucherRedemptions;
+
     public function __construct()
     {
         $this->addresses = new ArrayCollection();
         $this->orders = new ArrayCollection();
+        $this->voucherRedemptions = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -117,5 +122,11 @@ class Customer
         }
 
         return $this;
+    }
+
+    /** @return Collection<int, VoucherRedemption> */
+    public function getVoucherRedemptions(): Collection
+    {
+        return $this->voucherRedemptions;
     }
 }

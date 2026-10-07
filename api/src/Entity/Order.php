@@ -148,6 +148,9 @@ class Order
     #[ORM\OneToOne(mappedBy: 'order', targetEntity: RiderEarning::class, cascade: ['persist'])]
     private ?RiderEarning $riderEarning = null;
 
+    #[ORM\OneToOne(mappedBy: 'order', targetEntity: VoucherRedemption::class, cascade: ['persist'])]
+    private ?VoucherRedemption $voucherRedemption = null;
+
     /** @var Collection<int, RiderPoolDecline> */
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: RiderPoolDecline::class, cascade: ['persist'])]
     private Collection $riderPoolDeclines;
@@ -242,6 +245,8 @@ class Order
     public function setPayment(?Payment $payment): self { $this->payment = $payment; if ($payment !== null && $payment->getOrder() !== $this) { $payment->setOrder($this); } return $this; }
     public function getRiderEarning(): ?RiderEarning { return $this->riderEarning; }
     public function setRiderEarning(?RiderEarning $earning): self { $this->riderEarning = $earning; if ($earning !== null && $earning->getOrder() !== $this) { $earning->setOrder($this); } return $this; }
+    public function getVoucherRedemption(): ?VoucherRedemption { return $this->voucherRedemption; }
+    public function setVoucherRedemption(?VoucherRedemption $redemption): self { $this->voucherRedemption = $redemption; if ($redemption !== null && $redemption->getOrder() !== $this) { $redemption->setOrder($this); } return $this; }
     /** @return Collection<int, RiderPoolDecline> */
     public function getRiderPoolDeclines(): Collection { return $this->riderPoolDeclines; }
     public function addRiderPoolDecline(RiderPoolDecline $decline): self { if (!$this->riderPoolDeclines->contains($decline)) { $this->riderPoolDeclines->add($decline); $decline->setOrder($this); } return $this; }
