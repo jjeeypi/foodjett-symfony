@@ -20,24 +20,25 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 final class ApprovalAccessTest extends WebTestCase
 {
     private const PASSWORD = 'TestPassword123!';
+    private const EMAILS = [
+        'approval-pending-restaurant@foodjett.test',
+        'approval-approved-restaurant@foodjett.test',
+        'approval-pending-rider@foodjett.test',
+    ];
 
     private KernelBrowser $client;
-
-    /** @var list<string> */
-    private array $emails = [];
 
     protected function setUp(): void
     {
         $this->client = self::createClient();
+        $this->deleteTestUsers(self::getContainer()->get(EntityManagerInterface::class));
     }
 
     protected function tearDown(): void
     {
-        if (self::$kernel?->getContainer()->has(EntityManagerInterface::class)) {
-            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-            $this->deleteTestUsers($entityManager);
-            $entityManager->close();
-        }
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->deleteTestUsers($entityManager);
+        $entityManager->close();
 
         parent::tearDown();
     }
@@ -119,7 +120,6 @@ final class ApprovalAccessTest extends WebTestCase
 
     private function createUser(string $email, UserRole $role): User
     {
-        $this->emails[] = $email;
         $now = new \DateTimeImmutable();
 
         return (new User())
@@ -153,11 +153,7 @@ final class ApprovalAccessTest extends WebTestCase
 
     private function deleteTestUsers(EntityManagerInterface $entityManager): void
     {
-        if ([] === $this->emails) {
-            return;
-        }
-
-        $users = $entityManager->getRepository(User::class)->findBy(['email' => $this->emails]);
+        $users = $entityManager->getRepository(User::class)->findBy(['email' => self::EMAILS]);
         foreach ($users as $user) {
             if (null !== $user->getRestaurant()) {
                 $entityManager->remove($user->getRestaurant());

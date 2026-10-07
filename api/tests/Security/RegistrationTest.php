@@ -16,33 +16,27 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 final class RegistrationTest extends WebTestCase
 {
     private const PASSWORD = 'TestPassword123!';
+    private const EMAILS = [
+        'register-customer@foodjett.test',
+        'register-restaurant@foodjett.test',
+        'register-rider@foodjett.test',
+        'register-validation@foodjett.test',
+        'register-bicycle@foodjett.test',
+    ];
 
     private KernelBrowser $client;
-
-    /** @var list<string> */
-    private array $emails = [];
 
     protected function setUp(): void
     {
         $this->client = self::createClient();
+        $this->deleteTestUsers();
     }
 
     protected function tearDown(): void
     {
-        if (self::$kernel?->getContainer()->has(EntityManagerInterface::class)) {
-            $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-            $users = $entityManager->getRepository(User::class)->findBy(['email' => $this->emails]);
-            foreach ($users as $user) {
-                foreach ([$user->getCustomer(), $user->getRestaurant(), $user->getRider()] as $profile) {
-                    if (null !== $profile) {
-                        $entityManager->remove($profile);
-                    }
-                }
-                $entityManager->remove($user);
-            }
-            $entityManager->flush();
-            $entityManager->close();
-        }
+        $this->deleteTestUsers();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->close();
 
         parent::tearDown();
     }
@@ -50,8 +44,6 @@ final class RegistrationTest extends WebTestCase
     public function testCustomerRegistrationCreatesProfileAndReturnsJwt(): void
     {
         $email = 'register-customer@foodjett.test';
-        $this->emails[] = $email;
-
         $this->client->jsonRequest('POST', '/api/register', [
             'name' => 'Customer Test',
             'email' => $email,
@@ -73,8 +65,6 @@ final class RegistrationTest extends WebTestCase
     public function testRestaurantRegistrationCreatesPendingClosedProfile(): void
     {
         $email = 'register-restaurant@foodjett.test';
-        $this->emails[] = $email;
-
         $this->client->jsonRequest('POST', '/api/register/restaurant', [
             'owner_name' => 'Restaurant Owner',
             'email' => $email,
@@ -101,8 +91,6 @@ final class RegistrationTest extends WebTestCase
     public function testRiderRegistrationCreatesPendingOfflineProfile(): void
     {
         $email = 'register-rider@foodjett.test';
-        $this->emails[] = $email;
-
         $this->client->jsonRequest('POST', '/api/register/rider', [
             'name' => 'Rider Test',
             'email' => $email,
@@ -125,7 +113,6 @@ final class RegistrationTest extends WebTestCase
     public function testRegistrationValidatesConfirmationUniquenessAndConditionalPlate(): void
     {
         $customerEmail = 'register-validation@foodjett.test';
-        $this->emails[] = $customerEmail;
         $this->client->jsonRequest('POST', '/api/register', [
             'name' => 'Validation Test',
             'email' => $customerEmail,
@@ -156,7 +143,6 @@ final class RegistrationTest extends WebTestCase
     public function testBicycleDoesNotRequirePlateNumber(): void
     {
         $email = 'register-bicycle@foodjett.test';
-        $this->emails[] = $email;
         $this->client->jsonRequest('POST', '/api/register/rider', [
             'name' => 'Bicycle Rider',
             'email' => $email,
@@ -182,5 +168,20 @@ final class RegistrationTest extends WebTestCase
         self::assertInstanceOf(User::class, $user);
 
         return $user;
+    }
+
+    private function deleteTestUsers(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $users = $entityManager->getRepository(User::class)->findBy(['email' => self::EMAILS]);
+        foreach ($users as $user) {
+            foreach ([$user->getCustomer(), $user->getRestaurant(), $user->getRider()] as $profile) {
+                if (null !== $profile) {
+                    $entityManager->remove($profile);
+                }
+            }
+            $entityManager->remove($user);
+        }
+        $entityManager->flush();
     }
 }
