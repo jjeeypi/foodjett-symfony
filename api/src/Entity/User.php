@@ -94,11 +94,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'sender', targetEntity: Message::class, cascade: ['persist'])]
     private Collection $sentMessages;
 
+    /** @var Collection<int, Notification> */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Notification::class, cascade: ['persist'])]
+    private Collection $notifications;
+
+    /** @var Collection<int, AuditLog> */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: AuditLog::class, cascade: ['persist'])]
+    private Collection $auditLogs;
+
     public function __construct()
     {
         $this->reportedOrderReports = new ArrayCollection();
         $this->supportTickets = new ArrayCollection();
         $this->sentMessages = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
+        $this->auditLogs = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -368,4 +378,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /** @return Collection<int, Message> */
     public function getSentMessages(): Collection { return $this->sentMessages; }
+
+    /** @return Collection<int, Notification> */
+    public function getNotifications(): Collection { return $this->notifications; }
+
+    /** @return Collection<int, AuditLog> */
+    public function getAuditLogs(): Collection { return $this->auditLogs; }
 }
