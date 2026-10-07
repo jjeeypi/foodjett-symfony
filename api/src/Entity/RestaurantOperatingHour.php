@@ -22,6 +22,7 @@ class RestaurantOperatingHour
     #[ORM\JoinColumn(name: 'restaurant_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private Restaurant $restaurant;
 
+    // DBAL 4 has no integer-valued TINYINT type; columnDefinition preserves the documented MariaDB type.
     #[ORM\Column(type: Types::SMALLINT, columnDefinition: 'TINYINT UNSIGNED NOT NULL')]
     private int $dayOfWeek;
 
