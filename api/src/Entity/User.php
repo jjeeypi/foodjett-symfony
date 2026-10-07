@@ -216,7 +216,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        return ['ROLE_'.strtoupper($this->role->value)];
+        return ['ROLE_USER', 'ROLE_'.strtoupper($this->role->value)];
     }
 
     public function getStatus(): UserStatus
@@ -365,7 +365,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUserIdentifier(): string
     {
-        return $this->email ?? $this->phone ?? 'user-'.$this->id;
+        return $this->email ?? '';
     }
 
     public function eraseCredentials(): void
