@@ -10,6 +10,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'rider_cash_remittances')]
+#[ORM\Index(name: 'rider_cash_remittances_rider_id_foreign', columns: ['rider_id'])]
+#[ORM\Index(name: 'rider_cash_remittances_confirmed_by_admin_id_foreign', columns: ['confirmed_by_admin_id'])]
 class RiderCashRemittance
 {
     #[ORM\Id]

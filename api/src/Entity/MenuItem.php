@@ -10,12 +10,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'menu_items',
-    indexes: [
-        new ORM\Index(name: 'menu_items_is_available_index', columns: ['is_available']),
-    ],
-)]
+#[ORM\Table(name: 'menu_items')]
+#[ORM\Index(name: 'menu_items_is_available_index', columns: ['is_available'])]
+#[ORM\Index(name: 'menu_items_menu_category_id_foreign', columns: ['menu_category_id'])]
 class MenuItem
 {
     #[ORM\Id]
@@ -30,7 +27,7 @@ class MenuItem
     #[ORM\Column(length: 255)]
     private string $name;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]

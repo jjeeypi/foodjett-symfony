@@ -11,12 +11,8 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'conversations',
-    uniqueConstraints: [
-        new ORM\UniqueConstraint(name: 'conversations_order_id_type_unique', columns: ['order_id', 'type']),
-    ],
-)]
+#[ORM\Table(name: 'conversations')]
+#[ORM\UniqueConstraint(name: 'conversations_order_id_type_unique', columns: ['order_id', 'type'])]
 class Conversation
 {
     #[ORM\Id]

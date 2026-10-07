@@ -13,6 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'vouchers')]
+#[ORM\UniqueConstraint(name: 'vouchers_code_unique', columns: ['code'])]
+#[ORM\Index(name: 'vouchers_restaurant_id_foreign', columns: ['restaurant_id'])]
 class Voucher
 {
     #[ORM\Id]

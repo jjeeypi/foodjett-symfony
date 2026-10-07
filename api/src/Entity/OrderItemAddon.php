@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'order_item_addons')]
+#[ORM\Index(name: 'order_item_addons_order_item_id_foreign', columns: ['order_item_id'])]
+#[ORM\Index(name: 'order_item_addons_menu_item_addon_id_foreign', columns: ['menu_item_addon_id'])]
 class OrderItemAddon
 {
     #[ORM\Id]

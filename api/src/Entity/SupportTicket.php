@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'support_tickets')]
+#[ORM\Index(name: 'support_tickets_user_id_foreign', columns: ['user_id'])]
 class SupportTicket
 {
     #[ORM\Id]
@@ -24,7 +25,7 @@ class SupportTicket
     #[ORM\Column(length: 255)]
     private string $subject;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
     private string $message;
 
     #[ORM\Column(length: 16, enumType: SupportTicketStatus::class, options: ['default' => 'open'])]

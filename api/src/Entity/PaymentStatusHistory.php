@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'payment_status_history')]
+#[ORM\Index(name: 'payment_status_history_payment_id_foreign', columns: ['payment_id'])]
 class PaymentStatusHistory
 {
     #[ORM\Id]
@@ -31,7 +32,7 @@ class PaymentStatusHistory
     #[ORM\Column(length: 16, enumType: PaymentActor::class)]
     private PaymentActor $changedBy;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $note = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, columnDefinition: 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', options: ['default' => 'CURRENT_TIMESTAMP'])]

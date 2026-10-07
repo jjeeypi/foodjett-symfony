@@ -10,12 +10,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'restaurant_documents',
-    uniqueConstraints: [
-        new ORM\UniqueConstraint(name: 'restaurant_documents_restaurant_type_unique', columns: ['restaurant_id', 'type']),
-    ],
-)]
+#[ORM\Table(name: 'restaurant_documents')]
+#[ORM\UniqueConstraint(name: 'restaurant_documents_restaurant_type_unique', columns: ['restaurant_id', 'type'])]
+#[ORM\Index(name: 'restaurant_documents_restaurant_id_foreign', columns: ['restaurant_id'])]
 class RestaurantDocument
 {
     #[ORM\Id]
@@ -36,7 +33,7 @@ class RestaurantDocument
     #[ORM\Column(length: 32, enumType: DocumentStatus::class, options: ['default' => 'pending'])]
     private DocumentStatus $status = DocumentStatus::PENDING;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $rejectionReason = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

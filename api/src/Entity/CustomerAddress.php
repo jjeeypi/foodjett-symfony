@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'customer_addresses')]
+#[ORM\Index(name: 'customer_addresses_customer_id_foreign', columns: ['customer_id'])]
 class CustomerAddress
 {
     #[ORM\Id]
@@ -31,7 +32,7 @@ class CustomerAddress
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $landmark = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $deliveryInstructions = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]

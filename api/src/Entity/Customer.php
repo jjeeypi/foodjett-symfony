@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'customers')]
+#[ORM\UniqueConstraint(name: 'customers_user_id_unique', columns: ['user_id'])]
 class Customer
 {
     #[ORM\Id]

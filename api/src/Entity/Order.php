@@ -13,10 +13,14 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'orders',
-    indexes: [new ORM\Index(name: 'orders_status_index', columns: ['status'])],
-)]
+#[ORM\Table(name: 'orders')]
+#[ORM\Index(name: 'orders_status_index', columns: ['status'])]
+#[ORM\UniqueConstraint(name: 'orders_order_number_unique', columns: ['order_number'])]
+#[ORM\UniqueConstraint(name: 'orders_checkout_token_unique', columns: ['checkout_token'])]
+#[ORM\Index(name: 'orders_customer_id_foreign', columns: ['customer_id'])]
+#[ORM\Index(name: 'orders_restaurant_id_foreign', columns: ['restaurant_id'])]
+#[ORM\Index(name: 'orders_customer_address_id_foreign', columns: ['customer_address_id'])]
+#[ORM\Index(name: 'orders_rider_id_foreign', columns: ['rider_id'])]
 class Order
 {
     #[ORM\Id]
@@ -73,13 +77,13 @@ class Order
     #[ORM\Column(length: 16, enumType: PaymentMethod::class)]
     private PaymentMethod $paymentMethod;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $customerNotes = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $rejectionReason = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $cancellationReason = null;
 
     #[ORM\Column(length: 32, nullable: true, enumType: OrderActor::class)]

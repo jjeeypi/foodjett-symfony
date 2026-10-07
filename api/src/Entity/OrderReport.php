@@ -12,6 +12,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'order_reports')]
+#[ORM\Index(name: 'order_reports_order_id_foreign', columns: ['order_id'])]
+#[ORM\Index(name: 'order_reports_reported_by_user_id_foreign', columns: ['reported_by_user_id'])]
+#[ORM\Index(name: 'order_reports_resolved_by_admin_id_foreign', columns: ['resolved_by_admin_id'])]
 class OrderReport
 {
     #[ORM\Id]
@@ -33,13 +36,13 @@ class OrderReport
     #[ORM\Column(length: 32, enumType: OrderReportType::class)]
     private OrderReportType $type;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
     private string $description;
 
     #[ORM\Column(length: 32, enumType: OrderReportStatus::class, options: ['default' => 'open'])]
     private OrderReportStatus $status = OrderReportStatus::OPEN;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $resolution = null;
 
     #[ORM\ManyToOne(inversedBy: 'resolvedOrderReports', targetEntity: Admin::class)]

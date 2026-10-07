@@ -9,6 +9,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'restaurant_reviews')]
+#[ORM\UniqueConstraint(name: 'restaurant_reviews_order_id_unique', columns: ['order_id'])]
+#[ORM\Index(name: 'restaurant_reviews_customer_id_foreign', columns: ['customer_id'])]
+#[ORM\Index(name: 'restaurant_reviews_restaurant_id_foreign', columns: ['restaurant_id'])]
 class RestaurantReview
 {
     #[ORM\Id]
@@ -31,13 +34,13 @@ class RestaurantReview
     #[ORM\Column(type: Types::SMALLINT, columnDefinition: 'TINYINT UNSIGNED NOT NULL')]
     private int $rating;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $comment = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photoPath = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $restaurantReply = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

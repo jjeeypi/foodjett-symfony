@@ -11,6 +11,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'order_items')]
+#[ORM\Index(name: 'order_items_order_id_foreign', columns: ['order_id'])]
+#[ORM\Index(name: 'order_items_menu_item_id_foreign', columns: ['menu_item_id'])]
+#[ORM\Index(name: 'order_items_menu_item_variant_id_foreign', columns: ['menu_item_variant_id'])]
 class OrderItem
 {
     #[ORM\Id]
@@ -36,7 +39,7 @@ class OrderItem
     #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
     private string $unitPrice;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $specialInstructions = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

@@ -9,12 +9,10 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'rider_pool_declines',
-    uniqueConstraints: [
-        new ORM\UniqueConstraint(name: 'rider_pool_declines_order_rider_unique', columns: ['order_id', 'rider_id']),
-    ],
-)]
+#[ORM\Table(name: 'rider_pool_declines')]
+#[ORM\UniqueConstraint(name: 'rider_pool_declines_order_rider_unique', columns: ['order_id', 'rider_id'])]
+#[ORM\Index(name: 'rider_pool_declines_order_id_foreign', columns: ['order_id'])]
+#[ORM\Index(name: 'rider_pool_declines_rider_id_foreign', columns: ['rider_id'])]
 class RiderPoolDecline
 {
     #[ORM\Id]

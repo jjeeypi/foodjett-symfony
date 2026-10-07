@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'payments')]
+#[ORM\UniqueConstraint(name: 'payments_order_id_unique', columns: ['order_id'])]
 class Payment
 {
     #[ORM\Id]

@@ -13,12 +13,10 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'restaurants',
-    indexes: [
-        new ORM\Index(name: 'restaurants_approval_status_operating_status_index', columns: ['approval_status', 'operating_status']),
-    ],
-)]
+#[ORM\Table(name: 'restaurants')]
+#[ORM\Index(name: 'restaurants_approval_status_operating_status_index', columns: ['approval_status', 'operating_status'])]
+#[ORM\UniqueConstraint(name: 'restaurants_slug_unique', columns: ['slug'])]
+#[ORM\UniqueConstraint(name: 'restaurants_user_id_unique', columns: ['user_id'])]
 class Restaurant
 {
     #[ORM\Id]
@@ -36,7 +34,7 @@ class Restaurant
     #[ORM\Column(length: 255, unique: true)]
     private string $slug;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -69,7 +67,7 @@ class Restaurant
     #[ORM\Column(length: 32, enumType: ApprovalStatus::class, options: ['default' => 'pending'])]
     private ApprovalStatus $approvalStatus = ApprovalStatus::PENDING;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $rejectionReason = null;
 
     #[ORM\Column(length: 32, enumType: RestaurantOperatingStatus::class, options: ['default' => 'closed'])]

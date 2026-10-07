@@ -8,12 +8,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'messages',
-    indexes: [
-        new ORM\Index(name: 'messages_conversation_id_created_at_index', columns: ['conversation_id', 'created_at']),
-    ],
-)]
+#[ORM\Table(name: 'messages')]
+#[ORM\Index(name: 'messages_conversation_id_created_at_index', columns: ['conversation_id', 'created_at'])]
+#[ORM\Index(name: 'messages_sender_user_id_foreign', columns: ['sender_user_id'])]
 class Message
 {
     #[ORM\Id]
@@ -29,7 +26,7 @@ class Message
     #[ORM\JoinColumn(name: 'sender_user_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private User $sender;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
     private string $body;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

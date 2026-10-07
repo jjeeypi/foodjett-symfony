@@ -9,6 +9,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'rider_reviews')]
+#[ORM\UniqueConstraint(name: 'rider_reviews_order_id_unique', columns: ['order_id'])]
+#[ORM\Index(name: 'rider_reviews_customer_id_foreign', columns: ['customer_id'])]
+#[ORM\Index(name: 'rider_reviews_rider_id_foreign', columns: ['rider_id'])]
 class RiderReview
 {
     #[ORM\Id]
@@ -31,7 +34,7 @@ class RiderReview
     #[ORM\Column(type: Types::SMALLINT, columnDefinition: 'TINYINT UNSIGNED NOT NULL')]
     private int $rating;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $comment = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

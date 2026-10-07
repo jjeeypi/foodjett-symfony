@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'notifications')]
+#[ORM\Index(name: 'notifications_user_id_foreign', columns: ['user_id'])]
 class Notification
 {
     #[ORM\Id]
@@ -26,7 +27,7 @@ class Notification
     #[ORM\Column(length: 255)]
     private string $title;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, columnDefinition: 'TEXT NOT NULL')]
     private string $body;
 
     /** @var array<string, mixed>|null */

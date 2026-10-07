@@ -8,12 +8,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'restaurant_operating_hours',
-    uniqueConstraints: [
-        new ORM\UniqueConstraint(name: 'restaurant_operating_hours_restaurant_day_unique', columns: ['restaurant_id', 'day_of_week']),
-    ],
-)]
+#[ORM\Table(name: 'restaurant_operating_hours')]
+#[ORM\UniqueConstraint(name: 'restaurant_operating_hours_restaurant_day_unique', columns: ['restaurant_id', 'day_of_week'])]
+#[ORM\Index(name: 'restaurant_operating_hours_restaurant_id_foreign', columns: ['restaurant_id'])]
 class RestaurantOperatingHour
 {
     #[ORM\Id]

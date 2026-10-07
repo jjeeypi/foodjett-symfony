@@ -14,12 +14,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(
-    name: 'riders',
-    indexes: [
-        new ORM\Index(name: 'riders_availability_status_approval_status_index', columns: ['availability_status', 'approval_status']),
-    ],
-)]
+#[ORM\Table(name: 'riders')]
+#[ORM\Index(name: 'riders_availability_status_approval_status_index', columns: ['availability_status', 'approval_status'])]
+#[ORM\UniqueConstraint(name: 'riders_user_id_unique', columns: ['user_id'])]
 class Rider
 {
     #[ORM\Id]
@@ -40,7 +37,7 @@ class Rider
     #[ORM\Column(length: 32, enumType: ApprovalStatus::class, options: ['default' => 'pending'])]
     private ApprovalStatus $approvalStatus = ApprovalStatus::PENDING;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, columnDefinition: 'TEXT DEFAULT NULL')]
     private ?string $rejectionReason = null;
 
     #[ORM\Column(length: 32, enumType: RiderAvailabilityStatus::class, options: ['default' => 'offline'])]

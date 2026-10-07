@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'rider_pool_offers')]
+#[ORM\UniqueConstraint(name: 'rider_pool_offers_order_id_unique', columns: ['order_id'])]
 class RiderPoolOffer
 {
     #[ORM\Id]

@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'menu_categories')]
+#[ORM\Index(name: 'menu_categories_restaurant_id_foreign', columns: ['restaurant_id'])]
 class MenuCategory
 {
     #[ORM\Id]

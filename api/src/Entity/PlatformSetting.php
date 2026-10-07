@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'platform_settings')]
+#[ORM\UniqueConstraint(name: 'platform_settings_key_unique', columns: ['key'])]
 class PlatformSetting
 {
     #[ORM\Id]
