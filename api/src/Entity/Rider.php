@@ -97,6 +97,10 @@ class Rider
     #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderCashRemittance::class, cascade: ['persist'])]
     private Collection $cashRemittances;
 
+    /** @var Collection<int, RiderReview> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderReview::class, cascade: ['persist'])]
+    private Collection $reviews;
+
     public function __construct()
     {
         $this->documents = new ArrayCollection();
@@ -105,6 +109,7 @@ class Rider
         $this->earnings = new ArrayCollection();
         $this->payouts = new ArrayCollection();
         $this->cashRemittances = new ArrayCollection();
+        $this->reviews = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -368,4 +373,7 @@ class Rider
     {
         return $this->cashRemittances;
     }
+
+    /** @return Collection<int, RiderReview> */
+    public function getReviews(): Collection { return $this->reviews; }
 }

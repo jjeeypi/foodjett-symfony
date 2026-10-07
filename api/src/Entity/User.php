@@ -6,6 +6,8 @@ namespace App\Entity;
 
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -79,6 +81,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Customer::class)]
     private ?Customer $customer = null;
+
+    /** @var Collection<int, OrderReport> */
+    #[ORM\OneToMany(mappedBy: 'reportedBy', targetEntity: OrderReport::class, cascade: ['persist'])]
+    private Collection $reportedOrderReports;
+
+    /** @var Collection<int, SupportTicket> */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: SupportTicket::class, cascade: ['persist'])]
+    private Collection $supportTickets;
+
+    /** @var Collection<int, Message> */
+    #[ORM\OneToMany(mappedBy: 'sender', targetEntity: Message::class, cascade: ['persist'])]
+    private Collection $sentMessages;
+
+    public function __construct()
+    {
+        $this->reportedOrderReports = new ArrayCollection();
+        $this->supportTickets = new ArrayCollection();
+        $this->sentMessages = new ArrayCollection();
+    }
 
     public function getId(): ?string
     {
@@ -338,4 +359,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
     }
+
+    /** @return Collection<int, OrderReport> */
+    public function getReportedOrderReports(): Collection { return $this->reportedOrderReports; }
+
+    /** @return Collection<int, SupportTicket> */
+    public function getSupportTickets(): Collection { return $this->supportTickets; }
+
+    /** @return Collection<int, Message> */
+    public function getSentMessages(): Collection { return $this->sentMessages; }
 }

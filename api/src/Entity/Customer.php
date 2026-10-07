@@ -40,11 +40,21 @@ class Customer
     #[ORM\OneToMany(mappedBy: 'customer', targetEntity: VoucherRedemption::class, cascade: ['persist'])]
     private Collection $voucherRedemptions;
 
+    /** @var Collection<int, RestaurantReview> */
+    #[ORM\OneToMany(mappedBy: 'customer', targetEntity: RestaurantReview::class, cascade: ['persist'])]
+    private Collection $restaurantReviews;
+
+    /** @var Collection<int, RiderReview> */
+    #[ORM\OneToMany(mappedBy: 'customer', targetEntity: RiderReview::class, cascade: ['persist'])]
+    private Collection $riderReviews;
+
     public function __construct()
     {
         $this->addresses = new ArrayCollection();
         $this->orders = new ArrayCollection();
         $this->voucherRedemptions = new ArrayCollection();
+        $this->restaurantReviews = new ArrayCollection();
+        $this->riderReviews = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -129,4 +139,10 @@ class Customer
     {
         return $this->voucherRedemptions;
     }
+
+    /** @return Collection<int, RestaurantReview> */
+    public function getRestaurantReviews(): Collection { return $this->restaurantReviews; }
+
+    /** @return Collection<int, RiderReview> */
+    public function getRiderReviews(): Collection { return $this->riderReviews; }
 }

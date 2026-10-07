@@ -35,9 +35,14 @@ class Admin
     #[ORM\OneToMany(mappedBy: 'confirmedByAdmin', targetEntity: RiderCashRemittance::class)]
     private Collection $confirmedCashRemittances;
 
+    /** @var Collection<int, OrderReport> */
+    #[ORM\OneToMany(mappedBy: 'resolvedByAdmin', targetEntity: OrderReport::class)]
+    private Collection $resolvedOrderReports;
+
     public function __construct()
     {
         $this->confirmedCashRemittances = new ArrayCollection();
+        $this->resolvedOrderReports = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -102,4 +107,7 @@ class Admin
     {
         return $this->confirmedCashRemittances;
     }
+
+    /** @return Collection<int, OrderReport> */
+    public function getResolvedOrderReports(): Collection { return $this->resolvedOrderReports; }
 }
