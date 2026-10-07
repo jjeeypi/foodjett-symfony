@@ -1,0 +1,262 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Entity;
+
+use App\Enum\ApprovalStatus;
+use App\Enum\PayoutMethod;
+use App\Enum\RiderAvailabilityStatus;
+use App\Enum\VehicleType;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[ORM\Table(
+    name: 'riders',
+    indexes: [
+        new ORM\Index(name: 'riders_availability_status_approval_status_index', columns: ['availability_status', 'approval_status']),
+    ],
+)]
+class Rider
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
+    private ?string $id = null;
+
+    #[ORM\OneToOne(inversedBy: 'rider', targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, unique: true, onDelete: 'RESTRICT')]
+    private User $user;
+
+    #[ORM\Column(length: 32, enumType: VehicleType::class)]
+    private VehicleType $vehicleType;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $plateNumber = null;
+
+    #[ORM\Column(length: 32, enumType: ApprovalStatus::class, options: ['default' => 'pending'])]
+    private ApprovalStatus $approvalStatus = ApprovalStatus::PENDING;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $rejectionReason = null;
+
+    #[ORM\Column(length: 32, enumType: RiderAvailabilityStatus::class, options: ['default' => 'offline'])]
+    private RiderAvailabilityStatus $availabilityStatus = RiderAvailabilityStatus::OFFLINE;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
+    private ?string $currentLatitude = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
+    private ?string $currentLongitude = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
+    private ?\DateTimeImmutable $lastLocationAt = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    private string $cashOnHand = '0.00';
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '2000.00'])]
+    private string $cashRemitLimit = '2000.00';
+
+    #[ORM\Column(length: 32, nullable: true, enumType: PayoutMethod::class)]
+    private ?PayoutMethod $payoutMethod = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $payoutAccountDetails = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
+
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
+    public function setUser(User $user): self
+    {
+        $this->user = $user;
+
+        if ($user->getRider() !== $this) {
+            $user->setRider($this);
+        }
+
+        return $this;
+    }
+
+    public function getVehicleType(): VehicleType
+    {
+        return $this->vehicleType;
+    }
+
+    public function setVehicleType(VehicleType $vehicleType): self
+    {
+        $this->vehicleType = $vehicleType;
+
+        return $this;
+    }
+
+    public function getPlateNumber(): ?string
+    {
+        return $this->plateNumber;
+    }
+
+    public function setPlateNumber(?string $plateNumber): self
+    {
+        $this->plateNumber = $plateNumber;
+
+        return $this;
+    }
+
+    public function getApprovalStatus(): ApprovalStatus
+    {
+        return $this->approvalStatus;
+    }
+
+    public function setApprovalStatus(ApprovalStatus $approvalStatus): self
+    {
+        $this->approvalStatus = $approvalStatus;
+
+        return $this;
+    }
+
+    public function getRejectionReason(): ?string
+    {
+        return $this->rejectionReason;
+    }
+
+    public function setRejectionReason(?string $rejectionReason): self
+    {
+        $this->rejectionReason = $rejectionReason;
+
+        return $this;
+    }
+
+    public function getAvailabilityStatus(): RiderAvailabilityStatus
+    {
+        return $this->availabilityStatus;
+    }
+
+    public function setAvailabilityStatus(RiderAvailabilityStatus $availabilityStatus): self
+    {
+        $this->availabilityStatus = $availabilityStatus;
+
+        return $this;
+    }
+
+    public function getCurrentLatitude(): ?string
+    {
+        return $this->currentLatitude;
+    }
+
+    public function setCurrentLatitude(?string $currentLatitude): self
+    {
+        $this->currentLatitude = $currentLatitude;
+
+        return $this;
+    }
+
+    public function getCurrentLongitude(): ?string
+    {
+        return $this->currentLongitude;
+    }
+
+    public function setCurrentLongitude(?string $currentLongitude): self
+    {
+        $this->currentLongitude = $currentLongitude;
+
+        return $this;
+    }
+
+    public function getLastLocationAt(): ?\DateTimeImmutable
+    {
+        return $this->lastLocationAt;
+    }
+
+    public function setLastLocationAt(?\DateTimeImmutable $lastLocationAt): self
+    {
+        $this->lastLocationAt = $lastLocationAt;
+
+        return $this;
+    }
+
+    public function getCashOnHand(): string
+    {
+        return $this->cashOnHand;
+    }
+
+    public function setCashOnHand(string $cashOnHand): self
+    {
+        $this->cashOnHand = $cashOnHand;
+
+        return $this;
+    }
+
+    public function getCashRemitLimit(): string
+    {
+        return $this->cashRemitLimit;
+    }
+
+    public function setCashRemitLimit(string $cashRemitLimit): self
+    {
+        $this->cashRemitLimit = $cashRemitLimit;
+
+        return $this;
+    }
+
+    public function getPayoutMethod(): ?PayoutMethod
+    {
+        return $this->payoutMethod;
+    }
+
+    public function setPayoutMethod(?PayoutMethod $payoutMethod): self
+    {
+        $this->payoutMethod = $payoutMethod;
+
+        return $this;
+    }
+
+    public function getPayoutAccountDetails(): ?array
+    {
+        return $this->payoutAccountDetails;
+    }
+
+    public function setPayoutAccountDetails(?array $payoutAccountDetails): self
+    {
+        $this->payoutAccountDetails = $payoutAccountDetails;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(?\DateTimeImmutable $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+}
