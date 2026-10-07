@@ -8,6 +8,8 @@ use App\Enum\ApprovalStatus;
 use App\Enum\PayoutMethod;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\VehicleType;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -70,6 +72,20 @@ class Rider
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    /** @var Collection<int, RiderDocument> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderDocument::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $documents;
+
+    /** @var Collection<int, RiderPoolDecline> */
+    #[ORM\OneToMany(mappedBy: 'rider', targetEntity: RiderPoolDecline::class, cascade: ['persist'])]
+    private Collection $poolDeclines;
+
+    public function __construct()
+    {
+        $this->documents = new ArrayCollection();
+        $this->poolDeclines = new ArrayCollection();
+    }
 
     public function getId(): ?string
     {
@@ -256,6 +272,45 @@ class Rider
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    /** @return Collection<int, RiderDocument> */
+    public function getDocuments(): Collection
+    {
+        return $this->documents;
+    }
+
+    public function addDocument(RiderDocument $document): self
+    {
+        if (!$this->documents->contains($document)) {
+            $this->documents->add($document);
+            $document->setRider($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDocument(RiderDocument $document): self
+    {
+        $this->documents->removeElement($document);
+
+        return $this;
+    }
+
+    /** @return Collection<int, RiderPoolDecline> */
+    public function getPoolDeclines(): Collection
+    {
+        return $this->poolDeclines;
+    }
+
+    public function addPoolDecline(RiderPoolDecline $poolDecline): self
+    {
+        if (!$this->poolDeclines->contains($poolDecline)) {
+            $this->poolDeclines->add($poolDecline);
+            $poolDecline->setRider($this);
+        }
 
         return $this;
     }
