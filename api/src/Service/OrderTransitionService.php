@@ -11,6 +11,7 @@ use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\RiderPoolEscalationStage;
 use App\Event\OrderStatusChangedEvent;
+use App\Event\OrderUpdatedEvent;
 use App\Exception\InvalidOrderTransitionException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -122,6 +123,66 @@ final readonly class OrderTransitionService
         foreach ($events as $event) {
             $this->eventDispatcher->dispatch($event);
         }
+
+        return $updatedOrder;
+    }
+
+    /**
+     * Records an order-domain update that does not replace the current delivery status.
+     * This supports parallel food milestones such as ready while rider search is active.
+     *
+     * @param callable(Order, \DateTimeImmutable): void $applyChanges
+     */
+    public function recordUpdate(
+        Order $order,
+        OrderActor $changedBy,
+        string $kind,
+        ?string $note,
+        callable $applyChanges,
+        ?OrderStatus $historyStatus = null,
+    ): Order {
+        if (null === $order->getId()) {
+            throw new \InvalidArgumentException('An order must be persisted before it can be updated.');
+        }
+
+        $changedAt = new \DateTimeImmutable();
+        /** @var Order $updatedOrder */
+        $updatedOrder = $this->entityManager->wrapInTransaction(function () use (
+            $order,
+            $changedBy,
+            $note,
+            $applyChanges,
+            $historyStatus,
+            $changedAt,
+        ): Order {
+            $locked = $this->entityManager->find(Order::class, $order->getId(), LockMode::PESSIMISTIC_WRITE);
+            if (!$locked instanceof Order) {
+                throw new \RuntimeException('Order no longer exists.');
+            }
+
+            $applyChanges($locked, $changedAt);
+            $locked->setUpdatedAt($changedAt);
+            $history = (new OrderStatusHistory())
+                ->setOrder($locked)
+                ->setStatus(($historyStatus ?? $locked->getStatus())->value)
+                ->setChangedBy($changedBy)
+                ->setNote($note)
+                ->setCreatedAt($changedAt);
+            $locked->addStatusHistory($history);
+            $this->entityManager->persist($history);
+            $this->entityManager->flush();
+
+            return $locked;
+        });
+
+        $this->eventDispatcher->dispatch(new OrderUpdatedEvent(
+            orderId: (string) $updatedOrder->getId(),
+            currentStatus: $updatedOrder->getStatus(),
+            changedBy: $changedBy,
+            kind: $kind,
+            note: $note,
+            changedAt: $changedAt,
+        ));
 
         return $updatedOrder;
     }
