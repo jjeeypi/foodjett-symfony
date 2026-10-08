@@ -55,14 +55,6 @@ final class ApprovalStatusController extends AbstractController
         return $this->json(['message' => 'Restaurant account is approved.']);
     }
 
-    #[Route('/api/rider/pool', name: 'api_rider_pool_probe', methods: ['GET'])]
-    #[IsGranted('ROLE_RIDER')]
-    #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your rider account is awaiting approval.')]
-    public function riderPool(): JsonResponse
-    {
-        return $this->json(['message' => 'Rider account is approved.']);
-    }
-
     private function authenticatedUser(): User
     {
         $user = $this->getUser();
