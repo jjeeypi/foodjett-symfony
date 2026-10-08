@@ -9,10 +9,12 @@ use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
+use App\Entity\RiderPoolOffer;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
 use App\Enum\ConversationType;
 use App\Enum\OrderStatus;
+use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Security\Voter\ConversationVoter;
 use App\Security\Voter\OrderVoter;
@@ -30,14 +32,21 @@ final class OwnershipVotersTest extends TestCase
         $voter = new OrderVoter();
 
         self::assertTrue($this->granted($voter, OrderVoter::VIEW, $order, $customerUser));
-        self::assertTrue($this->granted($voter, OrderVoter::CANCEL, $order, $customerUser));
+        self::assertFalse($this->granted($voter, OrderVoter::CANCEL, $order, $customerUser));
         self::assertTrue($this->granted($voter, OrderVoter::UPDATE_AS_RESTAURANT, $order, $restaurantUser));
         self::assertTrue($this->granted($voter, OrderVoter::UPDATE_AS_RIDER, $order, $riderUser));
+
+        $offer = (new RiderPoolOffer())
+            ->setOrder($order)
+            ->setEscalationStage(RiderPoolEscalationStage::CUSTOMER_NOTIFIED);
+        $order->setRiderPoolOffer($offer);
+        self::assertTrue($this->granted($voter, OrderVoter::CANCEL, $order, $customerUser));
 
         $unapprovedRider = $this->riderUser(ApprovalStatus::PENDING);
         self::assertFalse($this->granted($voter, OrderVoter::UPDATE_AS_RIDER, $order, $unapprovedRider));
 
         $order->setStatus(OrderStatus::PLACED);
+        self::assertTrue($this->granted($voter, OrderVoter::CANCEL, $order, $customerUser));
         self::assertFalse($this->granted($voter, OrderVoter::UPDATE_AS_RIDER, $order, $riderUser));
 
         $order->setRider($riderUser->getRider());
