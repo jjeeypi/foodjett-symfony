@@ -63,7 +63,8 @@ final class RiderPoolControllerTest extends WebTestCase
         self::assertSame('card', $testOrders[0]['payment_method']);
         self::assertArrayHasKey('pickup_distance_km', $testOrders[0]);
         self::assertArrayHasKey('delivery_distance_km', $testOrders[0]);
-        self::assertArrayHasKey('total', $testOrders[0]['estimated_pay']);
+        self::assertMatchesRegularExpression('/^\d+\.\d{2}$/', $testOrders[0]['estimated_pay']);
+        self::assertSame($testOrders[0]['estimated_pay'], $testOrders[0]['pay_breakdown']['total']);
     }
 
     public function testOfflineRiderGetsAnEmptyPoolWithReason(): void

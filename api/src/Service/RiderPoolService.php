@@ -79,6 +79,7 @@ final readonly class RiderPoolService
                 (float) $order->getCustomerAddress()->getLatitude(),
                 (float) $order->getCustomerAddress()->getLongitude(),
             );
+            $pay = $this->payCalculator->estimate($pickupDistance, $deliveryDistance, $offer);
 
             $visible[] = [
                 'order_id' => $order->getId(),
@@ -90,7 +91,8 @@ final readonly class RiderPoolService
                 ],
                 'pickup_distance_km' => $this->distance($pickupDistance),
                 'delivery_distance_km' => $this->distance($deliveryDistance),
-                'estimated_pay' => $this->payCalculator->estimate($pickupDistance, $deliveryDistance, $offer),
+                'estimated_pay' => $pay['total'],
+                'pay_breakdown' => $pay,
                 'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
                 'search_radius_km' => $offer->getSearchRadiusKm(),
                 'escalation_stage' => $offer->getEscalationStage()->value,
