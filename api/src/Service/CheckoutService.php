@@ -65,9 +65,18 @@ final readonly class CheckoutService
 
         /** @var CheckoutResult $result */
         $result = $this->entityManager->wrapInTransaction(function () use ($customer, $input, $token): CheckoutResult {
+            if (null === $customer->getId()) {
+                throw new \InvalidArgumentException('The customer must be persisted before checkout.');
+            }
+            // Serializing checkouts per customer closes the race between the token lookup and insert.
+            // The unique checkout_token index remains the database-level final guard.
+            $lockedCustomer = $this->entityManager->find(Customer::class, $customer->getId(), LockMode::PESSIMISTIC_WRITE);
+            if (!$lockedCustomer instanceof Customer) {
+                throw new CheckoutValidationException('Customer profile not found.', 404);
+            }
             $existing = $this->entityManager->getRepository(Order::class)->findOneBy(['checkoutToken' => $token]);
             if ($existing instanceof Order) {
-                if ($existing->getCustomer() !== $customer) {
+                if ($existing->getCustomer() !== $lockedCustomer) {
                     throw new CheckoutValidationException('This checkout token is already in use.', 409);
                 }
 
@@ -76,7 +85,7 @@ final readonly class CheckoutService
 
             $now = new \DateTimeImmutable();
             $restaurant = $this->restaurant($input['restaurant_id'] ?? null);
-            $address = $this->address($input['customer_address_id'] ?? null, $customer);
+            $address = $this->address($input['customer_address_id'] ?? null, $lockedCustomer);
             $paymentMethod = $this->paymentMethod($input['payment_method'] ?? null);
             $tipCents = $this->nonNegativeMoneyToCents($input['tip_amount'] ?? 0, 'tip_amount');
             $notes = $this->optionalText($input['customer_notes'] ?? null, 2000, 'customer_notes');
@@ -111,7 +120,7 @@ final readonly class CheckoutService
             if ($voucher instanceof Voucher) {
                 $discountCents = $this->voucherDiscount(
                     $voucher,
-                    $customer,
+                    $lockedCustomer,
                     $restaurant,
                     $subtotalCents,
                     $deliveryFeeCents,
@@ -125,7 +134,7 @@ final readonly class CheckoutService
             $order = (new Order())
                 ->setOrderNumber($this->newOrderNumber())
                 ->setCheckoutToken($token)
-                ->setCustomer($customer)
+                ->setCustomer($lockedCustomer)
                 ->setRestaurant($restaurant)
                 ->setCustomerAddress($address)
                 ->setStatus(OrderStatus::PLACED)
@@ -203,7 +212,7 @@ final readonly class CheckoutService
                 $redemption = (new VoucherRedemption())
                     ->setVoucher($voucher)
                     ->setOrder($order)
-                    ->setCustomer($customer)
+                    ->setCustomer($lockedCustomer)
                     ->setDiscountApplied($this->decimal($discountCents))
                     ->setCreatedAt($now)
                     ->setUpdatedAt($now);
