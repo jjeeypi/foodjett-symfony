@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
+use App\Enum\RiderPoolEscalationStage;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -252,6 +253,16 @@ class Order
     public function setCreatedAt(?\DateTimeImmutable $createdAt): self { $this->createdAt = $createdAt; return $this; }
     public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self { $this->updatedAt = $updatedAt; return $this; }
+
+    public function canBeCancelledByCustomer(): bool
+    {
+        if (OrderStatus::PLACED === $this->status) {
+            return true;
+        }
+
+        return OrderStatus::FINDING_RIDER === $this->status
+            && RiderPoolEscalationStage::CUSTOMER_NOTIFIED === $this->riderPoolOffer?->getEscalationStage();
+    }
 
     /** @return Collection<int, OrderItem> */
     public function getItems(): Collection { return $this->items; }

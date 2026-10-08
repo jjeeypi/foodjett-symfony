@@ -47,7 +47,7 @@ final class OrderVoter extends Voter
             self::VIEW => $this->canView($user, $subject),
             self::UPDATE_AS_RESTAURANT => $subject->getRestaurant()->getUser() === $user,
             self::UPDATE_AS_RIDER => $this->canUpdateAsRider($user, $subject),
-            self::CANCEL => $subject->getCustomer()->getUser() === $user,
+            self::CANCEL => $subject->getCustomer()->getUser() === $user && $subject->canBeCancelledByCustomer(),
             default => false,
         };
     }
