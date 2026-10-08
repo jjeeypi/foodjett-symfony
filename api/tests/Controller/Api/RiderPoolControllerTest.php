@@ -20,6 +20,8 @@ use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
+use App\Exception\RiderPoolException;
+use App\Service\RiderPoolService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -28,6 +30,7 @@ final class RiderPoolControllerTest extends WebTestCase
 {
     private const PASSWORD = 'TestPassword123!';
     private const RIDER_EMAIL = 'pool-rider@foodjett.test';
+    private const SECOND_RIDER_EMAIL = 'pool-rider-two@foodjett.test';
     private const RESTAURANT_EMAIL = 'pool-restaurant@foodjett.test';
     private const CUSTOMER_EMAIL = 'pool-customer@foodjett.test';
 
@@ -78,6 +81,107 @@ final class RiderPoolControllerTest extends WebTestCase
         self::assertSame('Go online to view available orders.', $this->payload()['reason'] ?? null);
     }
 
+    public function testRiderAcceptsAtomicallyAndStaleCompetitorLosesTheRace(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => 'POOL-CARD']);
+        self::assertInstanceOf(Order::class, $order);
+        $staleSnapshot = clone $order;
+
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/accept', [], server: $this->auth($this->login()));
+        self::assertResponseIsSuccessful();
+        $payload = $this->payload()['order'] ?? [];
+        self::assertSame(OrderStatus::RIDER_ASSIGNED->value, $payload['status'] ?? null);
+        self::assertMatchesRegularExpression('/^\d{4}$/', (string) ($payload['pickup_code'] ?? ''));
+
+        $entityManager->clear();
+        $secondUser = $entityManager->getRepository(User::class)->findOneBy(['email' => self::SECOND_RIDER_EMAIL]);
+        self::assertInstanceOf(User::class, $secondUser);
+        self::assertNotNull($secondUser->getRider());
+
+        try {
+            self::getContainer()->get(RiderPoolService::class)->accept($staleSnapshot, $secondUser->getRider());
+            self::fail('The stale competing acceptance should fail after the database lock is acquired.');
+        } catch (RiderPoolException $exception) {
+            self::assertSame('This order was just taken by another rider.', $exception->getMessage());
+        }
+
+        $entityManager->clear();
+        $wonOrder = $entityManager->find(Order::class, $order->getId());
+        self::assertInstanceOf(Order::class, $wonOrder);
+        self::assertSame(self::RIDER_EMAIL, $wonOrder->getRider()?->getUser()->getEmail());
+        self::assertSame(RiderAvailabilityStatus::BUSY, $wonOrder->getRider()?->getAvailabilityStatus());
+        self::assertCount(1, $wonOrder->getStatusHistory());
+    }
+
+    public function testTakenOrderReturnsSpecificConflictToAnotherRider(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => 'POOL-CARD']);
+        self::assertInstanceOf(Order::class, $order);
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/accept', [], server: $this->auth($this->login()));
+        self::assertResponseIsSuccessful();
+
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/accept', [], server: $this->auth($this->login(self::SECOND_RIDER_EMAIL)));
+
+        self::assertResponseStatusCodeSame(409);
+        self::assertSame('This order was just taken by another rider.', $this->payload()['message'] ?? null);
+    }
+
+    public function testDeclineIsIdempotentAndHidesOrderFromRider(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => 'POOL-CARD']);
+        self::assertInstanceOf(Order::class, $order);
+        $token = $this->login();
+
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/decline', [], server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        self::assertSame('skipped', $this->payload()['decline']['action'] ?? null);
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/decline', [], server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+
+        $this->client->request('GET', '/api/rider/pool', server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        $testOrders = array_filter($this->payload()['orders'] ?? [], static fn (array $row): bool => str_starts_with($row['order_number'], 'POOL-'));
+        self::assertSame([], array_values($testOrders));
+        self::assertSame(1, (int) $entityManager->getConnection()->fetchOne(
+            'SELECT COUNT(*) FROM rider_pool_declines WHERE order_id = ?',
+            [$order->getId()],
+        ));
+    }
+
+    public function testAtomicAcceptRechecksCodLimit(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $order = $entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => 'POOL-COD']);
+        self::assertInstanceOf(Order::class, $order);
+
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/accept', [], server: $this->auth($this->login()));
+
+        self::assertResponseStatusCodeSame(409);
+        self::assertSame('Remit cash before accepting another COD order.', $this->payload()['message'] ?? null);
+        self::assertSame(OrderStatus::FINDING_RIDER, $this->reloadOrder((string) $order->getId())->getStatus());
+    }
+
+    public function testAtomicAcceptEnforcesOneActiveOrderPerRider(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $card = $entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => 'POOL-CARD']);
+        $cod = $entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => 'POOL-COD']);
+        self::assertInstanceOf(Order::class, $card);
+        self::assertInstanceOf(Order::class, $cod);
+        $token = $this->login();
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$card->getId().'/accept', [], server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+
+        $this->client->jsonRequest('POST', '/api/rider/pool/'.$cod->getId().'/accept', [], server: $this->auth($token));
+
+        self::assertResponseStatusCodeSame(409);
+        self::assertSame('Finish your current delivery before accepting another order.', $this->payload()['message'] ?? null);
+        self::assertSame(OrderStatus::FINDING_RIDER, $this->reloadOrder((string) $cod->getId())->getStatus());
+    }
+
     private function createFixture(): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -93,6 +197,20 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setCurrentLongitude('120.9843000')
             ->setLastLocationAt($now)
             ->setCashOnHand('2000.00')
+            ->setCashRemitLimit('2000.00')
+            ->setCreatedAt($now)
+            ->setUpdatedAt($now);
+        $secondRiderUser = $this->user(self::SECOND_RIDER_EMAIL, '+639186400004', UserRole::RIDER, $now);
+        $secondRider = (new Rider())
+            ->setUser($secondRiderUser)
+            ->setVehicleType(VehicleType::MOTORCYCLE)
+            ->setPlateNumber('POOL-002')
+            ->setApprovalStatus(ApprovalStatus::APPROVED)
+            ->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+            ->setCurrentLatitude('14.5997000')
+            ->setCurrentLongitude('120.9844000')
+            ->setLastLocationAt($now)
+            ->setCashOnHand('0.00')
             ->setCashRemitLimit('2000.00')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
@@ -119,7 +237,7 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
 
-        foreach ([$riderUser, $rider, $restaurantUser, $restaurant, $customerUser, $customer, $address] as $entity) {
+        foreach ([$riderUser, $rider, $secondRiderUser, $secondRider, $restaurantUser, $restaurant, $customerUser, $customer, $address] as $entity) {
             $entityManager->persist($entity);
         }
         $this->order($entityManager, $customer, $restaurant, $address, 'POOL-CARD', PaymentMethod::CARD, $now);
@@ -176,12 +294,22 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setUpdatedAt($now);
     }
 
-    private function login(): string
+    private function login(string $email = self::RIDER_EMAIL): string
     {
-        $this->client->jsonRequest('POST', '/api/login', ['login' => self::RIDER_EMAIL, 'password' => self::PASSWORD]);
+        $this->client->jsonRequest('POST', '/api/login', ['login' => $email, 'password' => self::PASSWORD]);
         self::assertResponseIsSuccessful();
 
         return $this->payload()['token'];
+    }
+
+    private function reloadOrder(string $id): Order
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $order = $entityManager->find(Order::class, $id);
+        self::assertInstanceOf(Order::class, $order);
+
+        return $order;
     }
 
     /** @return array<string, string> */
@@ -208,9 +336,9 @@ final class RiderPoolControllerTest extends WebTestCase
             $connection->executeStatement($sql, ['POOL-%']);
         }
         $connection->executeStatement('DELETE FROM customer_addresses WHERE label = ?', ['Pool Test Address']);
-        $connection->executeStatement('DELETE FROM riders WHERE user_id IN (SELECT id FROM users WHERE email = ?)', [self::RIDER_EMAIL]);
+        $connection->executeStatement('DELETE FROM riders WHERE user_id IN (SELECT id FROM users WHERE email IN (?, ?))', [self::RIDER_EMAIL, self::SECOND_RIDER_EMAIL]);
         $connection->executeStatement('DELETE FROM customers WHERE user_id IN (SELECT id FROM users WHERE email = ?)', [self::CUSTOMER_EMAIL]);
         $connection->executeStatement('DELETE FROM restaurants WHERE user_id IN (SELECT id FROM users WHERE email = ?)', [self::RESTAURANT_EMAIL]);
-        $connection->executeStatement('DELETE FROM users WHERE email IN (?, ?, ?)', [self::RIDER_EMAIL, self::CUSTOMER_EMAIL, self::RESTAURANT_EMAIL]);
+        $connection->executeStatement('DELETE FROM users WHERE email IN (?, ?, ?, ?)', [self::RIDER_EMAIL, self::SECOND_RIDER_EMAIL, self::CUSTOMER_EMAIL, self::RESTAURANT_EMAIL]);
     }
 }
