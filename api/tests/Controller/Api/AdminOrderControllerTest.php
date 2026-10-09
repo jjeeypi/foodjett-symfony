@@ -79,6 +79,25 @@ final class AdminOrderControllerTest extends WebTestCase
         self::assertSame(OrderStatus::RIDER_ASSIGNED, $this->reload()->getStatus());
     }
 
+    public function testAdminCanFilterOrdersAndOpenFullDetail(): void
+    {
+        $token = $this->login();
+        $this->client->request('GET', '/api/admin/orders?status=rider_assigned&perPage=10', server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        $records = array_values(array_filter($this->payload()['data'] ?? [], fn (array $order): bool => $this->orderId === (string) $order['id']));
+        self::assertCount(1, $records);
+        self::assertSame('Admin Cancel Test Restaurant', $records[0]['restaurant']['name']);
+
+        $this->client->request('GET', '/api/admin/orders/'.$this->orderId, server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        $order = $this->payload()['order'] ?? [];
+        self::assertSame($this->orderId, (string) ($order['id'] ?? ''));
+        self::assertSame('paid', $order['payment']['status'] ?? null);
+        self::assertSame('Test address', $order['delivery_address']['address_line'] ?? null);
+        self::assertArrayHasKey('status_history', $order);
+        self::assertArrayHasKey('rider_pool_offer', $order);
+    }
+
     private function createFixture(): Order
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -184,6 +203,7 @@ final class AdminOrderControllerTest extends WebTestCase
     private function cleanup(): void
     {
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $connection->executeStatement("DELETE FROM audit_logs WHERE action = 'order.cancelled'");
         foreach ([
             'DELETE FROM payment_status_history WHERE payment_id IN (SELECT id FROM payments WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?))',
             'DELETE FROM payments WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
