@@ -141,7 +141,7 @@ class Order
 
     /** @var Collection<int, OrderStatusHistory> */
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderStatusHistory::class, cascade: ['persist'])]
-    #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    #[ORM\OrderBy(['createdAt' => 'ASC', 'id' => 'ASC'])]
     private Collection $statusHistory;
 
     #[ORM\OneToOne(mappedBy: 'order', targetEntity: RiderPoolOffer::class, cascade: ['persist'])]
