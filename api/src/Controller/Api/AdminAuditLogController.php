@@ -25,12 +25,14 @@ final class AdminAuditLogController extends AbstractController
     public function index(Request $request): JsonResponse
     {
         $query = $this->entityManager->getRepository(AuditLog::class)->createQueryBuilder('log')
-            ->leftJoin('log.user', 'account')->addSelect('account')->orderBy('log.createdAt', 'DESC');
+            ->leftJoin('log.user', 'account')->addSelect('account')
+            ->leftJoin('account.admin', 'adminProfile')->addSelect('adminProfile')
+            ->orderBy('log.createdAt', 'DESC');
         if ('' !== ($action = trim((string) $request->query->get('action', '')))) {
             $query->andWhere('log.action LIKE :action')->setParameter('action', '%'.$action.'%');
         }
         if ('' !== ($adminId = trim((string) $request->query->get('admin_id', '')))) {
-            $query->andWhere('account.id = :adminId')->setParameter('adminId', $adminId);
+            $query->andWhere('adminProfile.id = :adminId')->setParameter('adminId', $adminId);
         }
         foreach (['date_from' => '>=', 'date_to' => '<='] as $parameter => $operator) {
             if ('' === ($value = trim((string) $request->query->get($parameter, '')))) { continue; }
@@ -40,7 +42,7 @@ final class AdminAuditLogController extends AbstractController
         }
         return $this->json($this->paginator->paginate($query, $request, static fn (AuditLog $log): array => [
             'id' => $log->getId(), 'action' => $log->getAction(), 'subject_type' => $log->getSubjectType(), 'subject_id' => $log->getSubjectId(),
-            'changes' => $log->getChanges(), 'admin' => null === $log->getUser() ? null : ['user_id' => $log->getUser()?->getId(), 'name' => $log->getUser()?->getName(), 'email' => $log->getUser()?->getEmail()],
+            'changes' => $log->getChanges(), 'admin' => null === $log->getUser() ? null : ['id' => $log->getUser()?->getAdmin()?->getId(), 'user_id' => $log->getUser()?->getId(), 'name' => $log->getUser()?->getName(), 'email' => $log->getUser()?->getEmail()],
             'created_at' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ]));
     }

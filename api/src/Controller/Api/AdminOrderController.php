@@ -83,10 +83,9 @@ final class AdminOrderController extends AbstractController
     }
 
     #[Route('/unassigned', name: 'unassigned', methods: ['GET'])]
-    public function unassigned(): JsonResponse
+    public function unassigned(Request $request): JsonResponse
     {
-        /** @var list<Order> $orders */
-        $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
+        $query = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
             ->innerJoin('orders.riderPoolOffer', 'offer')
             ->addSelect('offer')
             ->innerJoin('orders.restaurant', 'restaurant')
@@ -100,14 +99,9 @@ final class AdminOrderController extends AbstractController
                 RiderPoolEscalationStage::CUSTOMER_NOTIFIED->value,
                 RiderPoolEscalationStage::AUTO_CANCELLED->value,
             ])
-            ->orderBy('orders.riderSearchStartedAt', 'ASC')
-            ->setMaxResults(100)
-            ->getQuery()
-            ->getResult();
+            ->orderBy('orders.riderSearchStartedAt', 'ASC');
         $now = new \DateTimeImmutable();
-
-        return $this->json([
-            'orders' => array_map(static function (Order $order) use ($now): array {
+        $page = $this->paginator->paginate($query, $request, static function (Order $order) use ($now): array {
                 $startedAt = $order->getRiderSearchStartedAt();
                 $seconds = null === $startedAt ? 0 : max(0, $now->getTimestamp() - $startedAt->getTimestamp());
 
@@ -121,8 +115,10 @@ final class AdminOrderController extends AbstractController
                     'search_radius_km' => $order->getRiderPoolOffer()?->getSearchRadiusKm(),
                     'incentive_amount' => $order->getRiderPoolOffer()?->getIncentiveAmount(),
                 ];
-            }, $orders),
-        ]);
+            });
+
+        // Keep the Phase 4 `orders` key while also exposing the standard paginated shape.
+        return $this->json(['orders' => $page['data']] + $page);
     }
 
     #[Route('/{id}/assign-rider', name: 'assign_rider', methods: ['POST'])]
