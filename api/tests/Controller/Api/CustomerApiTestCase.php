@@ -11,13 +11,16 @@ use App\Entity\MenuItem;
 use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantOperatingHour;
+use App\Entity\Rider;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\RestaurantOperatingStatus;
+use App\Enum\RiderAvailabilityStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -176,7 +179,19 @@ abstract class CustomerApiTestCase extends WebTestCase
         return $order;
     }
 
-    private function user(string $label, UserRole $role, \DateTimeImmutable $now): User
+    protected function createRider(string $label = 'rider'): Rider
+    {
+        $now = new \DateTimeImmutable();
+        $user = $this->user($label, UserRole::RIDER, $now);
+        $rider = (new Rider())->setUser($user)->setVehicleType(VehicleType::MOTORCYCLE)->setPlateNumber('TEST-123')
+            ->setApprovalStatus(ApprovalStatus::APPROVED)->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+            ->setCreatedAt($now)->setUpdatedAt($now);
+        $this->persist($user, $rider);
+
+        return $rider;
+    }
+
+    protected function user(string $label, UserRole $role, \DateTimeImmutable $now): User
     {
         $suffix = bin2hex(random_bytes(3));
 
