@@ -114,12 +114,13 @@ final class CustomerOrderController extends AbstractCustomerController
         }
         $unavailable = [];
         $items = [];
+        $now = new \DateTimeImmutable();
         foreach ($order->getItems() as $orderItem) {
             $menuItem = $orderItem->getMenuItem();
             $variant = $orderItem->getMenuItemVariant();
             $addons = [];
             $unitPrice = (float) $menuItem->getBasePrice() + (null === $variant ? 0.0 : (float) $variant->getPriceDelta());
-            if (!$menuItem->isAvailable()) {
+            if (!$menuItem->isAvailable() || !$this->isWithinTimeWindow($menuItem->getAvailableFrom(), $menuItem->getAvailableUntil(), $now)) {
                 $unavailable[] = ['menu_item_id' => $menuItem->getId(), 'name' => $menuItem->getName()];
                 continue;
             }
@@ -312,5 +313,23 @@ final class CustomerOrderController extends AbstractCustomerController
         $value = trim((string) $value);
 
         return mb_strlen($value) > $maximum ? false : $value;
+    }
+
+    private function isWithinTimeWindow(?\DateTimeImmutable $from, ?\DateTimeImmutable $until, \DateTimeImmutable $now): bool
+    {
+        if (null === $from && null === $until) {
+            return true;
+        }
+        $time = $now->format('H:i:s');
+        $start = $from?->format('H:i:s');
+        $end = $until?->format('H:i:s');
+        if (null === $start) {
+            return $time <= $end;
+        }
+        if (null === $end) {
+            return $time >= $start;
+        }
+
+        return $start <= $end ? $time >= $start && $time <= $end : $time >= $start || $time <= $end;
     }
 }
