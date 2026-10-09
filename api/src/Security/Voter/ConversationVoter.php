@@ -33,7 +33,7 @@ final class ConversationVoter extends Voter
             return self::VIEW === $attribute;
         }
 
-        if (self::SEND === $attribute && null !== $subject->getClosedAt()) {
+        if (self::SEND === $attribute && $subject->isClosed()) {
             return false;
         }
 

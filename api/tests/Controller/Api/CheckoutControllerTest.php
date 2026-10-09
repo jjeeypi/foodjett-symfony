@@ -112,6 +112,53 @@ final class CheckoutControllerTest extends WebTestCase
         ]));
     }
 
+    public function testCheckoutRejectsAClosedRestaurantWithoutCreatingAnOrder(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $restaurant = $entityManager->find(Restaurant::class, $this->fixture['restaurant_id']);
+        self::assertInstanceOf(Restaurant::class, $restaurant);
+        $restaurant->setOperatingStatus(RestaurantOperatingStatus::CLOSED);
+        $entityManager->flush();
+
+        $response = $this->checkout('cod', $this->uuid());
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('This restaurant is currently closed.', $response['message'] ?? null);
+        self::assertSame(0, $entityManager->getRepository(Order::class)->count([]));
+    }
+
+    public function testCheckoutEnforcesOperatingHoursOnTheServer(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $restaurant = $entityManager->find(Restaurant::class, $this->fixture['restaurant_id']);
+        self::assertInstanceOf(Restaurant::class, $restaurant);
+        $hours = $entityManager->getRepository(RestaurantOperatingHour::class)->findOneBy(['restaurant' => $restaurant]);
+        self::assertInstanceOf(RestaurantOperatingHour::class, $hours);
+        $hours->setOpensAt(new \DateTimeImmutable('00:00:00'))->setClosesAt(new \DateTimeImmutable('00:00:01'));
+        $entityManager->flush();
+
+        $response = $this->checkout('gcash', $this->uuid());
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('This restaurant is outside its operating hours.', $response['message'] ?? null);
+        self::assertSame(0, $entityManager->getRepository(Order::class)->count([]));
+    }
+
+    public function testCheckoutRejectsAnUnavailableMenuItemWithoutCreatingAnOrder(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $item = $entityManager->find(MenuItem::class, $this->fixture['item_id']);
+        self::assertInstanceOf(MenuItem::class, $item);
+        $item->setIsAvailable(false);
+        $entityManager->flush();
+
+        $response = $this->checkout('card', $this->uuid());
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('Checkout Test Meal is not currently available.', $response['message'] ?? null);
+        self::assertSame(0, $entityManager->getRepository(Order::class)->count([]));
+    }
+
     /** @return array<string, mixed> */
     private function checkout(string $method, string $token, ?string $voucher = null): array
     {

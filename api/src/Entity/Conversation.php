@@ -53,6 +53,7 @@ class Conversation
     public function setType(ConversationType $type): self { $this->type = $type; return $this; }
     public function getClosedAt(): ?\DateTimeImmutable { return $this->closedAt; }
     public function setClosedAt(?\DateTimeImmutable $at): self { $this->closedAt = $at; return $this; }
+    public function isClosed(?\DateTimeImmutable $at = null): bool { return null !== $this->closedAt && $this->closedAt <= ($at ?? new \DateTimeImmutable()); }
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
     public function setCreatedAt(?\DateTimeImmutable $at): self { $this->createdAt = $at; return $this; }
     public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
