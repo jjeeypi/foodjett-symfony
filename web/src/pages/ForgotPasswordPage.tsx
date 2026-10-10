@@ -3,7 +3,6 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormAlert } from '../components/FormAlert'
-import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { SubmitButton } from '../components/SubmitButton'
 import { forgotPassword, isApiError } from '../lib/api'
@@ -48,10 +47,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-5 flex justify-center sm:mb-7">
-        <Logo />
-      </div>
-
       <section aria-labelledby="forgot-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
         <header className="mb-7">
           <h1 id="forgot-heading" className="text-2xl font-bold tracking-tight text-white">Reset your password</h1>
