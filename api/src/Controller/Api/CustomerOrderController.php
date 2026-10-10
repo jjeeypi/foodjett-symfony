@@ -154,9 +154,6 @@ final class CustomerOrderController extends AbstractCustomerController
         if (OrderStatus::DELIVERED !== $order->getStatus() || null === $order->getDeliveredAt()) {
             return $this->json(['message' => 'Only delivered orders can be reviewed.'], 409);
         }
-        if (new \DateTimeImmutable() > $order->getDeliveredAt()->modify('+7 days')) {
-            return $this->json(['message' => 'The seven-day review window has expired.'], 409);
-        }
         $data = $this->body($request);
         if ($data instanceof JsonResponse) {
             return $data;
@@ -208,6 +205,12 @@ final class CustomerOrderController extends AbstractCustomerController
     public function reports(string $id, Request $request): JsonResponse
     {
         $order = $this->ownedOrder($id);
+        if ($order->getStatus()->isTerminal()
+            && (OrderStatus::DELIVERED !== $order->getStatus()
+                || null === $order->getDeliveredAt()
+                || new \DateTimeImmutable() > $order->getDeliveredAt()->modify('+7 days'))) {
+            return $this->json(['message' => 'Problems may only be reported while an order is active or within seven days after delivery.'], 409);
+        }
         $data = $this->body($request);
         if ($data instanceof JsonResponse) {
             return $data;
