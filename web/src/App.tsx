@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { CartProvider } from './cart/CartProvider'
+import { CustomerLayout } from './layouts/CustomerLayout'
 import { isAuthenticated } from './lib/api'
+import { ComingSoonPage } from './pages/ComingSoonPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
@@ -13,30 +17,28 @@ function GuestRoute({ children }: { children: ReactNode }) {
   return isAuthenticated() ? <Navigate to="/" replace /> : children
 }
 
-function Home() {
-  return (
-    <main className="flex min-h-svh items-center justify-center bg-brand-black px-4 text-white">
-      <div className="space-y-3 text-center">
-        <h1 className="text-3xl font-bold">
-          Welcome to <span className="text-neon-green">Foodjett</span>
-        </h1>
-        <p className="text-white/55">You are logged in.</p>
-      </div>
-    </main>
-  )
-}
-
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-        <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-        <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+      <CartProvider>
+        <Routes>
+          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
 
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to={isAuthenticated() ? '/' : '/login'} replace />} />
-      </Routes>
+          <Route element={<ProtectedRoute><CustomerLayout /></ProtectedRoute>}>
+            <Route index element={<HomePage />} />
+            <Route path="/foods" element={<ComingSoonPage title="Foods" message="Dish browsing will live here. For now, choose an open restaurant from Home." />} />
+            <Route path="/messages" element={<ComingSoonPage title="Messages" message="Order conversations will appear here once the messaging screen is connected." />} />
+            <Route path="/orders" element={<ComingSoonPage title="Orders" message="Your active and past orders will appear here once the orders screen is connected." />} />
+            <Route path="/checkout" element={<ComingSoonPage title="Checkout" message="Checkout is the next customer flow to connect to the Symfony API." />} />
+            <Route path="/restaurants/:id" element={<ComingSoonPage title="Restaurant" message="This restaurant menu route is ready for the upcoming menu-detail screen." />} />
+            <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
+            <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />
+          </Route>
+          <Route path="*" element={<Navigate to={isAuthenticated() ? '/' : '/login'} replace />} />
+        </Routes>
+      </CartProvider>
     </BrowserRouter>
   )
 }
