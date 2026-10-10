@@ -8,6 +8,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import RestaurantPage from './pages/RestaurantPage'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   return isAuthenticated() ? children : <Navigate to="/login" replace />
@@ -32,7 +33,7 @@ export default function App() {
             <Route path="/messages" element={<ComingSoonPage title="Messages" message="Order conversations will appear here once the messaging screen is connected." />} />
             <Route path="/orders" element={<ComingSoonPage title="Orders" message="Your active and past orders will appear here once the orders screen is connected." />} />
             <Route path="/checkout" element={<ComingSoonPage title="Checkout" message="Checkout is the next customer flow to connect to the Symfony API." />} />
-            <Route path="/restaurants/:id" element={<ComingSoonPage title="Restaurant" message="This restaurant menu route is ready for the upcoming menu-detail screen." />} />
+            <Route path="/restaurants/:id" element={<RestaurantPage />} />
             <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
             <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />
           </Route>
