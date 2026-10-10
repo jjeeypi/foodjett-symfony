@@ -132,14 +132,12 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-5 flex justify-center sm:mb-7">
-        <Logo />
-      </div>
-
       <section aria-labelledby="register-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
-        <header className="mb-7">
-          <h1 id="register-heading" className="text-2xl font-bold tracking-tight text-white">Create your account</h1>
-          <p className="mt-1 text-sm text-white/55">Start discovering food near you.</p>
+        <header className="mb-7 text-center">
+          <h1 id="register-heading" className="sr-only">Create your Foodjett account</h1>
+          <div className="flex justify-center">
+            <Logo />
+          </div>
         </header>
 
         <FormAlert message={globalError} />
