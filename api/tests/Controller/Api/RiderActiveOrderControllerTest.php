@@ -17,6 +17,7 @@ use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\RiderPoolEscalationStage;
+use App\Service\DeliveryZoneService;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class RiderActiveOrderControllerTest extends RiderApiTestCase
@@ -78,6 +79,7 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
             ->setRiderArrivedRestaurantAt($now->modify('-12 minutes'))->setPickedUpAt($now->modify('-2 minutes'));
         $this->rider->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)->setCashOnHand('100.00');
         $offer = (new RiderPoolOffer())->setOrder($order)->setSearchRadiusKm('3.0')->setIncentiveAmount('20.00')
+            ->setAcceptedPickupDistanceKm('2.5000')
             ->setEscalationStage(RiderPoolEscalationStage::INCENTIVIZED)->setCreatedAt($now)->setUpdatedAt($now);
         $order->setRiderPoolOffer($offer);
         $this->persist($offer);
@@ -96,6 +98,9 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
         $payload = $this->payload();
         self::assertSame('delivered', $payload['order']['status']);
         self::assertSame('40.00', $payload['earning']['base_pay']);
+        $deliveryDistance = DeliveryZoneService::distanceKm(14.5995000, 120.9842000, 14.6091000, 121.0223000);
+        $expectedDistancePay = number_format(round((2.5 + $deliveryDistance) * 10, 2), 2, '.', '');
+        self::assertSame($expectedDistancePay, $payload['earning']['distance_pay']);
         self::assertSame('10.00', $payload['earning']['waiting_pay']);
         self::assertSame('20.00', $payload['earning']['incentive_pay']);
         self::assertSame('10.00', $payload['earning']['tip_amount']);
@@ -112,6 +117,23 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
         self::assertSame(RiderAvailabilityStatus::AVAILABLE, $savedRider->getAvailabilityStatus());
         self::assertInstanceOf(RiderEarning::class, $savedOrder->getRiderEarning());
         self::assertCount(1, $savedOrder->getPayment()?->getStatusHistory());
+    }
+
+    public function testDeliveryDoesNotSilentlyUnderpayWhenAcceptedPickupDistanceIsMissing(): void
+    {
+        $order = $this->createOrder(OrderStatus::ARRIVED, $this->rider);
+        $offer = (new RiderPoolOffer())->setOrder($order)->setSearchRadiusKm('3.0')->setIncentiveAmount('0.00')
+            ->setEscalationStage(RiderPoolEscalationStage::INITIAL)->setCreatedAt(new \DateTimeImmutable())->setUpdatedAt(new \DateTimeImmutable());
+        $order->setRiderPoolOffer($offer);
+        $this->persist($offer);
+        $this->entityManager->flush();
+
+        $this->client->request('POST', '/api/rider/active-order/confirm-delivery', files: ['proof' => $this->proofUpload()], server: $this->auth());
+
+        self::assertResponseStatusCodeSame(409);
+        self::assertStringContainsString('pickup distance is missing', $this->payload()['message']);
+        self::assertSame(OrderStatus::ARRIVED, $order->getStatus());
+        self::assertNull($order->getRiderEarning());
     }
 
     public function testCustomerUnreachableHonorsWaitAndLeavesCodPaymentPending(): void

@@ -38,13 +38,17 @@ final readonly class RiderPayCalculator
     {
         $base = max(0.0, $this->settings->float('rider_base_pay', self::DEFAULT_BASE_PAY));
         $perKm = max(0.0, $this->settings->float('rider_distance_pay_per_km', self::DEFAULT_DISTANCE_RATE_PER_KM));
-        $distanceKm = DeliveryZoneService::distanceKm(
+        $pickupDistanceKm = $order->getRiderPoolOffer()?->getAcceptedPickupDistanceKm();
+        if (null === $pickupDistanceKm) {
+            throw new \DomainException('The accepted pickup distance is missing for this order.');
+        }
+        $deliveryDistanceKm = DeliveryZoneService::distanceKm(
             (float) $order->getRestaurant()->getLatitude(),
             (float) $order->getRestaurant()->getLongitude(),
             (float) $order->getCustomerAddress()->getLatitude(),
             (float) $order->getCustomerAddress()->getLongitude(),
         );
-        $distance = $distanceKm * $perKm;
+        $distance = (max(0.0, (float) $pickupDistanceKm) + $deliveryDistanceKm) * $perKm;
         $threshold = max(0.0, $this->settings->float('rider_waiting_compensation_threshold_minutes', 5.0));
         $waiting = $restaurantWaitMinutes >= $threshold
             ? max(0.0, $this->settings->float('rider_waiting_compensation_amount', 10.0))

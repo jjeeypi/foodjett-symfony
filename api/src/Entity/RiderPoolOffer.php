@@ -34,6 +34,9 @@ class RiderPoolOffer
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $adminAssigned = false;
 
+    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 4, nullable: true)]
+    private ?string $acceptedPickupDistanceKm = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -101,6 +104,18 @@ class RiderPoolOffer
     public function setAdminAssigned(bool $adminAssigned): self
     {
         $this->adminAssigned = $adminAssigned;
+
+        return $this;
+    }
+
+    public function getAcceptedPickupDistanceKm(): ?string
+    {
+        return $this->acceptedPickupDistanceKm;
+    }
+
+    public function setAcceptedPickupDistanceKm(?string $acceptedPickupDistanceKm): self
+    {
+        $this->acceptedPickupDistanceKm = $acceptedPickupDistanceKm;
 
         return $this;
     }

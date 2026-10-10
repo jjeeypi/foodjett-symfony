@@ -115,6 +115,9 @@ final class RiderActiveOrderController extends AbstractRiderController
         if (PaymentMethod::COD === $order->getPaymentMethod() && null === $order->getPayment()) {
             return $this->json(['message' => 'The COD payment record is missing.'], 409);
         }
+        if (null === $order->getRiderPoolOffer()?->getAcceptedPickupDistanceKm()) {
+            return $this->json(['message' => 'The accepted pickup distance is missing; contact support before completing this delivery.'], 409);
+        }
         try {
             $path = $this->uploads->store($file, 'orders/proof-of-delivery', self::PROOF_MIME_TYPES);
         } catch (\InvalidArgumentException $exception) {
