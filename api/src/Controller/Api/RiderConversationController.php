@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Enum\ConversationType;
+use App\Event\MessageSentEvent;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\ConversationVoter;
 use App\Service\ApiPaginator;
@@ -15,14 +16,18 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[Route('/api/rider/conversations', name: 'api_rider_conversations_')]
 #[IsGranted('ROLE_RIDER')]
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your rider account is awaiting approval.')]
 final class RiderConversationController extends AbstractRiderController
 {
-    public function __construct(EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        private readonly ApiPaginator $paginator,
+        private readonly EventDispatcherInterface $eventDispatcher,
+    ) {
         parent::__construct($entityManager);
     }
 
@@ -84,6 +89,14 @@ final class RiderConversationController extends AbstractRiderController
         $conversation->addMessage($message)->setUpdatedAt($now);
         $this->entityManager->persist($message);
         $this->entityManager->flush();
+        $recipient = $conversation->getOrder()->getCustomer()->getUser();
+        $this->eventDispatcher->dispatch(new MessageSentEvent(
+            messageId: (string) $message->getId(),
+            conversationId: (string) $conversation->getId(),
+            senderUserId: (string) $this->riderUser()->getId(),
+            recipientUserId: (string) $recipient->getId(),
+            sentAt: $now,
+        ));
 
         return $this->json(['message' => $this->messageData($message)], 201);
     }

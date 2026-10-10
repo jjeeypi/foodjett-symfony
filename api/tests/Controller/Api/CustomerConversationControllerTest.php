@@ -7,6 +7,7 @@ namespace App\Tests\Controller\Api;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Enum\ConversationType;
+use App\Tests\Double\RecordingMercureHub;
 
 final class CustomerConversationControllerTest extends CustomerApiTestCase
 {
@@ -48,10 +49,22 @@ final class CustomerConversationControllerTest extends CustomerApiTestCase
         $this->entityManager->flush();
         $incomingId = (string) $incoming->getId();
         $outgoingId = (string) $outgoing->getId();
+        $hub = self::getContainer()->get(RecordingMercureHub::class);
+        $hub->reset();
 
         $this->client->jsonRequest('POST', '/api/customer/conversations/'.$conversation->getId().'/messages', ['body' => 'Thanks for the update.'], server: $this->auth());
         self::assertResponseStatusCodeSame(201);
         self::assertSame('Thanks for the update.', $this->payload()['message']['body']);
+        self::assertCount(2, $hub->updates());
+        self::assertSame(['conversations/'.$conversation->getId()], $hub->updates()[0]->getTopics());
+        self::assertTrue($hub->updates()[0]->isPrivate());
+        $messagePayload = json_decode($hub->updates()[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('message.sent', $messagePayload['event'] ?? null);
+        self::assertSame('Thanks for the update.', $messagePayload['body'] ?? null);
+        self::assertSame(['users/'.$this->restaurant->getUser()->getId().'/notifications'], $hub->updates()[1]->getTopics());
+        $notificationPayload = json_decode($hub->updates()[1]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('notifications.unread_count_updated', $notificationPayload['event'] ?? null);
+        self::assertSame(2, $notificationPayload['unread_count'] ?? null);
 
         $this->client->request('POST', '/api/customer/conversations/'.$conversation->getId().'/mark-read', server: $this->auth());
         self::assertResponseIsSuccessful();
