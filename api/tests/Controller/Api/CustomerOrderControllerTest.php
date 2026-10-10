@@ -76,13 +76,13 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
         self::assertStringContainsString('no longer available', $this->payload()['message']);
     }
 
-    public function testDeliveredOrderCanBeReviewedOnceWithinSevenDays(): void
+    public function testDeliveredOrderCanBeReviewedOnceWithoutAnExpiryWindow(): void
     {
         $rider = $this->createRider();
         $deliveredAt = new \DateTimeImmutable('-1 day');
         $order = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-2 days'), $deliveredAt)
             ->setRider($rider);
-        $expired = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-10 days'), new \DateTimeImmutable('-8 days'));
+        $oldOrder = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-31 days'), new \DateTimeImmutable('-30 days'));
         $this->entityManager->flush();
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/reviews', [
@@ -97,15 +97,18 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/reviews', ['restaurant_rating' => 3], server: $this->auth());
         self::assertResponseStatusCodeSame(409);
+        self::assertStringContainsString('already been reviewed', $this->payload()['message']);
 
-        $this->client->jsonRequest('POST', '/api/customer/orders/'.$expired->getId().'/reviews', ['restaurant_rating' => 5], server: $this->auth());
-        self::assertResponseStatusCodeSame(409);
-        self::assertStringContainsString('expired', $this->payload()['message']);
+        $this->client->jsonRequest('POST', '/api/customer/orders/'.$oldOrder->getId().'/reviews', ['restaurant_rating' => 5], server: $this->auth());
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('Review submitted.', $this->payload()['message']);
     }
 
-    public function testReportIsCreatedForOwnedOrderAndForeignOrderIsHidden(): void
+    public function testReportsAllowActiveAndRecentlyDeliveredOrdersButRejectOldDeliveries(): void
     {
-        $order = $this->createOrder($this->customer, $this->restaurant, $this->address);
+        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, placedAt: new \DateTimeImmutable('-60 days'));
+        $recentlyDelivered = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-6 days'), new \DateTimeImmutable('-5 days'));
+        $oldDelivery = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-11 days'), new \DateTimeImmutable('-10 days'));
         $foreign = $this->createOrder($this->otherCustomer, $this->otherRestaurant, $this->otherAddress);
         $this->entityManager->flush();
 
@@ -115,6 +118,18 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
         self::assertResponseStatusCodeSame(201);
         self::assertSame('open', $this->payload()['report']['status']);
         self::assertSame(1, $this->entityManager->getRepository(OrderReport::class)->count(['order' => $order]));
+
+        $this->client->jsonRequest('POST', '/api/customer/orders/'.$recentlyDelivered->getId().'/reports', [
+            'type' => 'late_delivery', 'against' => 'rider', 'description' => 'The delivery arrived very late.',
+        ], server: $this->auth());
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('open', $this->payload()['report']['status']);
+
+        $this->client->jsonRequest('POST', '/api/customer/orders/'.$oldDelivery->getId().'/reports', [
+            'type' => 'other', 'against' => 'platform', 'description' => 'This report is too late.',
+        ], server: $this->auth());
+        self::assertResponseStatusCodeSame(409);
+        self::assertStringContainsString('within seven days after delivery', $this->payload()['message']);
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$foreign->getId().'/reports', [
             'type' => 'other', 'against' => 'platform', 'description' => 'Should not work.',
