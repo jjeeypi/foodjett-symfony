@@ -154,6 +154,59 @@ export interface RestaurantSummary {
   distance_km: number | null
 }
 
+export interface RestaurantOperatingHour {
+  day_of_week: number
+  opens_at: string
+  closes_at: string
+}
+
+export interface MenuItemVariant {
+  id: string
+  name: string
+  price_delta: string
+}
+
+export interface MenuItemAddon {
+  id: string
+  name: string
+  price: string
+  is_available: boolean
+}
+
+export interface CustomerMenuItem {
+  id: string
+  name: string
+  description: string | null
+  photo_path: string | null
+  base_price: string
+  is_available: boolean
+  available_from: string | null
+  available_until: string | null
+  is_featured: boolean
+  category: { id: string; name: string }
+  variants: MenuItemVariant[]
+  addons: MenuItemAddon[]
+}
+
+export interface CustomerMenuCategory {
+  id: string
+  name: string
+  sort_order: number
+  items: CustomerMenuItem[]
+}
+
+export interface RestaurantDetail extends RestaurantSummary {
+  description: string | null
+  cover_photo_path: string | null
+  address: string
+  latitude: string
+  longitude: string
+  default_prep_time_minutes: number
+  min_order_amount: string
+  operating_hours: RestaurantOperatingHour[]
+  menu_categories: CustomerMenuCategory[]
+}
+
 export function getRestaurants(
   filters: { openNow?: boolean; cuisineType?: string; rating?: number; page?: number; perPage?: number } = {},
   signal?: AbortSignal,
@@ -167,6 +220,10 @@ export function getRestaurants(
   const query = params.toString()
 
   return request<PaginatedResponse<RestaurantSummary>>(`/api/restaurants${query ? `?${query}` : ''}`, { signal })
+}
+
+export function getRestaurant(id: string, signal?: AbortSignal): Promise<{ restaurant: RestaurantDetail }> {
+  return request<{ restaurant: RestaurantDetail }>(`/api/restaurants/${encodeURIComponent(id)}`, { signal })
 }
 
 export interface AuthUser {
