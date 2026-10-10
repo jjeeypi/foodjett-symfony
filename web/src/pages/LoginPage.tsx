@@ -84,7 +84,6 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <Logo />
           </div>
-          <p className="mt-4 text-sm text-white/55">Sign in to continue ordering with Foodjett.</p>
         </header>
 
         <FormAlert message={globalError} />
