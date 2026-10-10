@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormAlert } from '../components/FormAlert'
+import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { SubmitButton } from '../components/SubmitButton'
 import { isApiError, login, setToken } from '../lib/api'
@@ -76,11 +77,13 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout showStandaloneLogo={false}>
       <section aria-labelledby="login-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
-        <header className="mb-7">
-          <h1 id="login-heading" className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Welcome back</h1>
-          <p className="mt-2 text-sm leading-6 text-white/50">Sign in to order your favorites and track deliveries.</p>
+        <header className="mb-7 text-center">
+          <h1 id="login-heading" className="sr-only">Sign in to Foodjett</h1>
+          <div className="flex justify-center">
+            <Logo />
+          </div>
         </header>
 
         <FormAlert message={globalError} />
