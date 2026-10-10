@@ -122,6 +122,53 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>
 }
 
+export function apiAssetUrl(path: string | null): string | null {
+  if (!path) return null
+  if (/^https?:\/\//i.test(path)) return path
+
+  return `${API_BASE}/${path.replace(/^\//, '')}`
+}
+
+export interface PaginationMeta {
+  page: number
+  perPage: number
+  total: number
+  lastPage: number
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta: PaginationMeta
+}
+
+export interface RestaurantSummary {
+  id: string
+  name: string
+  slug: string
+  logo_path: string | null
+  cuisine_type: string | null
+  operating_status: 'open' | 'closed' | 'temporarily_closed'
+  is_open_now: boolean
+  rating: number
+  review_count: number
+  distance_km: number | null
+}
+
+export function getRestaurants(
+  filters: { openNow?: boolean; cuisineType?: string; rating?: number; page?: number; perPage?: number } = {},
+  signal?: AbortSignal,
+): Promise<PaginatedResponse<RestaurantSummary>> {
+  const params = new URLSearchParams()
+  if (filters.openNow !== undefined) params.set('open_now', filters.openNow ? '1' : '0')
+  if (filters.cuisineType) params.set('cuisine_type', filters.cuisineType)
+  if (filters.rating !== undefined) params.set('rating', String(filters.rating))
+  if (filters.page !== undefined) params.set('page', String(filters.page))
+  if (filters.perPage !== undefined) params.set('perPage', String(filters.perPage))
+  const query = params.toString()
+
+  return request<PaginatedResponse<RestaurantSummary>>(`/api/restaurants${query ? `?${query}` : ''}`, { signal })
+}
+
 export interface AuthUser {
   id: string
   name: string

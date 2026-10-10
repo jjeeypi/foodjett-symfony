@@ -46,6 +46,10 @@ input {
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
 
+.customer-top-nav {
+  padding-top: env(safe-area-inset-top);
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
