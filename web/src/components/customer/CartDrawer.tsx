@@ -75,6 +75,8 @@ export function CartDrawer() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="truncate text-sm font-semibold text-white">{item.name}</p>
+                        {item.variant && <p className="mt-0.5 text-xs text-white/45">{item.variant.name}</p>}
+                        {item.addons && item.addons.length > 0 && <p className="mt-0.5 line-clamp-2 text-xs text-white/35">+ {item.addons.map((addon) => addon.name).join(', ')}</p>}
                         <p className="mt-1 text-sm font-bold text-neon-green">{currency.format(item.unitPrice)}</p>
                       </div>
                       <button type="button" onClick={() => removeItem(item.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/35 transition hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400" aria-label={`Remove ${item.name}`}>
