@@ -12,6 +12,8 @@ use App\Enum\OrderStatus;
 use App\Enum\RiderPoolEscalationStage;
 use App\Event\OrderStatusChangedEvent;
 use App\Event\OrderUpdatedEvent;
+use App\Event\RiderPoolOfferCreatedEvent;
+use App\Event\RiderPoolOfferTakenEvent;
 use App\Exception\InvalidOrderTransitionException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -122,6 +124,15 @@ final readonly class OrderTransitionService
 
         foreach ($events as $event) {
             $this->eventDispatcher->dispatch($event);
+            if (OrderStatus::FINDING_RIDER === $event->currentStatus) {
+                $this->eventDispatcher->dispatch(new RiderPoolOfferCreatedEvent($event->orderId, $event->changedAt));
+            } elseif (OrderStatus::FINDING_RIDER === $event->previousStatus) {
+                $this->eventDispatcher->dispatch(new RiderPoolOfferTakenEvent(
+                    $event->orderId,
+                    $event->currentStatus->value,
+                    $event->changedAt,
+                ));
+            }
         }
 
         return $updatedOrder;

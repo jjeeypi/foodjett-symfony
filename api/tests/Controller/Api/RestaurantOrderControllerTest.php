@@ -62,6 +62,16 @@ final class RestaurantOrderControllerTest extends WebTestCase
             ['accepted', 'preparing', 'finding_rider'],
             array_map(static fn ($update): string => json_decode($update->getData(), true, flags: JSON_THROW_ON_ERROR)['status'], $acceptUpdates),
         );
+        $poolUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
+        ));
+        self::assertCount(1, $poolUpdates);
+        self::assertFalse($poolUpdates[0]->isPrivate());
+        $poolPayload = json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('rider_pool.offer_created', $poolPayload['event'] ?? null);
+        self::assertSame($this->orderId, $poolPayload['order_id'] ?? null);
+        self::assertArrayHasKey('estimated_pay', $poolPayload);
 
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/extend-prep-time', [
             'minutes' => 5,
