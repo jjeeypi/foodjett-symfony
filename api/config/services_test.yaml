@@ -1,0 +1,7 @@
+services:
+    App\Tests\Double\RecordingMercureHub:
+        public: true
+
+    Symfony\Component\Mercure\HubInterface:
+        alias: App\Tests\Double\RecordingMercureHub
+        public: true

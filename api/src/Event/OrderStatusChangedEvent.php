@@ -11,7 +11,7 @@ final readonly class OrderStatusChangedEvent
 {
     public function __construct(
         public string $orderId,
-        public OrderStatus $previousStatus,
+        public ?OrderStatus $previousStatus,
         public OrderStatus $currentStatus,
         public OrderActor $changedBy,
         public ?string $note,

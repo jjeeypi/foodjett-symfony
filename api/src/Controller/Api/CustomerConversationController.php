@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Enum\ConversationType;
+use App\Event\MessageSentEvent;
 use App\Security\Voter\ConversationVoter;
 use App\Service\ApiPaginator;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[Route('/api/customer/conversations', name: 'api_customer_conversations_')]
 #[IsGranted('ROLE_CUSTOMER')]
@@ -22,6 +24,7 @@ final class CustomerConversationController extends AbstractCustomerController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -81,6 +84,18 @@ final class CustomerConversationController extends AbstractCustomerController
         $conversation->addMessage($message)->setUpdatedAt($now);
         $this->entityManager->persist($message);
         $this->entityManager->flush();
+        $recipient = ConversationType::CUSTOMER_RESTAURANT === $conversation->getType()
+            ? $conversation->getOrder()->getRestaurant()->getUser()
+            : $conversation->getOrder()->getRider()?->getUser();
+        if (null !== $recipient) {
+            $this->eventDispatcher->dispatch(new MessageSentEvent(
+                messageId: (string) $message->getId(),
+                conversationId: (string) $conversation->getId(),
+                senderUserId: (string) $this->customerUser()->getId(),
+                recipientUserId: (string) $recipient->getId(),
+                sentAt: $now,
+            ));
+        }
 
         return $this->json(['message' => $this->messageData($message)], 201);
     }

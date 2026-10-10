@@ -24,9 +24,10 @@ use App\Service\RiderPoolEscalationService;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
 use App\Service\PlatformSettingService;
+use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final class RiderPoolEscalationServiceTest extends KernelTestCase
 {
@@ -42,6 +43,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
     {
         self::bootKernel();
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::getContainer()->get(RecordingMercureHub::class)->reset();
         $this->cleanup();
         $this->createFixture();
     }
@@ -83,6 +85,15 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         self::assertSame(PaymentStatus::REFUNDED, $order->getPayment()?->getStatus());
         self::assertSame($order->getPayment()?->getAmount(), $order->getPayment()?->getRefundedAmount());
         self::assertCount(1, $order->getPayment()?->getStatusHistory());
+        $poolUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
+        ));
+        self::assertCount(1, $poolUpdates);
+        self::assertFalse($poolUpdates[0]->isPrivate());
+        $payload = json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('rider_pool.offer_taken', $payload['event'] ?? null);
+        self::assertSame('cancelled_no_rider', $payload['reason'] ?? null);
     }
 
     public function testAutoCancellationMarksUncollectedCodPaymentFailed(): void
@@ -194,7 +205,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         return new RiderPoolEscalationService(
             $this->entityManager,
             $settings,
-            new OrderTransitionService($this->entityManager, $settings, new EventDispatcher()),
+            new OrderTransitionService($this->entityManager, $settings, self::getContainer()->get(EventDispatcherInterface::class)),
             new PaymentTransitionService($this->entityManager),
         );
     }

@@ -1,0 +1,16 @@
+mercure:
+    hubs:
+        default:
+            url: '%env(default::MERCURE_URL)%'
+            public_url: '%env(default::MERCURE_PUBLIC_URL)%'
+            protocol_version: '1.0'
+            # The protocol 1.0 secure prefix requires HTTPS. This explicit name
+            # keeps local plain-HTTP development at localhost:3000 functional.
+            cookie_name: 'mercure_access_token'
+            jwt:
+                secret: '%env(MERCURE_JWT_SECRET)%'
+                publish: '*'
+                claims:
+                    iss: 'foodjett-api'
+                    sub: 'foodjett-api'
+                    client_id: 'foodjett-api'

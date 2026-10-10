@@ -23,6 +23,7 @@ use App\Enum\VehicleType;
 use App\Exception\RiderPoolException;
 use App\Service\DeliveryZoneService;
 use App\Service\RiderPoolService;
+use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -40,6 +41,7 @@ final class RiderPoolControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = self::createClient();
+        self::getContainer()->get(RecordingMercureHub::class)->reset();
         $this->cleanup();
         $this->createFixture();
     }
@@ -101,6 +103,16 @@ final class RiderPoolControllerTest extends WebTestCase
         $payload = $this->payload()['order'] ?? [];
         self::assertSame(OrderStatus::RIDER_ASSIGNED->value, $payload['status'] ?? null);
         self::assertMatchesRegularExpression('/^\d{4}$/', (string) ($payload['pickup_code'] ?? ''));
+        $poolUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
+        ));
+        self::assertCount(1, $poolUpdates);
+        self::assertFalse($poolUpdates[0]->isPrivate());
+        self::assertSame('rider_pool.offer_taken', $poolUpdates[0]->getType());
+        $takenPayload = json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($order->getId(), $takenPayload['order_id'] ?? null);
+        self::assertSame('rider_assigned', $takenPayload['reason'] ?? null);
 
         $entityManager->clear();
         $secondUser = $entityManager->getRepository(User::class)->findOneBy(['email' => self::SECOND_RIDER_EMAIL]);

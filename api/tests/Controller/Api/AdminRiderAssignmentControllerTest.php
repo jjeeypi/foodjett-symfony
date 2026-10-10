@@ -22,6 +22,7 @@ use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
 use App\Service\DeliveryZoneService;
+use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -41,6 +42,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = self::createClient();
+        self::getContainer()->get(RecordingMercureHub::class)->reset();
         $this->cleanup();
         [$this->orderId, $this->riderId] = $this->createFixture();
     }
@@ -90,6 +92,13 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
         self::assertSame(RiderAvailabilityStatus::BUSY, $order->getRider()?->getAvailabilityStatus());
         self::assertNotNull($order->getRiderAssignedAt());
         self::assertMatchesRegularExpression('/^\d{4}$/', (string) $order->getPickupCode());
+        $poolUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
+        ));
+        self::assertCount(1, $poolUpdates);
+        self::assertFalse($poolUpdates[0]->isPrivate());
+        self::assertSame($this->orderId, json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR)['order_id'] ?? null);
     }
 
     /** @return array{string, string} */

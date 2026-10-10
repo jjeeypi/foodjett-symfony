@@ -17,6 +17,7 @@ use App\Enum\PaymentStatus;
 use App\Enum\RestaurantOperatingStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -33,6 +34,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = self::createClient();
+        self::getContainer()->get(RecordingMercureHub::class)->reset();
         $this->cleanup();
         $this->orderId = (string) $this->createOrder()->getId();
     }
@@ -54,17 +56,41 @@ final class RestaurantOrderControllerTest extends WebTestCase
         $payload = $this->payload();
         self::assertSame(OrderStatus::FINDING_RIDER->value, $payload['order']['status'] ?? null);
         self::assertNotNull($payload['order']['rider_search_started_at'] ?? null);
+        $acceptUpdates = $this->orderUpdates();
+        self::assertCount(3, $acceptUpdates);
+        self::assertSame(
+            ['accepted', 'preparing', 'finding_rider'],
+            array_map(static fn ($update): string => json_decode($update->getData(), true, flags: JSON_THROW_ON_ERROR)['status'], $acceptUpdates),
+        );
+        $poolUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
+        ));
+        self::assertCount(1, $poolUpdates);
+        self::assertFalse($poolUpdates[0]->isPrivate());
+        $poolPayload = json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('rider_pool.offer_created', $poolPayload['event'] ?? null);
+        self::assertSame($this->orderId, $poolPayload['order_id'] ?? null);
+        self::assertArrayHasKey('estimated_pay', $poolPayload);
 
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/extend-prep-time', [
             'minutes' => 5,
         ], server: $this->auth($token));
         self::assertResponseIsSuccessful();
+        $extensionUpdates = $this->orderUpdates();
+        self::assertCount(1, $extensionUpdates);
+        $extensionPayload = json_decode($extensionUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('prep_time_extended', $extensionPayload['kind'] ?? null);
+        self::assertNotNull($extensionPayload['estimated_ready_at'] ?? null);
 
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/mark-ready', server: $this->auth($token));
         self::assertResponseIsSuccessful();
         $readyPayload = $this->payload();
         self::assertSame(OrderStatus::FINDING_RIDER->value, $readyPayload['order']['status'] ?? null);
         self::assertNotNull($readyPayload['order']['ready_at'] ?? null);
+        $readyUpdates = $this->orderUpdates();
+        self::assertCount(1, $readyUpdates);
+        self::assertSame('food_ready', json_decode($readyUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR)['kind'] ?? null);
 
         $this->client->request('GET', '/api/restaurant/orders?status=finding_rider', server: $this->auth($token));
         self::assertResponseIsSuccessful();
@@ -77,6 +103,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
             ['accepted', 'preparing', 'finding_rider', 'finding_rider', 'ready'],
             array_map(static fn ($history): string => $history->getStatus(), $order->getStatusHistory()->toArray()),
         );
+
     }
 
     public function testRestaurantRejectionRefundsPaidSimulatedPayment(): void
@@ -210,6 +237,15 @@ final class RestaurantOrderControllerTest extends WebTestCase
         self::assertInstanceOf(Order::class, $order);
 
         return $order;
+    }
+
+    /** @return list<\Symfony\Component\Mercure\Update> */
+    private function orderUpdates(): array
+    {
+        return array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            fn ($update): bool => ['orders/'.$this->orderId.'/status'] === $update->getTopics(),
+        ));
     }
 
     private function cleanup(): void

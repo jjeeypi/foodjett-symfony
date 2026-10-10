@@ -29,8 +29,10 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
 use App\Exception\CheckoutValidationException;
+use App\Event\OrderStatusChangedEvent;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final readonly class CheckoutService
 {
@@ -38,6 +40,7 @@ final readonly class CheckoutService
         private EntityManagerInterface $entityManager,
         private PlatformSettingService $settings,
         private DeliveryZoneService $deliveryZones,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -224,6 +227,17 @@ final readonly class CheckoutService
 
             return new CheckoutResult($order, true);
         });
+
+        if ($result->created) {
+            $this->eventDispatcher->dispatch(new OrderStatusChangedEvent(
+                orderId: (string) $result->order->getId(),
+                previousStatus: null,
+                currentStatus: OrderStatus::PLACED,
+                changedBy: OrderActor::CUSTOMER,
+                note: 'Order placed by customer.',
+                changedAt: $result->order->getPlacedAt(),
+            ));
+        }
 
         return $result;
     }
