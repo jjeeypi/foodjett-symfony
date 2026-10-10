@@ -21,6 +21,7 @@ use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
+use App\Service\DeliveryZoneService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -82,6 +83,10 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
         $order = $entityManager->find(Order::class, $this->orderId);
         self::assertInstanceOf(Order::class, $order);
         self::assertTrue($order->getRiderPoolOffer()?->isAdminAssigned());
+        self::assertSame(
+            number_format(round(DeliveryZoneService::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
+            $order->getRiderPoolOffer()?->getAcceptedPickupDistanceKm(),
+        );
         self::assertSame(RiderAvailabilityStatus::BUSY, $order->getRider()?->getAvailabilityStatus());
         self::assertNotNull($order->getRiderAssignedAt());
         self::assertMatchesRegularExpression('/^\d{4}$/', (string) $order->getPickupCode());

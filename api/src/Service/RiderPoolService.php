@@ -128,11 +128,14 @@ final readonly class RiderPoolService
                     throw RiderPoolException::taken();
                 }
 
-                $this->assertEligible($lockedOrder, $lockedRider, $adminOverride);
+                $pickupDistance = $this->assertEligible($lockedOrder, $lockedRider, $adminOverride);
                 $lockedOrder->setRider($lockedRider);
                 $lockedRider
                     ->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)
                     ->setUpdatedAt($now);
+                $lockedOrder->getRiderPoolOffer()?->setAcceptedPickupDistanceKm(
+                    number_format(round($pickupDistance, 4), 4, '.', ''),
+                )->setUpdatedAt($now);
                 if ($adminOverride) {
                     $lockedOrder->getRiderPoolOffer()?->setAdminAssigned(true)->setUpdatedAt($now);
                 }
@@ -184,7 +187,7 @@ final readonly class RiderPoolService
         bool $adminOverride,
         bool $checkActiveOrder = true,
         bool $checkCodLimit = true,
-    ): void {
+    ): float {
         if (ApprovalStatus::APPROVED !== $rider->getApprovalStatus()) {
             throw new RiderPoolException('Only approved riders can be assigned to orders.', 422);
         }
@@ -213,6 +216,8 @@ final readonly class RiderPoolService
         if (!$adminOverride && RiderAvailabilityStatus::AVAILABLE !== $rider->getAvailabilityStatus()) {
             throw new RiderPoolException('Go online before accepting an order.');
         }
+
+        return $distance;
     }
 
     private function hasActiveOrder(Rider $rider, Order $candidate): bool

@@ -21,6 +21,7 @@ use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
 use App\Exception\RiderPoolException;
+use App\Service\DeliveryZoneService;
 use App\Service\RiderPoolService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -118,6 +119,10 @@ final class RiderPoolControllerTest extends WebTestCase
         self::assertInstanceOf(Order::class, $wonOrder);
         self::assertSame(self::RIDER_EMAIL, $wonOrder->getRider()?->getUser()->getEmail());
         self::assertSame(RiderAvailabilityStatus::BUSY, $wonOrder->getRider()?->getAvailabilityStatus());
+        self::assertSame(
+            number_format(round(DeliveryZoneService::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
+            $wonOrder->getRiderPoolOffer()?->getAcceptedPickupDistanceKm(),
+        );
         self::assertCount(1, $wonOrder->getStatusHistory());
     }
 
