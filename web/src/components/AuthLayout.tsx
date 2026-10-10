@@ -18,7 +18,7 @@ function CheckIcon() {
 }
 
 /** Shared mobile-first shell for the customer authentication screens. */
-export function AuthLayout({ children }: { children: ReactNode }) {
+export function AuthLayout({ children, showStandaloneLogo = true }: { children: ReactNode; showStandaloneLogo?: boolean }) {
   return (
     <main className="auth-shell relative min-h-svh overflow-x-hidden bg-brand-black px-4 sm:px-6 lg:flex lg:items-center lg:px-10">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -29,11 +29,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[1fr_28rem] lg:gap-16 xl:gap-24">
         <section className="hidden lg:block" aria-labelledby="auth-value-heading">
-          <Logo className="mb-12 w-52 sm:w-52" />
+          {showStandaloneLogo && <Logo className="mb-12 w-52 sm:w-52" />}
           <p className="mb-5 text-sm font-bold uppercase tracking-[0.22em] text-neon-green">Made for your cravings</p>
-          <h1 id="auth-value-heading" className="max-w-xl text-5xl font-black leading-[1.08] tracking-[-0.04em] text-white xl:text-6xl">
+          <h2 id="auth-value-heading" className="max-w-xl text-5xl font-black leading-[1.08] tracking-[-0.04em] text-white xl:text-6xl">
             Great food, delivered at full speed.
-          </h1>
+          </h2>
           <p className="mt-6 max-w-lg text-lg leading-8 text-white/55">
             Foodjett brings your favorite restaurants closer, with a smoother way to order and track every bite.
           </p>
@@ -49,9 +49,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         </section>
 
         <div className="mx-auto w-full max-w-[28rem]">
-          <div className="mb-7 flex justify-center lg:hidden">
-            <Logo />
-          </div>
+          {showStandaloneLogo && (
+            <div className="mb-7 flex justify-center lg:hidden">
+              <Logo />
+            </div>
+          )}
           {children}
         </div>
       </div>
