@@ -57,4 +57,24 @@ final readonly class PaymentTransitionService
         $payment->addStatusHistory($history);
         $this->entityManager->persist($history);
     }
+
+    public function markPaid(
+        Payment $payment,
+        PaymentActor $changedBy,
+        string $note,
+        \DateTimeImmutable $now,
+    ): void {
+        if (PaymentStatus::PAID === $payment->getStatus()) {
+            return;
+        }
+        if (PaymentStatus::PENDING !== $payment->getStatus()) {
+            throw new \DomainException('Only a pending payment can be marked paid.');
+        }
+        $from = $payment->getStatus();
+        $payment->setStatus(PaymentStatus::PAID)->setPaidAt($now)->setUpdatedAt($now);
+        $history = (new PaymentStatusHistory())->setPayment($payment)->setFromStatus($from)->setToStatus(PaymentStatus::PAID)
+            ->setChangedBy($changedBy)->setNote($note)->setCreatedAt($now);
+        $payment->addStatusHistory($history);
+        $this->entityManager->persist($history);
+    }
 }
