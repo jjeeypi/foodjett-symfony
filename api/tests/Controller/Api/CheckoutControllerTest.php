@@ -23,6 +23,7 @@ use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
+use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -42,6 +43,7 @@ final class CheckoutControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = self::createClient();
+        self::getContainer()->get(RecordingMercureHub::class)->reset();
         $this->cleanup();
         $this->fixture = $this->createFixture();
     }
@@ -71,6 +73,22 @@ final class CheckoutControllerTest extends WebTestCase
         self::assertNotNull($order->getVoucherRedemption());
         self::assertSame(PaymentStatus::PENDING, $order->getPayment()?->getStatus());
         self::assertNull($order->getPayment()?->getTransactionReference());
+
+        $updates = self::getContainer()->get(RecordingMercureHub::class)->updates();
+        self::assertCount(2, $updates);
+        self::assertSame(['orders/'.$order->getId().'/status'], $updates[0]->getTopics());
+        self::assertTrue($updates[0]->isPrivate());
+        self::assertSame('order.status_changed', $updates[0]->getType());
+        $statusPayload = json_decode($updates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('placed', $statusPayload['status'] ?? null);
+        self::assertNull($statusPayload['previous_status'] ?? null);
+
+        self::assertSame(['restaurant/'.$order->getRestaurant()->getId().'/orders'], $updates[1]->getTopics());
+        self::assertTrue($updates[1]->isPrivate());
+        self::assertSame('order.placed', $updates[1]->getType());
+        $restaurantPayload = json_decode($updates[1]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($order->getOrderNumber(), $restaurantPayload['order_number'] ?? null);
+        self::assertSame($order->getTotalAmount(), $restaurantPayload['total_amount'] ?? null);
     }
 
     public function testCardCheckoutIsPaidImmediatelyAndRetryIsIdempotent(): void
@@ -79,6 +97,7 @@ final class CheckoutControllerTest extends WebTestCase
         $first = $this->checkout('card', $token);
         self::assertResponseStatusCodeSame(201);
         $firstOrderId = $first['order']['id'] ?? null;
+        self::assertCount(2, self::getContainer()->get(RecordingMercureHub::class)->updates());
 
         $second = $this->checkout('card', $token);
         self::assertResponseIsSuccessful();
