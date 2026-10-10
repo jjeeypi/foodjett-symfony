@@ -61,8 +61,8 @@ class Rider
     #[ORM\Column(length: 32, nullable: true, enumType: PayoutMethod::class)]
     private ?PayoutMethod $payoutMethod = null;
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
-    private ?array $payoutAccountDetails = null;
+    #[ORM\Column(name: 'payout_account_details', type: Types::TEXT, length: 65535, nullable: true)]
+    private ?string $encryptedPayoutAccountDetails = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $createdAt = null;
@@ -262,14 +262,14 @@ class Rider
         return $this;
     }
 
-    public function getPayoutAccountDetails(): ?array
+    public function getEncryptedPayoutAccountDetails(): ?string
     {
-        return $this->payoutAccountDetails;
+        return $this->encryptedPayoutAccountDetails;
     }
 
-    public function setPayoutAccountDetails(?array $payoutAccountDetails): self
+    public function setEncryptedPayoutAccountDetails(?string $payoutAccountDetails): self
     {
-        $this->payoutAccountDetails = $payoutAccountDetails;
+        $this->encryptedPayoutAccountDetails = $payoutAccountDetails;
 
         return $this;
     }
