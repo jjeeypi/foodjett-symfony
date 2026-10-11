@@ -10,11 +10,16 @@ use App\Dto\Auth\RiderRegistrationRequest;
 use App\Entity\Customer;
 use App\Entity\PlatformSetting;
 use App\Entity\Restaurant;
+use App\Entity\RestaurantDocument;
 use App\Entity\Rider;
+use App\Entity\RiderDocument;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
+use App\Enum\DocumentStatus;
+use App\Enum\RestaurantDocumentType;
 use App\Enum\RestaurantOperatingStatus;
 use App\Enum\RiderAvailabilityStatus;
+use App\Enum\RiderDocumentType;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
@@ -49,9 +54,10 @@ final readonly class RegistrationService
         });
     }
 
-    public function registerRestaurant(RestaurantRegistrationRequest $request): User
+    /** @param array<string, string> $documentPaths */
+    public function registerRestaurant(RestaurantRegistrationRequest $request, array $documentPaths): User
     {
-        return $this->entityManager->wrapInTransaction(function () use ($request): User {
+        return $this->entityManager->wrapInTransaction(function () use ($request, $documentPaths): User {
             $now = new \DateTimeImmutable();
             $user = $this->newUser($request->ownerName, $request->email, $request->phone, $request->password, UserRole::RESTAURANT, $now);
             $setting = $this->entityManager->getRepository(PlatformSetting::class)->findOneBy(['key' => 'default_commission_rate']);
@@ -72,15 +78,27 @@ final readonly class RegistrationService
 
             $this->entityManager->persist($user);
             $this->entityManager->persist($restaurant);
+            foreach ($documentPaths as $type => $path) {
+                $document = (new RestaurantDocument())
+                    ->setRestaurant($restaurant)
+                    ->setType(RestaurantDocumentType::from($type))
+                    ->setFilePath($path)
+                    ->setStatus(DocumentStatus::PENDING)
+                    ->setCreatedAt($now)
+                    ->setUpdatedAt($now);
+                $restaurant->addDocument($document);
+                $this->entityManager->persist($document);
+            }
             $this->entityManager->flush();
 
             return $user;
         });
     }
 
-    public function registerRider(RiderRegistrationRequest $request): User
+    /** @param array<string, string> $documentPaths */
+    public function registerRider(RiderRegistrationRequest $request, array $documentPaths): User
     {
-        return $this->entityManager->wrapInTransaction(function () use ($request): User {
+        return $this->entityManager->wrapInTransaction(function () use ($request, $documentPaths): User {
             $now = new \DateTimeImmutable();
             $user = $this->newUser($request->name, $request->email, $request->phone, $request->password, UserRole::RIDER, $now);
             $rider = (new Rider())
@@ -94,6 +112,17 @@ final readonly class RegistrationService
 
             $this->entityManager->persist($user);
             $this->entityManager->persist($rider);
+            foreach ($documentPaths as $type => $path) {
+                $document = (new RiderDocument())
+                    ->setRider($rider)
+                    ->setType(RiderDocumentType::from($type))
+                    ->setFilePath($path)
+                    ->setStatus(DocumentStatus::PENDING)
+                    ->setCreatedAt($now)
+                    ->setUpdatedAt($now);
+                $rider->addDocument($document);
+                $this->entityManager->persist($document);
+            }
             $this->entityManager->flush();
 
             return $user;
