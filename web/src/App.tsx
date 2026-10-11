@@ -7,6 +7,7 @@ import { CartProvider } from './cart/CartProvider'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { RestaurantLayout } from './layouts/RestaurantLayout'
 import { RiderLayout } from './layouts/RiderLayout'
+import { AdminLayout } from './layouts/AdminLayout'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
@@ -27,6 +28,8 @@ import { RiderActivePage } from './pages/rider/RiderActivePage'
 import { RiderChatPage } from './pages/rider/RiderChatPage'
 import { RiderEarningsPage } from './pages/rider/RiderEarningsPage'
 import { RiderPoolPage } from './pages/rider/RiderPoolPage'
+import { AdminApprovalsPage } from './pages/admin/AdminApprovalsPage'
+import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage'
 
 function LoadingSession() {
   return (
@@ -39,7 +42,7 @@ function LoadingSession() {
   )
 }
 
-function ProtectedRoute({ children, role }: { children: ReactNode; role?: 'customer' | 'restaurant' | 'rider' }) {
+function ProtectedRoute({ children, role }: { children: ReactNode; role?: 'admin' | 'customer' | 'restaurant' | 'rider' }) {
   const { loading, user } = useAuth()
   if (loading) return <LoadingSession />
   if (!user) return <Navigate to="/login" replace />
@@ -105,6 +108,24 @@ export default function App() {
               <Route path="messages/:conversationId" element={<RiderChatPage />} />
               <Route path="earnings" element={<RiderEarningsPage />} />
               <Route path="account" element={<RiderAccountPage />} />
+            </Route>
+
+            <Route path="/admin" element={<ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminApprovalsPage />} />
+              <Route path="approvals" element={<AdminApprovalsPage />} />
+              <Route path="approvals/:kind/:id" element={<AdminApprovalsPage />} />
+              <Route path="orders" element={<AdminComingSoonPage section="Orders" />} />
+              <Route path="restaurants" element={<AdminComingSoonPage section="Restaurants" />} />
+              <Route path="riders" element={<AdminComingSoonPage section="Riders" />} />
+              <Route path="customers" element={<AdminComingSoonPage section="Customers" />} />
+              <Route path="payments" element={<AdminComingSoonPage section="Payments" />} />
+              <Route path="remittances" element={<AdminComingSoonPage section="Remittances" />} />
+              <Route path="vouchers" element={<AdminComingSoonPage section="Vouchers" />} />
+              <Route path="reviews" element={<AdminComingSoonPage section="Reviews" />} />
+              <Route path="support" element={<AdminComingSoonPage section="Support" />} />
+              <Route path="audit-log" element={<AdminComingSoonPage section="Audit Log" />} />
+              <Route path="platform-settings" element={<AdminComingSoonPage section="Platform Settings" />} />
             </Route>
 
             <Route path="/unsupported-role" element={<ProtectedRoute><ComingSoonPage title="Dashboard unavailable" message="This role's web dashboard has not been connected yet." /></ProtectedRoute>} />
