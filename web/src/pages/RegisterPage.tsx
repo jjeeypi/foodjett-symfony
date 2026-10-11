@@ -66,6 +66,7 @@ function validateAll(fields: typeof emptyFields): FieldErrors {
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { completeLogin } = useAuth()
+  const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [fields, setFields] = useState(emptyFields)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [globalError, setGlobalError] = useState('')
@@ -132,6 +133,41 @@ export default function RegisterPage() {
     }
   }
 
+  if (!showCustomerForm) {
+    return (
+      <AuthLayout showStandaloneLogo={false}>
+        <section aria-labelledby="role-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
+          <header className="mb-7 text-center">
+            <div className="flex justify-center"><Logo /></div>
+            <p className="mt-5 text-sm font-bold uppercase tracking-[0.18em] text-neon-green">Join Foodjett</p>
+            <h1 id="role-heading" className="mt-2 text-3xl font-black text-white">I&apos;m a...</h1>
+            <p className="mt-2 text-sm leading-6 text-white/50">Choose the account that fits how you&apos;ll use Foodjett.</p>
+          </header>
+
+          <div className="grid gap-3">
+            <button type="button" onClick={() => setShowCustomerForm(true)} className="group flex min-h-20 items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-left transition hover:border-neon-green/60 hover:bg-neon-green/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60">
+              <RoleIcon path="M3 11.5 12 4l9 7.5M5.5 10v9h13v-9M9 19v-5h6v5" />
+              <span className="min-w-0 flex-1"><span className="block font-bold text-white">Customer</span><span className="mt-1 block text-sm text-white/45">Order meals from nearby restaurants.</span></span>
+              <ArrowIcon />
+            </button>
+            <Link to="/register/restaurant" className="group flex min-h-20 items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-left transition hover:border-neon-green/60 hover:bg-neon-green/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60">
+              <RoleIcon path="M4 10h16l-1.2-5H5.2L4 10Zm1 0v9h14v-9M9 19v-5h6v5M3 10c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2" />
+              <span className="min-w-0 flex-1"><span className="block font-bold text-white">Restaurant</span><span className="mt-1 block text-sm text-white/45">Apply to sell food on the platform.</span></span>
+              <ArrowIcon />
+            </Link>
+            <Link to="/register/rider" className="group flex min-h-20 items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-left transition hover:border-neon-green/60 hover:bg-neon-green/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60">
+              <RoleIcon path="M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm14 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM7 19h7l2-6h-5l-2-4H6m10 4h2l2 4" />
+              <span className="min-w-0 flex-1"><span className="block font-bold text-white">Rider</span><span className="mt-1 block text-sm text-white/45">Apply to deliver orders with Foodjett.</span></span>
+              <ArrowIcon />
+            </Link>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-white/50">Already have an account? <Link to="/login" className="font-semibold text-neon-green">Log in</Link></p>
+        </section>
+      </AuthLayout>
+    )
+  }
+
   return (
     <AuthLayout showStandaloneLogo={false}>
       <section aria-labelledby="register-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
@@ -140,6 +176,7 @@ export default function RegisterPage() {
           <div className="flex justify-center">
             <Logo />
           </div>
+          <button type="button" onClick={() => setShowCustomerForm(false)} className="mt-4 min-h-11 text-sm font-semibold text-white/55 hover:text-neon-green">← Choose another account type</button>
         </header>
 
         <FormAlert message={globalError} />
@@ -240,4 +277,12 @@ export default function RegisterPage() {
       </section>
     </AuthLayout>
   )
+}
+
+function RoleIcon({ path }: { path: string }) {
+  return <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neon-green/10 text-neon-green transition group-hover:bg-neon-green group-hover:text-brand-black"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path strokeLinecap="round" strokeLinejoin="round" d={path} /></svg></span>
+}
+
+function ArrowIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0 text-white/25 transition group-hover:translate-x-0.5 group-hover:text-neon-green"><path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" /></svg>
 }

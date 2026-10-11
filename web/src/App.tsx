@@ -15,6 +15,9 @@ import MessagesPage from './pages/MessagesPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import RegisterPage from './pages/RegisterPage'
+import RestaurantRegistrationPage from './pages/RestaurantRegistrationPage'
+import RiderRegistrationPage from './pages/RiderRegistrationPage'
+import PendingReviewPage from './pages/PendingReviewPage'
 import RestaurantPage from './pages/RestaurantPage'
 import { RestaurantDashboardPage } from './pages/restaurant/RestaurantDashboardPage'
 import { RestaurantComingSoonPage } from './pages/restaurant/RestaurantComingSoonPage'
@@ -67,6 +70,9 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/register/restaurant" element={<GuestRoute><RestaurantRegistrationPage /></GuestRoute>} />
+            <Route path="/register/rider" element={<GuestRoute><RiderRegistrationPage /></GuestRoute>} />
+            <Route path="/register/pending" element={<GuestRoute><PendingReviewPage /></GuestRoute>} />
             <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
 
             <Route element={<ProtectedRoute role="customer"><CustomerLayout /></ProtectedRoute>}>

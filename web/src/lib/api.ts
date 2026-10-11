@@ -925,6 +925,11 @@ export interface RegistrationResponse extends LoginResponse {
   user: AuthUser
 }
 
+export interface PendingRegistrationResponse {
+  message: string
+  user: AuthUser
+}
+
 /** Symfony Security JSON login: POST /api/login with login + password. */
 export function login(email: string, password: string): Promise<LoginResponse> {
   return request<LoginResponse>('/api/login', {
@@ -945,6 +950,48 @@ export function registerCustomer(data: {
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+export interface RestaurantRegistrationInput {
+  owner_name: string
+  email: string
+  phone: string
+  password: string
+  password_confirmation: string
+  restaurant_name: string
+  address: string
+  latitude: string
+  longitude: string
+  cuisine_type: string
+  business_permit: File
+  food_safety_permit: File
+  owner_id: File
+}
+
+export function registerRestaurant(data: RestaurantRegistrationInput): Promise<PendingRegistrationResponse> {
+  const body = new FormData()
+  for (const [key, value] of Object.entries(data)) body.set(key, value)
+  return request<PendingRegistrationResponse>('/api/register/restaurant', { method: 'POST', body })
+}
+
+export interface RiderRegistrationInput {
+  name: string
+  email: string
+  phone: string
+  password: string
+  password_confirmation: string
+  vehicle_type: 'motorcycle' | 'bicycle' | 'car'
+  plate_number: string
+  drivers_license: File
+  vehicle_registration: File
+  valid_id: File
+  police_clearance: File
+}
+
+export function registerRider(data: RiderRegistrationInput): Promise<PendingRegistrationResponse> {
+  const body = new FormData()
+  for (const [key, value] of Object.entries(data)) body.set(key, value)
+  return request<PendingRegistrationResponse>('/api/register/rider', { method: 'POST', body })
 }
 
 /** SymfonyCasts ResetPasswordBundle request endpoint. */
