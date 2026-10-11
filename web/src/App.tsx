@@ -6,6 +6,7 @@ import { useAuth } from './auth/useAuth'
 import { CartProvider } from './cart/CartProvider'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { RestaurantLayout } from './layouts/RestaurantLayout'
+import { RiderLayout } from './layouts/RiderLayout'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
@@ -18,6 +19,11 @@ import RestaurantPage from './pages/RestaurantPage'
 import { RestaurantDashboardPage } from './pages/restaurant/RestaurantDashboardPage'
 import { RestaurantComingSoonPage } from './pages/restaurant/RestaurantComingSoonPage'
 import { RestaurantMenuPage } from './pages/restaurant/RestaurantMenuPage'
+import { RiderAccountPage } from './pages/rider/RiderAccountPage'
+import { RiderActivePage } from './pages/rider/RiderActivePage'
+import { RiderChatPage } from './pages/rider/RiderChatPage'
+import { RiderEarningsPage } from './pages/rider/RiderEarningsPage'
+import { RiderPoolPage } from './pages/rider/RiderPoolPage'
 
 function LoadingSession() {
   return (
@@ -30,7 +36,7 @@ function LoadingSession() {
   )
 }
 
-function ProtectedRoute({ children, role }: { children: ReactNode; role?: 'customer' | 'restaurant' }) {
+function ProtectedRoute({ children, role }: { children: ReactNode; role?: 'customer' | 'restaurant' | 'rider' }) {
   const { loading, user } = useAuth()
   if (loading) return <LoadingSession />
   if (!user) return <Navigate to="/login" replace />
@@ -84,6 +90,15 @@ export default function App() {
               <Route path="earnings" element={<RestaurantComingSoonPage section="Earnings" />} />
               <Route path="profile" element={<RestaurantComingSoonPage section="Profile" />} />
               <Route path="reviews" element={<RestaurantComingSoonPage section="Reviews" />} />
+            </Route>
+
+            <Route path="/rider" element={<ProtectedRoute role="rider"><RiderLayout /></ProtectedRoute>}>
+              <Route index element={<Navigate to="/rider/pool" replace />} />
+              <Route path="pool" element={<RiderPoolPage />} />
+              <Route path="active" element={<RiderActivePage />} />
+              <Route path="messages/:conversationId" element={<RiderChatPage />} />
+              <Route path="earnings" element={<RiderEarningsPage />} />
+              <Route path="account" element={<RiderAccountPage />} />
             </Route>
 
             <Route path="/unsupported-role" element={<ProtectedRoute><ComingSoonPage title="Dashboard unavailable" message="This role's web dashboard has not been connected yet." /></ProtectedRoute>} />
