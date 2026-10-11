@@ -54,6 +54,10 @@ input {
   padding-top: env(safe-area-inset-top);
 }
 
+.admin-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
 .rider-safe-top {
   padding-top: max(0.75rem, env(safe-area-inset-top));
 }

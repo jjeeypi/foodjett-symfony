@@ -903,6 +903,110 @@ export function resolveOrderConversation(orderId: string, type: ConversationType
   })
 }
 
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+export type DocumentStatus = 'pending' | 'verified' | 'rejected'
+
+export interface AdminApprovalDocument {
+  id: string
+  type: string
+  file_path: string
+  status: DocumentStatus
+  rejection_reason: string | null
+}
+
+export interface AdminApplicantOwner {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  status: string
+}
+
+export interface AdminRestaurantApplication {
+  id: string
+  name: string
+  description: string | null
+  cuisine_type: string | null
+  address: string
+  latitude: string
+  longitude: string
+  approval_status: ApprovalStatus
+  rejection_reason: string | null
+  operating_status: string
+  commission_rate: string
+  min_order_amount: string
+  default_prep_time_minutes: number
+  owner: AdminApplicantOwner
+  documents: AdminApprovalDocument[]
+  created_at: string | null
+}
+
+export interface AdminRiderApplication {
+  id: string
+  vehicle_type: string
+  plate_number: string | null
+  approval_status: ApprovalStatus
+  rejection_reason: string | null
+  availability_status: string
+  cash_on_hand: string
+  cash_remit_limit: string
+  owner: AdminApplicantOwner
+  documents: AdminApprovalDocument[]
+  created_at: string | null
+}
+
+export function getPendingAdminRestaurants(signal?: AbortSignal): Promise<PaginatedResponse<AdminRestaurantApplication>> {
+  return request<PaginatedResponse<AdminRestaurantApplication>>('/api/admin/restaurants/pending?perPage=100', { signal })
+}
+
+export function getPendingAdminRiders(signal?: AbortSignal): Promise<PaginatedResponse<AdminRiderApplication>> {
+  return request<PaginatedResponse<AdminRiderApplication>>('/api/admin/riders/pending?perPage=100', { signal })
+}
+
+export function approveAdminRestaurant(id: string): Promise<{ restaurant: AdminRestaurantApplication }> {
+  return request<{ restaurant: AdminRestaurantApplication }>(`/api/admin/restaurants/${encodeURIComponent(id)}/approve`, { method: 'POST' })
+}
+
+export function rejectAdminRestaurant(id: string, rejectionReason: string): Promise<{ restaurant: AdminRestaurantApplication }> {
+  return request<{ restaurant: AdminRestaurantApplication }>(`/api/admin/restaurants/${encodeURIComponent(id)}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ rejection_reason: rejectionReason }),
+  })
+}
+
+export function approveAdminRider(id: string): Promise<{ rider: AdminRiderApplication }> {
+  return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/approve`, { method: 'POST' })
+}
+
+export function rejectAdminRider(id: string, rejectionReason: string): Promise<{ rider: AdminRiderApplication }> {
+  return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ rejection_reason: rejectionReason }),
+  })
+}
+
+export function verifyAdminRestaurantDocument(id: string): Promise<{ document: AdminApprovalDocument }> {
+  return request<{ document: AdminApprovalDocument }>(`/api/admin/restaurant-documents/${encodeURIComponent(id)}/verify`, { method: 'POST' })
+}
+
+export function rejectAdminRestaurantDocument(id: string, rejectionReason: string): Promise<{ document: AdminApprovalDocument }> {
+  return request<{ document: AdminApprovalDocument }>(`/api/admin/restaurant-documents/${encodeURIComponent(id)}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ rejection_reason: rejectionReason }),
+  })
+}
+
+export function verifyAdminRiderDocument(id: string): Promise<{ document: AdminApprovalDocument }> {
+  return request<{ document: AdminApprovalDocument }>(`/api/admin/rider-documents/${encodeURIComponent(id)}/verify`, { method: 'POST' })
+}
+
+export function rejectAdminRiderDocument(id: string, rejectionReason: string): Promise<{ document: AdminApprovalDocument }> {
+  return request<{ document: AdminApprovalDocument }>(`/api/admin/rider-documents/${encodeURIComponent(id)}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ rejection_reason: rejectionReason }),
+  })
+}
+
 export interface AuthUser {
   id: string
   name: string
