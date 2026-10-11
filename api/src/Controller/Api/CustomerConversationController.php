@@ -6,10 +6,12 @@ namespace App\Controller\Api;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
+use App\Entity\Order;
 use App\Enum\ConversationType;
 use App\Event\MessageSentEvent;
 use App\Security\Voter\ConversationVoter;
 use App\Service\ApiPaginator;
+use App\Service\ConversationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,7 +27,40 @@ final class CustomerConversationController extends AbstractCustomerController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly ConversationService $conversations,
     ) {
+    }
+
+    #[Route('/for-order/{orderId}', name: 'for_order', methods: ['POST'], requirements: ['orderId' => '\\d+'])]
+    public function forOrder(string $orderId, Request $request): JsonResponse
+    {
+        $order = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
+            ->andWhere('orders.id = :id')->setParameter('id', $orderId)
+            ->andWhere('orders.customer = :customer')->setParameter('customer', $this->customer())
+            ->getQuery()->getOneOrNullResult();
+        if (!$order instanceof Order) {
+            throw $this->createNotFoundException('Order not found.');
+        }
+
+        $data = $this->body($request);
+        if ($data instanceof JsonResponse) {
+            return $data;
+        }
+        $type = ConversationType::tryFrom((string) ($data['type'] ?? ConversationType::CUSTOMER_RIDER->value));
+        if (!$type instanceof ConversationType) {
+            return $this->json(['message' => 'type must be customer_rider or customer_restaurant.'], 422);
+        }
+        if (ConversationType::CUSTOMER_RIDER === $type && null === $order->getRider()) {
+            return $this->json(['message' => 'A rider has not been assigned to this order yet.'], 409);
+        }
+        if (ConversationType::CUSTOMER_RESTAURANT === $type && null === $order->getAcceptedAt()) {
+            return $this->json(['message' => 'Restaurant chat opens after the restaurant accepts the order.'], 409);
+        }
+
+        $conversation = $this->conversations->forOrder($order, $type);
+        $this->entityManager->flush();
+
+        return $this->json(['conversation' => $this->conversationData($conversation)]);
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
@@ -139,8 +174,8 @@ final class CustomerConversationController extends AbstractCustomerController
             ->andWhere('message.readAt IS NULL')->getQuery()->getSingleScalarResult();
         $order = $conversation->getOrder();
         $counterpart = ConversationType::CUSTOMER_RESTAURANT === $conversation->getType()
-            ? ['type' => 'restaurant', 'id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName()]
-            : ['type' => 'rider', 'id' => $order->getRider()?->getId(), 'name' => $order->getRider()?->getUser()->getName()];
+            ? ['type' => 'restaurant', 'id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName(), 'avatar_path' => $order->getRestaurant()->getLogoPath()]
+            : ['type' => 'rider', 'id' => $order->getRider()?->getId(), 'name' => $order->getRider()?->getUser()->getName(), 'avatar_path' => $order->getRider()?->getUser()->getAvatarPath()];
 
         return [
             'id' => $conversation->getId(), 'type' => $conversation->getType()->value,

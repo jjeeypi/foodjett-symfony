@@ -209,6 +209,8 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
     {
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         foreach ([
+            'DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE order_id IN (SELECT id FROM orders WHERE order_number = ?))',
+            'DELETE FROM conversations WHERE order_id IN (SELECT id FROM orders WHERE order_number = ?)',
             'DELETE FROM rider_pool_declines WHERE order_id IN (SELECT id FROM orders WHERE order_number = ?)',
             'DELETE FROM rider_pool_offers WHERE order_id IN (SELECT id FROM orders WHERE order_number = ?)',
             'DELETE FROM order_status_history WHERE order_id IN (SELECT id FROM orders WHERE order_number = ?)',

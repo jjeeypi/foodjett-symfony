@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { OrderStatusTimeline } from '../components/customer/OrderStatusTimeline'
 import {
   apiAssetUrl,
@@ -7,6 +7,7 @@ import {
   cancelCustomerOrder,
   getCustomerOrder,
   isApiError,
+  resolveOrderConversation,
   type CheckoutOrder,
   type CustomerOrderDetail,
   type OrderStatus,
@@ -78,6 +79,7 @@ function ConnectionBadge({ state, onRefresh, refreshing }: { state: ConnectionSt
 export default function OrderTrackingPage() {
   const { id = '' } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const checkoutOrder = (location.state as { order?: CheckoutOrder } | null)?.order
   const [order, setOrder] = useState<CustomerOrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,6 +90,8 @@ export default function OrderTrackingPage() {
   const [cancelReason, setCancelReason] = useState('Changed my mind')
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
+  const [openingChat, setOpeningChat] = useState(false)
+  const [chatError, setChatError] = useState('')
   const eventSourceRef = useRef<EventSource | null>(null)
 
   const loadOrder = useCallback(async (silent = false) => {
@@ -206,6 +210,20 @@ export default function OrderTrackingPage() {
     }
   }
 
+  async function messageRider() {
+    if (!order?.rider || openingChat) return
+    setOpeningChat(true)
+    setChatError('')
+    try {
+      const response = await resolveOrderConversation(order.id, 'customer_rider')
+      navigate(`/messages/${response.conversation.id}`)
+    } catch (requestError) {
+      setChatError(isApiError(requestError) ? requestError.message : 'The rider conversation could not be opened.')
+    } finally {
+      setOpeningChat(false)
+    }
+  }
+
   if (loading && !order) {
     return (
       <div className="mx-auto max-w-6xl space-y-5">
@@ -287,8 +305,9 @@ export default function OrderTrackingPage() {
                   <h2 className="text-lg font-black text-white">{order.rider.name}</h2>
                   <p className="mt-1 text-sm capitalize text-white/50">{order.rider.vehicle_type.replaceAll('_', ' ')}</p>
                 </div>
-                <Link to="/messages" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-neon-green/35 px-4 text-sm font-bold text-neon-green transition hover:bg-neon-green hover:text-brand-black">Message rider</Link>
+                <button type="button" onClick={() => void messageRider()} disabled={openingChat} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-neon-green/35 px-4 text-sm font-bold text-neon-green transition hover:bg-neon-green hover:text-brand-black disabled:cursor-wait disabled:opacity-60">{openingChat ? 'Opening…' : 'Message rider'}</button>
               </div>
+              {chatError && <p role="alert" className="mt-3 text-sm text-red-200">{chatError}</p>}
             </section>
           )}
 

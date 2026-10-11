@@ -6,12 +6,14 @@ namespace App\Tests\Controller\Api;
 
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
+use App\Entity\Conversation;
 use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\RiderPoolOffer;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
+use App\Enum\ConversationType;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\RestaurantOperatingStatus;
@@ -103,6 +105,11 @@ final class RiderPoolControllerTest extends WebTestCase
         $payload = $this->payload()['order'] ?? [];
         self::assertSame(OrderStatus::RIDER_ASSIGNED->value, $payload['status'] ?? null);
         self::assertMatchesRegularExpression('/^\d{4}$/', (string) ($payload['pickup_code'] ?? ''));
+        $conversation = $entityManager->getRepository(Conversation::class)->findOneBy([
+            'order' => $order,
+            'type' => ConversationType::CUSTOMER_RIDER,
+        ]);
+        self::assertInstanceOf(Conversation::class, $conversation);
         $poolUpdates = array_values(array_filter(
             self::getContainer()->get(RecordingMercureHub::class)->updates(),
             static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
@@ -352,6 +359,8 @@ final class RiderPoolControllerTest extends WebTestCase
     {
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         foreach ([
+            'DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?))',
+            'DELETE FROM conversations WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
             'DELETE FROM rider_pool_declines WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
             'DELETE FROM rider_pool_offers WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
             'DELETE FROM order_status_history WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
