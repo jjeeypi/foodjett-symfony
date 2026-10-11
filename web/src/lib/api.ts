@@ -440,6 +440,62 @@ export function authorizeMercure(): Promise<MercureAuthorization> {
   })
 }
 
+export type ConversationType = 'customer_rider' | 'customer_restaurant'
+
+export interface ConversationMessage {
+  id: string
+  conversation_id: string
+  sender: { id: string; name: string }
+  body: string
+  read_at: string | null
+  created_at: string
+}
+
+export interface CustomerConversation {
+  id: string
+  type: ConversationType
+  order: { id: string; order_number: string; restaurant_name: string }
+  counterpart: {
+    type: 'restaurant' | 'rider'
+    id: string | null
+    name: string | null
+    avatar_path: string | null
+  }
+  is_closed: boolean
+  closed_at: string | null
+  unread_count: number
+  last_message: ConversationMessage | null
+  updated_at: string | null
+}
+
+export function getCustomerConversations(signal?: AbortSignal): Promise<PaginatedResponse<CustomerConversation>> {
+  return request<PaginatedResponse<CustomerConversation>>('/api/customer/conversations?perPage=100', { signal })
+}
+
+export function getCustomerConversationMessages(id: string, signal?: AbortSignal): Promise<PaginatedResponse<ConversationMessage> & { conversation: CustomerConversation }> {
+  return request<PaginatedResponse<ConversationMessage> & { conversation: CustomerConversation }>(`/api/customer/conversations/${encodeURIComponent(id)}/messages?perPage=100`, { signal })
+}
+
+export function sendCustomerConversationMessage(id: string, body: string): Promise<{ message: ConversationMessage }> {
+  return request<{ message: ConversationMessage }>(`/api/customer/conversations/${encodeURIComponent(id)}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  })
+}
+
+export function markCustomerConversationRead(id: string): Promise<{ message: string; updated: number; read_at: string }> {
+  return request<{ message: string; updated: number; read_at: string }>(`/api/customer/conversations/${encodeURIComponent(id)}/mark-read`, {
+    method: 'POST',
+  })
+}
+
+export function resolveOrderConversation(orderId: string, type: ConversationType): Promise<{ conversation: CustomerConversation }> {
+  return request<{ conversation: CustomerConversation }>(`/api/customer/conversations/for-order/${encodeURIComponent(orderId)}`, {
+    method: 'POST',
+    body: JSON.stringify({ type }),
+  })
+}
+
 export interface AuthUser {
   id: string
   name: string
@@ -448,6 +504,10 @@ export interface AuthUser {
   role: string
   status: string
   approval_status: string | null
+}
+
+export function getCurrentUser(signal?: AbortSignal): Promise<Omit<AuthUser, 'approval_status'>> {
+  return request<Omit<AuthUser, 'approval_status'>>('/api/me', { signal })
 }
 
 export interface LoginResponse {

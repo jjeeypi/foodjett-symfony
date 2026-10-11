@@ -127,6 +127,10 @@ final class CustomerConversationControllerTest extends CustomerApiTestCase
         self::assertResponseStatusCodeSame(409);
         self::assertStringContainsString('not been assigned', $this->payload()['message']);
 
+        $this->client->jsonRequest('POST', '/api/customer/conversations/for-order/'.$unassigned->getId(), ['type' => 'customer_restaurant'], server: $this->auth());
+        self::assertResponseStatusCodeSame(409);
+        self::assertStringContainsString('after the restaurant accepts', $this->payload()['message']);
+
         $this->client->jsonRequest('POST', '/api/customer/conversations/for-order/'.$foreignOrder->getId(), ['type' => 'customer_rider'], server: $this->auth());
         self::assertResponseStatusCodeSame(404);
     }

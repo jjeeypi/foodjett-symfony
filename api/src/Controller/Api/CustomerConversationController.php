@@ -53,6 +53,9 @@ final class CustomerConversationController extends AbstractCustomerController
         if (ConversationType::CUSTOMER_RIDER === $type && null === $order->getRider()) {
             return $this->json(['message' => 'A rider has not been assigned to this order yet.'], 409);
         }
+        if (ConversationType::CUSTOMER_RESTAURANT === $type && null === $order->getAcceptedAt()) {
+            return $this->json(['message' => 'Restaurant chat opens after the restaurant accepts the order.'], 409);
+        }
 
         $conversation = $this->conversations->forOrder($order, $type);
         $this->entityManager->flush();
