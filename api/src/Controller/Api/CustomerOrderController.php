@@ -261,7 +261,10 @@ final class CustomerOrderController extends AbstractCustomerController
     {
         return [
             'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus()->value,
-            'restaurant' => ['id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName(), 'logo_path' => $order->getRestaurant()->getLogoPath()],
+            'restaurant' => [
+                'id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName(),
+                'logo_path' => $order->getRestaurant()->getLogoPath(), 'address' => $order->getRestaurant()->getAddress(),
+            ],
             'item_count' => array_sum(array_map(static fn (OrderItem $item): int => $item->getQuantity(), $order->getItems()->toArray())),
             'total_amount' => $order->getTotalAmount(), 'payment_method' => $order->getPaymentMethod()->value,
             'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM), 'delivered_at' => $order->getDeliveredAt()?->format(\DateTimeInterface::ATOM),
@@ -279,14 +282,33 @@ final class CustomerOrderController extends AbstractCustomerController
             'subtotal' => $order->getSubtotal(), 'delivery_fee' => $order->getDeliveryFee(), 'service_fee' => $order->getServiceFee(),
             'discount_amount' => $order->getDiscountAmount(), 'tip_amount' => $order->getTipAmount(), 'customer_notes' => $order->getCustomerNotes(),
             'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
+            'can_cancel' => $order->canBeCancelledByCustomer(),
+            'cancellation_reason' => $order->getCancellationReason(),
+            'cancelled_by' => $order->getCancelledBy()?->value,
             'rider' => null === $order->getRider() ? null : ['id' => $order->getRider()?->getId(), 'name' => $order->getRider()?->getUser()->getName(), 'vehicle_type' => $order->getRider()?->getVehicleType()->value],
-            'delivery_address' => ['id' => $address->getId(), 'label' => $address->getLabel(), 'address_line' => $address->getAddressLine(), 'landmark' => $address->getLandmark(), 'delivery_instructions' => $address->getDeliveryInstructions()],
+            'delivery_address' => [
+                'id' => $address->getId(), 'label' => $address->getLabel(), 'address_line' => $address->getAddressLine(),
+                'landmark' => $address->getLandmark(), 'delivery_instructions' => $address->getDeliveryInstructions(),
+                'latitude' => $address->getLatitude(), 'longitude' => $address->getLongitude(),
+            ],
             'items' => array_map($this->item(...), $order->getItems()->toArray()),
             'status_history' => array_map(static fn (OrderStatusHistory $entry): array => [
                 'id' => $entry->getId(), 'status' => $entry->getStatus(), 'changed_by' => $entry->getChangedBy()->value,
                 'note' => $entry->getNote(), 'created_at' => $entry->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ], $history),
             'payment' => null === $order->getPayment() ? null : ['status' => $order->getPayment()?->getStatus()->value, 'amount' => $order->getPayment()?->getAmount(), 'refunded_amount' => $order->getPayment()?->getRefundedAmount()],
+            'timestamps' => [
+                'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
+                'accepted_at' => $order->getAcceptedAt()?->format(\DateTimeInterface::ATOM),
+                'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
+                'ready_at' => $order->getReadyAt()?->format(\DateTimeInterface::ATOM),
+                'rider_search_started_at' => $order->getRiderSearchStartedAt()?->format(\DateTimeInterface::ATOM),
+                'rider_assigned_at' => $order->getRiderAssignedAt()?->format(\DateTimeInterface::ATOM),
+                'rider_arrived_restaurant_at' => $order->getRiderArrivedRestaurantAt()?->format(\DateTimeInterface::ATOM),
+                'picked_up_at' => $order->getPickedUpAt()?->format(\DateTimeInterface::ATOM),
+                'delivered_at' => $order->getDeliveredAt()?->format(\DateTimeInterface::ATOM),
+                'updated_at' => $order->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
+            ],
         ];
     }
 

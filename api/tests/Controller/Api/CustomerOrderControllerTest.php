@@ -41,9 +41,34 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
         $shown = $this->payload()['order'];
         self::assertSame($active->getOrderNumber(), $shown['order_number']);
         self::assertSame('placed', $shown['status_history'][0]['status']);
+        self::assertTrue($shown['can_cancel']);
+        self::assertSame('Restaurant address', $shown['restaurant']['address']);
+        self::assertSame('14.6000000', $shown['delivery_address']['latitude']);
+        self::assertSame($active->getPlacedAt()->format(\DateTimeInterface::ATOM), $shown['timestamps']['placed_at']);
+        self::assertArrayHasKey('rider_assigned_at', $shown['timestamps']);
 
         $this->client->request('GET', '/api/customer/orders/'.$foreign->getId(), server: $this->auth());
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testShowExposesAssignedRiderAndDisablesCancellationAfterAcceptance(): void
+    {
+        $rider = $this->createRider();
+        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::RIDER_ASSIGNED)
+            ->setRider($rider)
+            ->setAcceptedAt(new \DateTimeImmutable('-20 minutes'))
+            ->setRiderAssignedAt(new \DateTimeImmutable('-2 minutes'));
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/api/customer/orders/'.$order->getId(), server: $this->auth());
+        self::assertResponseIsSuccessful();
+        $shown = $this->payload()['order'];
+
+        self::assertFalse($shown['can_cancel']);
+        self::assertSame($rider->getId(), $shown['rider']['id']);
+        self::assertSame($rider->getUser()->getName(), $shown['rider']['name']);
+        self::assertSame('motorcycle', $shown['rider']['vehicle_type']);
+        self::assertNotNull($shown['timestamps']['rider_assigned_at']);
     }
 
     public function testReorderUsesCurrentPricesAndRejectsUnavailableItems(): void
