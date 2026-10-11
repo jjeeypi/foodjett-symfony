@@ -226,6 +226,113 @@ export function getRestaurant(id: string, signal?: AbortSignal): Promise<{ resta
   return request<{ restaurant: RestaurantDetail }>(`/api/restaurants/${encodeURIComponent(id)}`, { signal })
 }
 
+export interface CustomerAddress {
+  id: string
+  label: string
+  address_line: string
+  landmark: string | null
+  delivery_instructions: string | null
+  latitude: string
+  longitude: string
+  is_default: boolean
+}
+
+export interface CustomerAddressInput {
+  label: string
+  address_line: string
+  landmark?: string
+  delivery_instructions?: string
+  latitude: string
+  longitude: string
+  is_default?: boolean
+}
+
+export function getCustomerAddresses(signal?: AbortSignal): Promise<{ addresses: CustomerAddress[] }> {
+  return request<{ addresses: CustomerAddress[] }>('/api/customer/addresses', { signal })
+}
+
+export function createCustomerAddress(data: CustomerAddressInput): Promise<{ message: string; address: CustomerAddress }> {
+  return request<{ message: string; address: CustomerAddress }>('/api/customer/addresses', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export type PaymentMethod = 'cod' | 'gcash' | 'card'
+
+export interface CheckoutItemInput {
+  menu_item_id: string
+  variant_id: string | null
+  addon_ids: string[]
+  quantity: number
+  special_instructions?: string | null
+}
+
+export interface CheckoutInput {
+  checkout_token: string
+  restaurant_id: string
+  customer_address_id: string
+  payment_method: PaymentMethod
+  tip_amount: string
+  customer_notes?: string | null
+  items: CheckoutItemInput[]
+}
+
+export interface CheckoutQuoteItem {
+  menu_item_id: string
+  name: string
+  quantity: number
+  variant: { id: string; name: string } | null
+  addons: Array<{ id: string; name: string; price: string }>
+  unit_total: string
+  line_total: string
+}
+
+export interface CheckoutQuote {
+  restaurant_id: string
+  customer_address_id: string
+  address_covered: boolean
+  payment_method: PaymentMethod
+  items: CheckoutQuoteItem[]
+  subtotal: string
+  delivery_fee: string
+  service_fee: string
+  discount_amount: string
+  tip_amount: string
+  total_amount: string
+}
+
+export interface CheckoutOrder {
+  id: string
+  order_number: string
+  checkout_token: string
+  status: string
+  subtotal: string
+  delivery_fee: string
+  service_fee: string
+  discount_amount: string
+  tip_amount: string
+  total_amount: string
+  payment_method: PaymentMethod
+  payment_status: string | null
+  placed_at: string
+}
+
+export function previewCheckout(data: CheckoutInput, signal?: AbortSignal): Promise<{ quote: CheckoutQuote }> {
+  return request<{ quote: CheckoutQuote }>('/api/customer/checkout/preview', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    signal,
+  })
+}
+
+export function placeOrder(data: CheckoutInput): Promise<{ created: boolean; order: CheckoutOrder }> {
+  return request<{ created: boolean; order: CheckoutOrder }>('/api/customer/checkout', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
 export interface AuthUser {
   id: string
   name: string
