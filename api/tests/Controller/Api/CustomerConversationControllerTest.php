@@ -99,6 +99,38 @@ final class CustomerConversationControllerTest extends CustomerApiTestCase
         self::assertStringContainsString('Too many messages', $this->payload()['message']);
     }
 
+    public function testCustomerResolvesAssignedRiderConversationIdempotentlyAndCannotResolveForeignOrder(): void
+    {
+        $rider = $this->createRider();
+        $order = $this->createOrder($this->customer, $this->restaurant, $this->address)->setRider($rider);
+        $foreignOrder = $this->createOrder($this->otherCustomer, $this->otherRestaurant, $this->otherAddress)->setRider($rider);
+        $unassigned = $this->createOrder($this->customer, $this->restaurant, $this->address);
+        $this->entityManager->flush();
+
+        $uri = '/api/customer/conversations/for-order/'.$order->getId();
+        $this->client->jsonRequest('POST', $uri, ['type' => 'customer_rider'], server: $this->auth());
+        self::assertResponseIsSuccessful();
+        $firstId = $this->payload()['conversation']['id'] ?? null;
+        self::assertNotNull($firstId);
+        self::assertSame('customer_rider', $this->payload()['conversation']['type']);
+        self::assertSame($rider->getUser()->getName(), $this->payload()['conversation']['counterpart']['name']);
+
+        $this->client->jsonRequest('POST', $uri, ['type' => 'customer_rider'], server: $this->auth());
+        self::assertResponseIsSuccessful();
+        self::assertSame($firstId, $this->payload()['conversation']['id']);
+        self::assertSame(1, $this->entityManager->getRepository(Conversation::class)->count([
+            'order' => $order,
+            'type' => ConversationType::CUSTOMER_RIDER,
+        ]));
+
+        $this->client->jsonRequest('POST', '/api/customer/conversations/for-order/'.$unassigned->getId(), ['type' => 'customer_rider'], server: $this->auth());
+        self::assertResponseStatusCodeSame(409);
+        self::assertStringContainsString('not been assigned', $this->payload()['message']);
+
+        $this->client->jsonRequest('POST', '/api/customer/conversations/for-order/'.$foreignOrder->getId(), ['type' => 'customer_rider'], server: $this->auth());
+        self::assertResponseStatusCodeSame(404);
+    }
+
     private function conversation(\App\Entity\Order $order, \DateTimeImmutable $at): Conversation
     {
         return (new Conversation())->setOrder($order)->setType(ConversationType::CUSTOMER_RESTAURANT)->setCreatedAt($at)->setUpdatedAt($at);

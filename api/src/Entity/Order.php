@@ -286,6 +286,7 @@ class Order
     public function getReports(): Collection { return $this->reports; }
     /** @return Collection<int, Conversation> */
     public function getConversations(): Collection { return $this->conversations; }
+    public function addConversation(Conversation $conversation): self { if (!$this->conversations->contains($conversation)) { $this->conversations->add($conversation); $conversation->setOrder($this); } return $this; }
     /** @return Collection<int, RiderPoolDecline> */
     public function getRiderPoolDeclines(): Collection { return $this->riderPoolDeclines; }
     public function addRiderPoolDecline(RiderPoolDecline $decline): self { if (!$this->riderPoolDeclines->contains($decline)) { $this->riderPoolDeclines->add($decline); $decline->setOrder($this); } return $this; }

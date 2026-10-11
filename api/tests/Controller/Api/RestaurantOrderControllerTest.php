@@ -6,11 +6,13 @@ namespace App\Tests\Controller\Api;
 
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
+use App\Entity\Conversation;
 use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
+use App\Enum\ConversationType;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
@@ -56,6 +58,11 @@ final class RestaurantOrderControllerTest extends WebTestCase
         $payload = $this->payload();
         self::assertSame(OrderStatus::FINDING_RIDER->value, $payload['order']['status'] ?? null);
         self::assertNotNull($payload['order']['rider_search_started_at'] ?? null);
+        $conversation = self::getContainer()->get(EntityManagerInterface::class)->getRepository(Conversation::class)->findOneBy([
+            'order' => $this->orderId,
+            'type' => ConversationType::CUSTOMER_RESTAURANT,
+        ]);
+        self::assertInstanceOf(Conversation::class, $conversation);
         $acceptUpdates = $this->orderUpdates();
         self::assertCount(3, $acceptUpdates);
         self::assertSame(
@@ -253,6 +260,8 @@ final class RestaurantOrderControllerTest extends WebTestCase
         $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
         $pattern = 'REST-ORDER-%';
         foreach ([
+            'DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?))',
+            'DELETE FROM conversations WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
             'DELETE FROM payment_status_history WHERE payment_id IN (SELECT id FROM payments WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?))',
             'DELETE FROM payments WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
             'DELETE FROM rider_pool_offers WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
