@@ -91,6 +91,27 @@ final class CheckoutControllerTest extends WebTestCase
         self::assertSame($order->getTotalAmount(), $restaurantPayload['total_amount'] ?? null);
     }
 
+    public function testPreviewReturnsTheSameServerAuthoritativeTotalsWithoutCreatingAnOrder(): void
+    {
+        $token = $this->uuid();
+        $preview = $this->preview('gcash', $token);
+
+        self::assertResponseIsSuccessful();
+        self::assertTrue($preview['quote']['address_covered'] ?? false);
+        self::assertSame('gcash', $preview['quote']['payment_method'] ?? null);
+        self::assertSame('260.00', $preview['quote']['subtotal'] ?? null);
+        self::assertSame('130.00', $preview['quote']['items'][0]['unit_total'] ?? null);
+        self::assertSame('260.00', $preview['quote']['items'][0]['line_total'] ?? null);
+        self::assertSame(0, self::getContainer()->get(EntityManagerInterface::class)->getRepository(Order::class)->count([]));
+
+        $checkout = $this->checkout('gcash', $token);
+        self::assertResponseStatusCodeSame(201);
+        foreach (['subtotal', 'delivery_fee', 'service_fee', 'discount_amount', 'tip_amount', 'total_amount'] as $amount) {
+            self::assertSame($preview['quote'][$amount] ?? null, $checkout['order'][$amount] ?? null, $amount);
+        }
+        self::assertSame('paid', $checkout['order']['payment_status'] ?? null);
+    }
+
     public function testCardCheckoutIsPaidImmediatelyAndRetryIsIdempotent(): void
     {
         $token = $this->uuid();
@@ -129,6 +150,21 @@ final class CheckoutControllerTest extends WebTestCase
         self::assertSame(0, $entityManager->getRepository(Order::class)->count([
             'customer' => $entityManager->find(Customer::class, $this->fixture['customer_id']),
         ]));
+    }
+
+    public function testPreviewSurfacesAnAddressOutsideEveryActiveZoneWithoutCreatingAnOrder(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $zone = $entityManager->getRepository(DeliveryZone::class)->findOneBy(['name' => self::ZONE_NAME]);
+        self::assertInstanceOf(DeliveryZone::class, $zone);
+        $zone->setIsActive(false);
+        $entityManager->flush();
+
+        $response = $this->preview('cod', $this->uuid());
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('The selected address is outside the active delivery zones.', $response['message'] ?? null);
+        self::assertSame(0, $entityManager->getRepository(Order::class)->count([]));
     }
 
     public function testCheckoutRejectsAClosedRestaurantWithoutCreatingAnOrder(): void
@@ -181,6 +217,22 @@ final class CheckoutControllerTest extends WebTestCase
     /** @return array<string, mixed> */
     private function checkout(string $method, string $token, ?string $voucher = null): array
     {
+        $this->client->jsonRequest('POST', '/api/customer/checkout', $this->checkoutBody($method, $token, $voucher), server: $this->auth($this->login()));
+
+        return json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+    }
+
+    /** @return array<string, mixed> */
+    private function preview(string $method, string $token, ?string $voucher = null): array
+    {
+        $this->client->jsonRequest('POST', '/api/customer/checkout/preview', $this->checkoutBody($method, $token, $voucher), server: $this->auth($this->login()));
+
+        return json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+    }
+
+    /** @return array<string, mixed> */
+    private function checkoutBody(string $method, string $token, ?string $voucher = null): array
+    {
         $body = [
             'checkout_token' => $token,
             'restaurant_id' => $this->fixture['restaurant_id'],
@@ -200,9 +252,7 @@ final class CheckoutControllerTest extends WebTestCase
             $body['voucher_code'] = $voucher;
         }
 
-        $this->client->jsonRequest('POST', '/api/customer/checkout', $body, server: $this->auth($this->login()));
-
-        return json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        return $body;
     }
 
     /** @return array<string, string> */

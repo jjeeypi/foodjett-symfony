@@ -87,53 +87,20 @@ final readonly class CheckoutService
             }
 
             $now = new \DateTimeImmutable();
-            $restaurant = $this->restaurant($input['restaurant_id'] ?? null);
-            $address = $this->address($input['customer_address_id'] ?? null, $lockedCustomer);
-            $paymentMethod = $this->paymentMethod($input['payment_method'] ?? null);
-            $tipCents = $this->nonNegativeMoneyToCents($input['tip_amount'] ?? 0, 'tip_amount');
-            $notes = $this->optionalText($input['customer_notes'] ?? null, 2000, 'customer_notes');
-
-            $this->assertRestaurantCanAcceptOrders($restaurant, $now);
-            if (!$this->deliveryZones->isCovered((float) $address->getLatitude(), (float) $address->getLongitude())) {
-                throw new CheckoutValidationException('The selected address is outside the active delivery zones.');
-            }
-
-            $selections = $input['items'] ?? null;
-            if (!is_array($selections) || [] === $selections) {
-                throw new CheckoutValidationException('At least one cart item is required.');
-            }
-
-            [$itemRows, $subtotalCents] = $this->priceItems($selections, $restaurant, $now);
-            if ($subtotalCents < $this->moneyToCents($restaurant->getMinOrderAmount())) {
-                throw new CheckoutValidationException('The order subtotal does not meet the restaurant minimum.');
-            }
-
-            $distanceKm = DeliveryZoneService::distanceKm(
-                (float) $restaurant->getLatitude(),
-                (float) $restaurant->getLongitude(),
-                (float) $address->getLatitude(),
-                (float) $address->getLongitude(),
-            );
-            $deliveryFeeCents = (int) round(($this->settings->float('delivery_base_fee', 35.0)
-                + $this->settings->float('delivery_fee_per_km', 10.0) * $distanceKm) * 100);
-            $serviceFeeCents = (int) round(max(0.0, $this->settings->float('service_fee', 0.0)) * 100);
-
-            $voucher = $this->lockedVoucher($input['voucher_code'] ?? null);
-            $discountCents = 0;
-            if ($voucher instanceof Voucher) {
-                $discountCents = $this->voucherDiscount(
-                    $voucher,
-                    $lockedCustomer,
-                    $restaurant,
-                    $subtotalCents,
-                    $deliveryFeeCents,
-                    $now,
-                );
-            }
-
-            $totalCents = max(0, $subtotalCents + $deliveryFeeCents + $serviceFeeCents + $tipCents - $discountCents);
-            // Commission is based on food subtotal. Voucher funding ownership is not yet modelled.
-            $commissionCents = (int) round($subtotalCents * ((float) $restaurant->getCommissionRate() / 100));
+            $quote = $this->quote($lockedCustomer, $input, $now, true);
+            $restaurant = $quote['restaurant'];
+            $address = $quote['address'];
+            $paymentMethod = $quote['payment_method'];
+            $tipCents = $quote['tip_cents'];
+            $notes = $quote['notes'];
+            $itemRows = $quote['item_rows'];
+            $subtotalCents = $quote['subtotal_cents'];
+            $deliveryFeeCents = $quote['delivery_fee_cents'];
+            $serviceFeeCents = $quote['service_fee_cents'];
+            $voucher = $quote['voucher'];
+            $discountCents = $quote['discount_cents'];
+            $totalCents = $quote['total_cents'];
+            $commissionCents = $quote['commission_cents'];
             $order = (new Order())
                 ->setOrderNumber($this->newOrderNumber())
                 ->setCheckoutToken($token)
@@ -240,6 +207,130 @@ final readonly class CheckoutService
         }
 
         return $result;
+    }
+
+    /**
+     * Validates the same cart/address/payment input as checkout and returns server-authoritative
+     * totals without creating an order, payment, redemption, or history row.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function preview(Customer $customer, array $input): array
+    {
+        $quote = $this->quote($customer, $input, new \DateTimeImmutable(), false);
+
+        $items = array_map(function (array $row): array {
+            $addonsCents = array_sum(array_map(fn (MenuItemAddon $addon): int => $this->moneyToCents($addon->getPrice()), $row['addons']));
+            $unitTotalCents = $row['unit_price_cents'] + $addonsCents;
+
+            return [
+                'menu_item_id' => $row['item']->getId(),
+                'name' => $row['item']->getName(),
+                'quantity' => $row['quantity'],
+                'variant' => $row['variant'] instanceof MenuItemVariant ? [
+                    'id' => $row['variant']->getId(),
+                    'name' => $row['variant']->getName(),
+                ] : null,
+                'addons' => array_map(static fn (MenuItemAddon $addon): array => [
+                    'id' => $addon->getId(),
+                    'name' => $addon->getName(),
+                    'price' => $addon->getPrice(),
+                ], $row['addons']),
+                'unit_total' => $this->decimal($unitTotalCents),
+                'line_total' => $this->decimal($unitTotalCents * $row['quantity']),
+            ];
+        }, $quote['item_rows']);
+
+        return [
+            'restaurant_id' => $quote['restaurant']->getId(),
+            'customer_address_id' => $quote['address']->getId(),
+            'address_covered' => true,
+            'payment_method' => $quote['payment_method']->value,
+            'items' => $items,
+            'subtotal' => $this->decimal($quote['subtotal_cents']),
+            'delivery_fee' => $this->decimal($quote['delivery_fee_cents']),
+            'service_fee' => $this->decimal($quote['service_fee_cents']),
+            'discount_amount' => $this->decimal($quote['discount_cents']),
+            'tip_amount' => $this->decimal($quote['tip_cents']),
+            'total_amount' => $this->decimal($quote['total_cents']),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array{
+     *     restaurant: Restaurant,
+     *     address: CustomerAddress,
+     *     payment_method: PaymentMethod,
+     *     tip_cents: int,
+     *     notes: ?string,
+     *     item_rows: list<array{item: MenuItem, variant: ?MenuItemVariant, addons: list<MenuItemAddon>, quantity: int, unit_price_cents: int, instructions: ?string}>,
+     *     subtotal_cents: int,
+     *     delivery_fee_cents: int,
+     *     service_fee_cents: int,
+     *     voucher: ?Voucher,
+     *     discount_cents: int,
+     *     total_cents: int,
+     *     commission_cents: int
+     * }
+     */
+    private function quote(Customer $customer, array $input, \DateTimeImmutable $now, bool $lockVoucher): array
+    {
+        $restaurant = $this->restaurant($input['restaurant_id'] ?? null);
+        $address = $this->address($input['customer_address_id'] ?? null, $customer);
+        $paymentMethod = $this->paymentMethod($input['payment_method'] ?? null);
+        $tipCents = $this->nonNegativeMoneyToCents($input['tip_amount'] ?? 0, 'tip_amount');
+        $notes = $this->optionalText($input['customer_notes'] ?? null, 2000, 'customer_notes');
+
+        $this->assertRestaurantCanAcceptOrders($restaurant, $now);
+        if (!$this->deliveryZones->isCovered((float) $address->getLatitude(), (float) $address->getLongitude())) {
+            throw new CheckoutValidationException('The selected address is outside the active delivery zones.');
+        }
+
+        $selections = $input['items'] ?? null;
+        if (!is_array($selections) || [] === $selections) {
+            throw new CheckoutValidationException('At least one cart item is required.');
+        }
+
+        [$itemRows, $subtotalCents] = $this->priceItems($selections, $restaurant, $now);
+        if ($subtotalCents < $this->moneyToCents($restaurant->getMinOrderAmount())) {
+            throw new CheckoutValidationException('The order subtotal does not meet the restaurant minimum.');
+        }
+
+        $distanceKm = DeliveryZoneService::distanceKm(
+            (float) $restaurant->getLatitude(),
+            (float) $restaurant->getLongitude(),
+            (float) $address->getLatitude(),
+            (float) $address->getLongitude(),
+        );
+        $deliveryFeeCents = (int) round(($this->settings->float('delivery_base_fee', 35.0)
+            + $this->settings->float('delivery_fee_per_km', 10.0) * $distanceKm) * 100);
+        $serviceFeeCents = (int) round(max(0.0, $this->settings->float('service_fee', 0.0)) * 100);
+
+        $voucher = $this->voucher($input['voucher_code'] ?? null, $lockVoucher);
+        $discountCents = $voucher instanceof Voucher
+            ? $this->voucherDiscount($voucher, $customer, $restaurant, $subtotalCents, $deliveryFeeCents, $now)
+            : 0;
+        $totalCents = max(0, $subtotalCents + $deliveryFeeCents + $serviceFeeCents + $tipCents - $discountCents);
+        // Commission is based on food subtotal. Voucher funding ownership is not yet modelled.
+        $commissionCents = (int) round($subtotalCents * ((float) $restaurant->getCommissionRate() / 100));
+
+        return [
+            'restaurant' => $restaurant,
+            'address' => $address,
+            'payment_method' => $paymentMethod,
+            'tip_cents' => $tipCents,
+            'notes' => $notes,
+            'item_rows' => $itemRows,
+            'subtotal_cents' => $subtotalCents,
+            'delivery_fee_cents' => $deliveryFeeCents,
+            'service_fee_cents' => $serviceFeeCents,
+            'voucher' => $voucher,
+            'discount_cents' => $discountCents,
+            'total_cents' => $totalCents,
+            'commission_cents' => $commissionCents,
+        ];
     }
 
     private function restaurant(mixed $id): Restaurant
@@ -391,7 +482,7 @@ final readonly class CheckoutService
         return $start <= $end ? $time >= $start && $time <= $end : $time >= $start || $time <= $end;
     }
 
-    private function lockedVoucher(mixed $code): ?Voucher
+    private function voucher(mixed $code, bool $lock): ?Voucher
     {
         $code = strtoupper(trim(is_string($code) ? $code : ''));
         if ('' === $code) {
@@ -401,7 +492,9 @@ final readonly class CheckoutService
         if (!$voucher instanceof Voucher) {
             throw new CheckoutValidationException('Voucher code is invalid.');
         }
-        $this->entityManager->lock($voucher, LockMode::PESSIMISTIC_WRITE);
+        if ($lock) {
+            $this->entityManager->lock($voucher, LockMode::PESSIMISTIC_WRITE);
+        }
 
         return $voucher;
     }
