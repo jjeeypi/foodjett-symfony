@@ -7,6 +7,7 @@ namespace App\Tests\Controller\Api;
 use App\Entity\MenuItem;
 use App\Entity\OrderItem;
 use App\Enum\OrderStatus;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class RestaurantMenuItemControllerTest extends RestaurantApiTestCase
 {
@@ -84,5 +85,38 @@ final class RestaurantMenuItemControllerTest extends RestaurantApiTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertArrayHasKey('menu_category_id', $this->payload()['errors']);
+    }
+
+    public function testRestaurantCanUploadAnItemPhotoThroughDedicatedPostEndpoint(): void
+    {
+        $category = $this->createCategory($this->restaurant, 'Photos');
+        $item = $this->createItem($category, 'Photogenic meal');
+        $this->entityManager->flush();
+
+        $this->client->request('POST', '/api/restaurant/menu-items/'.$item->getId().'/photo', files: [
+            'photo' => $this->imageUpload(),
+        ], server: $this->auth());
+
+        self::assertResponseIsSuccessful();
+        $path = $this->payload()['item']['photo_path'] ?? null;
+        self::assertIsString($path);
+        self::assertStringStartsWith('uploads/restaurants/menu-items/', $path);
+        $this->uploadedPaths[] = $path;
+        /** @var MenuItem $fresh */
+        $fresh = $this->fresh(MenuItem::class, (string) $item->getId());
+        self::assertSame($path, $fresh->getPhotoPath());
+
+        $this->client->request('POST', '/api/restaurant/menu-items/'.$item->getId().'/photo', server: $this->auth());
+        self::assertResponseStatusCodeSame(422);
+        self::assertArrayHasKey('photo', $this->payload()['errors']);
+    }
+
+    private function imageUpload(): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'foodjett-menu-photo-');
+        self::assertNotFalse($path);
+        file_put_contents($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', true));
+
+        return new UploadedFile($path, 'menu-item.png', 'image/png', null, true);
     }
 }

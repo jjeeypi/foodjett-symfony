@@ -126,6 +126,23 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
         return $this->json(['message' => $available ? 'Menu item is available.' : 'Menu item is unavailable.', 'is_available' => $available]);
     }
 
+    #[Route('/{id}/photo', name: 'photo_update', methods: ['POST'], requirements: ['id' => '\\d+'])]
+    public function updatePhoto(string $id, Request $request): JsonResponse
+    {
+        $item = $this->ownedItem($id);
+        if (null === $request->files->get('photo')) {
+            return $this->json(['message' => 'The submitted data is invalid.', 'errors' => ['photo' => ['A menu item photo is required.']]], 422);
+        }
+        $uploadError = $this->storePhoto($request, $item);
+        if ($uploadError instanceof JsonResponse) {
+            return $uploadError;
+        }
+        $item->setUpdatedAt(new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        return $this->json(['message' => 'Menu item photo updated.', 'item' => $this->serialize($item)]);
+    }
+
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\\d+'])]
     public function delete(string $id): JsonResponse
     {

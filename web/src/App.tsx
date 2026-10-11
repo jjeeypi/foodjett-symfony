@@ -17,6 +17,7 @@ import RegisterPage from './pages/RegisterPage'
 import RestaurantPage from './pages/RestaurantPage'
 import { RestaurantDashboardPage } from './pages/restaurant/RestaurantDashboardPage'
 import { RestaurantComingSoonPage } from './pages/restaurant/RestaurantComingSoonPage'
+import { RestaurantMenuPage } from './pages/restaurant/RestaurantMenuPage'
 
 function LoadingSession() {
   return (
@@ -79,7 +80,7 @@ export default function App() {
               <Route index element={<Navigate to="/restaurant/dashboard" replace />} />
               <Route path="dashboard" element={<RestaurantDashboardPage />} />
               <Route path="orders" element={<Navigate to="/restaurant/dashboard" replace />} />
-              <Route path="menu" element={<RestaurantComingSoonPage section="Menu" />} />
+              <Route path="menu" element={<RestaurantMenuPage />} />
               <Route path="earnings" element={<RestaurantComingSoonPage section="Earnings" />} />
               <Route path="profile" element={<RestaurantComingSoonPage section="Profile" />} />
               <Route path="reviews" element={<RestaurantComingSoonPage section="Reviews" />} />

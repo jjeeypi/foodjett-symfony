@@ -91,7 +91,7 @@ function normalizeFieldErrors(value: unknown): Record<string, string[]> | undefi
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers)
   headers.set('Accept', 'application/json')
-  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
   let response: Response
@@ -202,6 +202,151 @@ export interface RestaurantOrderSummary {
   customer_notes: string | null
   items: RestaurantOrderItem[]
   placed_at: string
+}
+
+export interface RestaurantMenuCategory {
+  id: string
+  name: string
+  sort_order: number
+  item_count: number
+}
+
+export interface RestaurantMenuVariant {
+  id: string
+  name: string
+  price_delta: string
+}
+
+export interface RestaurantMenuAddon {
+  id: string
+  name: string
+  price: string
+  is_available: boolean
+}
+
+export interface RestaurantMenuItem {
+  id: string
+  name: string
+  description: string | null
+  photo_path: string | null
+  base_price: string
+  is_available: boolean
+  available_from: string | null
+  available_until: string | null
+  is_featured: boolean
+  category: { id: string; name: string }
+  variants: RestaurantMenuVariant[]
+  addons: RestaurantMenuAddon[]
+}
+
+export interface RestaurantMenuItemInput {
+  menu_category_id: string
+  name: string
+  description: string
+  base_price: string
+  is_available: boolean
+  is_featured: boolean
+  available_from: string | null
+  available_until: string | null
+  photo?: File | null
+}
+
+export function getRestaurantMenuCategories(signal?: AbortSignal): Promise<PaginatedResponse<RestaurantMenuCategory>> {
+  return request<PaginatedResponse<RestaurantMenuCategory>>('/api/restaurant/menu-categories?perPage=100', { signal })
+}
+
+export function createRestaurantMenuCategory(name: string, sortOrder: number): Promise<{ message: string; category: RestaurantMenuCategory }> {
+  return request<{ message: string; category: RestaurantMenuCategory }>('/api/restaurant/menu-categories', {
+    method: 'POST',
+    body: JSON.stringify({ name, sort_order: sortOrder }),
+  })
+}
+
+export function updateRestaurantMenuCategory(id: string, data: { name?: string; sort_order?: number }): Promise<{ message: string; category: RestaurantMenuCategory }> {
+  return request<{ message: string; category: RestaurantMenuCategory }>(`/api/restaurant/menu-categories/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteRestaurantMenuCategory(id: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/api/restaurant/menu-categories/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function getRestaurantMenuItems(signal?: AbortSignal): Promise<PaginatedResponse<RestaurantMenuItem>> {
+  return request<PaginatedResponse<RestaurantMenuItem>>('/api/restaurant/menu-items?perPage=100', { signal })
+}
+
+function restaurantMenuItemFormData(data: RestaurantMenuItemInput): FormData {
+  const body = new FormData()
+  body.set('menu_category_id', data.menu_category_id)
+  body.set('name', data.name)
+  body.set('description', data.description)
+  body.set('base_price', data.base_price)
+  body.set('is_available', data.is_available ? '1' : '0')
+  body.set('is_featured', data.is_featured ? '1' : '0')
+  body.set('available_from', data.available_from ?? '')
+  body.set('available_until', data.available_until ?? '')
+  if (data.photo) body.set('photo', data.photo)
+  return body
+}
+
+export function createRestaurantMenuItem(data: RestaurantMenuItemInput): Promise<{ message: string; item: RestaurantMenuItem }> {
+  return request<{ message: string; item: RestaurantMenuItem }>('/api/restaurant/menu-items', {
+    method: 'POST',
+    body: restaurantMenuItemFormData(data),
+  })
+}
+
+export function updateRestaurantMenuItem(id: string, data: Omit<RestaurantMenuItemInput, 'photo'>): Promise<{ message: string; item: RestaurantMenuItem }> {
+  return request<{ message: string; item: RestaurantMenuItem }>(`/api/restaurant/menu-items/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function uploadRestaurantMenuItemPhoto(id: string, photo: File): Promise<{ message: string; item: RestaurantMenuItem }> {
+  const body = new FormData()
+  body.set('photo', photo)
+  return request<{ message: string; item: RestaurantMenuItem }>(`/api/restaurant/menu-items/${encodeURIComponent(id)}/photo`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function toggleRestaurantMenuItemAvailability(id: string, isAvailable: boolean): Promise<{ message: string; is_available: boolean }> {
+  return request<{ message: string; is_available: boolean }>(`/api/restaurant/menu-items/${encodeURIComponent(id)}/toggle-availability`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_available: isAvailable }),
+  })
+}
+
+export function deleteRestaurantMenuItem(id: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/api/restaurant/menu-items/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function createRestaurantMenuVariant(itemId: string, data: { name: string; price_delta: string }): Promise<{ message: string; variant: RestaurantMenuVariant }> {
+  return request<{ message: string; variant: RestaurantMenuVariant }>(`/api/restaurant/menu-items/${encodeURIComponent(itemId)}/variants`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateRestaurantMenuVariant(itemId: string, id: string, data: { name: string; price_delta: string }): Promise<{ message: string; variant: RestaurantMenuVariant }> {
+  return request<{ message: string; variant: RestaurantMenuVariant }>(`/api/restaurant/menu-items/${encodeURIComponent(itemId)}/variants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteRestaurantMenuVariant(itemId: string, id: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/api/restaurant/menu-items/${encodeURIComponent(itemId)}/variants/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function createRestaurantMenuAddon(itemId: string, data: { name: string; price: string; is_available: boolean }): Promise<{ message: string; addon: RestaurantMenuAddon }> {
+  return request<{ message: string; addon: RestaurantMenuAddon }>(`/api/restaurant/menu-items/${encodeURIComponent(itemId)}/addons`, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateRestaurantMenuAddon(itemId: string, id: string, data: { name: string; price: string; is_available: boolean }): Promise<{ message: string; addon: RestaurantMenuAddon }> {
+  return request<{ message: string; addon: RestaurantMenuAddon }>(`/api/restaurant/menu-items/${encodeURIComponent(itemId)}/addons/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteRestaurantMenuAddon(itemId: string, id: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/api/restaurant/menu-items/${encodeURIComponent(itemId)}/addons/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 export function getRestaurantProfile(signal?: AbortSignal): Promise<{ restaurant: RestaurantProfile }> {
