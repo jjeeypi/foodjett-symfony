@@ -216,6 +216,8 @@ final class RestaurantOrderController extends AbstractRestaurantController
             'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
             'ready_at' => $order->getReadyAt()?->format(\DateTimeInterface::ATOM),
             'rider_search_started_at' => $order->getRiderSearchStartedAt()?->format(\DateTimeInterface::ATOM),
+            'customer_notes' => $order->getCustomerNotes(),
+            'items' => array_map($this->serializeItem(...), $order->getItems()->toArray()),
             'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
         ];
     }

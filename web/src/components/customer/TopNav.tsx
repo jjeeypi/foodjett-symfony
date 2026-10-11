@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/useAuth'
 import { useCart } from '../../cart/CartContext'
-import { clearToken } from '../../lib/api'
 import { Logo } from '../Logo'
 import { CartIcon, CloseIcon, FoodIcon, HomeIcon, MessageIcon, OrdersIcon, SearchIcon, UserIcon } from './Icons'
 
@@ -13,6 +13,7 @@ function CartCount({ count }: { count: number }) {
 
 export function TopNav({ searchQuery, onSearchQueryChange }: { searchQuery: string; onSearchQueryChange: (query: string) => void }) {
   const navigate = useNavigate()
+  const { logout: clearSession } = useAuth()
   const accountRef = useRef<HTMLDivElement>(null)
   const { itemCount, isCartOpen, openCart } = useCart()
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -38,7 +39,7 @@ export function TopNav({ searchQuery, onSearchQueryChange }: { searchQuery: stri
   }, [])
 
   function logout() {
-    clearToken()
+    clearSession()
     setAccountOpen(false)
     navigate('/login', { replace: true })
   }
