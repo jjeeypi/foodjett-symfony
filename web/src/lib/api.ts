@@ -395,6 +395,159 @@ export function markRestaurantOrderReady(id: string): Promise<{ order: Restauran
   })
 }
 
+export type RiderAvailabilityStatus = 'offline' | 'available' | 'busy'
+
+export interface RiderProfile {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_path: string | null
+  vehicle_type: 'motorcycle' | 'bicycle' | 'car'
+  plate_number: string | null
+  approval_status: string
+  availability_status: RiderAvailabilityStatus
+  payout_method: 'bank' | 'ewallet' | null
+  payout_account_details: Record<string, unknown> | null
+}
+
+export interface RiderPoolOffer {
+  order_id: string
+  order_number: string
+  restaurant: { name: string; latitude: string; longitude: string }
+  pickup_distance_km: string
+  delivery_distance_km: string
+  estimated_pay: string
+  pay_breakdown: {
+    base_pay: string
+    distance_pay: string
+    incentive_pay: string
+    total: string
+  }
+  estimated_ready_at: string | null
+  search_radius_km: string
+  escalation_stage: 'initial' | 'widened' | 'incentivized' | 'admin_alerted' | 'customer_notified' | 'auto_cancelled'
+  payment_method: PaymentMethod
+}
+
+export interface RiderActiveOrder {
+  id: string
+  order_number: string
+  status: OrderStatus
+  restaurant: { name: string; address: string; latitude: string; longitude: string }
+  delivery_address: {
+    address_line: string
+    landmark: string | null
+    instructions: string | null
+    latitude: string
+    longitude: string
+  }
+  customer: { name: string; phone: string | null }
+  items: Array<{ name: string; quantity: number; special_instructions: string | null }>
+  customer_notes: string | null
+  payment_method: PaymentMethod
+  cash_to_collect: string | null
+  estimated_ready_at: string | null
+  pickup_code_required: boolean
+  proof_of_delivery_path: string | null
+  delivered_at: string | null
+}
+
+export interface RiderConversation {
+  id: string
+  type: 'customer_rider'
+  order: { id: string; order_number: string; restaurant_name: string }
+  counterpart: { type: 'customer'; id: string; name: string }
+  is_closed: boolean
+  closed_at: string | null
+  unread_count: number
+  last_message: ConversationMessage | null
+  updated_at: string | null
+}
+
+export function getRiderProfile(signal?: AbortSignal): Promise<{ profile: RiderProfile }> {
+  return request<{ profile: RiderProfile }>('/api/rider/profile', { signal })
+}
+
+export function toggleRiderAvailability(location?: { latitude: number; longitude: number }): Promise<{
+  availability_status: RiderAvailabilityStatus
+  latitude: string | null
+  longitude: string | null
+  last_location_at: string | null
+}> {
+  return request('/api/rider/availability', {
+    method: 'PATCH',
+    body: JSON.stringify(location ?? {}),
+  })
+}
+
+export function getRiderPool(signal?: AbortSignal): Promise<{ orders: RiderPoolOffer[]; reason?: string }> {
+  return request<{ orders: RiderPoolOffer[]; reason?: string }>('/api/rider/pool', { signal })
+}
+
+export function acceptRiderPoolOrder(id: string): Promise<{ order: { id: string; order_number: string; status: OrderStatus; rider_id: string; rider_assigned_at: string; pickup_code: string } }> {
+  return request(`/api/rider/pool/${encodeURIComponent(id)}/accept`, { method: 'POST' })
+}
+
+export function declineRiderPoolOrder(id: string): Promise<{ decline: { order_id: string; action: string } }> {
+  return request(`/api/rider/pool/${encodeURIComponent(id)}/decline`, { method: 'POST' })
+}
+
+export function getRiderActiveOrder(signal?: AbortSignal): Promise<{ message?: string; order: RiderActiveOrder | null }> {
+  return request<{ message?: string; order: RiderActiveOrder | null }>('/api/rider/active-order', { signal })
+}
+
+export function riderArrivedAtRestaurant(): Promise<{ order: RiderActiveOrder }> {
+  return request('/api/rider/active-order/arrived-at-restaurant', { method: 'POST' })
+}
+
+export function riderConfirmPickup(pickupCode: string): Promise<{ order: RiderActiveOrder }> {
+  return request('/api/rider/active-order/confirm-pickup', { method: 'POST', body: JSON.stringify({ pickup_code: pickupCode }) })
+}
+
+export function riderStartDelivery(): Promise<{ order: RiderActiveOrder }> {
+  return request('/api/rider/active-order/start-delivery', { method: 'POST' })
+}
+
+export function riderArrivedAtCustomer(): Promise<{ order: RiderActiveOrder }> {
+  return request('/api/rider/active-order/arrived-at-customer', { method: 'POST' })
+}
+
+export function riderConfirmDelivery(proof: File, cashCollected: boolean): Promise<{ message: string; order: RiderActiveOrder; earning: { total_earned: string } | null }> {
+  const body = new FormData()
+  body.set('proof', proof)
+  body.set('cashCollected', cashCollected ? 'true' : 'false')
+  return request('/api/rider/active-order/confirm-delivery', { method: 'POST', body })
+}
+
+export function updateRiderLocation(latitude: number, longitude: number): Promise<{ updated: boolean; throttled: boolean }> {
+  return request('/api/rider/location', { method: 'POST', body: JSON.stringify({ latitude, longitude }) })
+}
+
+export function riderCustomerUnreachable(): Promise<{ message: string; order: RiderActiveOrder }> {
+  return request('/api/rider/active-order/customer-unreachable', { method: 'POST' })
+}
+
+export function getRiderConversations(signal?: AbortSignal): Promise<PaginatedResponse<RiderConversation>> {
+  return request<PaginatedResponse<RiderConversation>>('/api/rider/conversations?perPage=100', { signal })
+}
+
+export function getRiderConversationMessages(id: string, signal?: AbortSignal): Promise<PaginatedResponse<ConversationMessage> & { conversation: RiderConversation }> {
+  return request(`/api/rider/conversations/${encodeURIComponent(id)}/messages?perPage=100`, { signal })
+}
+
+export function sendRiderConversationMessage(id: string, body: string): Promise<{ message: ConversationMessage }> {
+  return request(`/api/rider/conversations/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify({ body }) })
+}
+
+export function markRiderConversationRead(id: string): Promise<{ updated: number }> {
+  return request(`/api/rider/conversations/${encodeURIComponent(id)}/mark-read`, { method: 'POST' })
+}
+
+export function getRiderEarningsSummary(signal?: AbortSignal): Promise<{ summary: { today: string; week: string; month: string } }> {
+  return request('/api/rider/earnings/summary', { signal })
+}
+
 export interface RestaurantSummary {
   id: string
   name: string
@@ -710,7 +863,7 @@ export interface CustomerConversation {
   type: ConversationType
   order: { id: string; order_number: string; restaurant_name: string }
   counterpart: {
-    type: 'restaurant' | 'rider'
+    type: 'restaurant' | 'rider' | 'customer'
     id: string | null
     name: string | null
     avatar_path: string | null
