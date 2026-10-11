@@ -141,6 +141,115 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta
 }
 
+export type RestaurantOperatingStatus = 'open' | 'closed' | 'temporarily_closed'
+
+export interface RestaurantProfile {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  logo_path: string | null
+  cover_photo_path: string | null
+  cuisine_type: string | null
+  address: string
+  latitude: string
+  longitude: string
+  default_prep_time_minutes: number
+  min_order_amount: string
+  commission_rate: string
+  approval_status: string
+  operating_status: RestaurantOperatingStatus
+  payout_method: string | null
+  payout_account_details: Record<string, unknown> | null
+}
+
+export interface RestaurantDashboard {
+  today_order_count: number
+  today_revenue: string
+  pending_orders_count: number
+  recent_orders: Array<{
+    id: string
+    order_number: string
+    status: OrderStatus
+    total_amount: string
+    payment_method: PaymentMethod
+    placed_at: string
+  }>
+}
+
+export interface RestaurantOrderItem {
+  id: string
+  menu_item_id: string
+  name: string
+  variant: { id: string; name: string } | null
+  quantity: number
+  unit_price: string
+  special_instructions: string | null
+  addons: Array<{ id: string; menu_item_addon_id: string; name: string; price: string }>
+}
+
+export interface RestaurantOrderSummary {
+  id: string
+  order_number: string
+  status: OrderStatus
+  customer_name: string
+  total_amount: string
+  payment_method: PaymentMethod
+  estimated_prep_minutes: number | null
+  estimated_ready_at: string | null
+  ready_at: string | null
+  rider_search_started_at: string | null
+  customer_notes: string | null
+  items: RestaurantOrderItem[]
+  placed_at: string
+}
+
+export function getRestaurantProfile(signal?: AbortSignal): Promise<{ restaurant: RestaurantProfile }> {
+  return request<{ restaurant: RestaurantProfile }>('/api/restaurant/profile', { signal })
+}
+
+export function updateRestaurantOperatingStatus(operatingStatus: RestaurantOperatingStatus): Promise<{ message: string; operating_status: RestaurantOperatingStatus }> {
+  return request<{ message: string; operating_status: RestaurantOperatingStatus }>('/api/restaurant/operating-status', {
+    method: 'PATCH',
+    body: JSON.stringify({ operating_status: operatingStatus }),
+  })
+}
+
+export function getRestaurantDashboard(signal?: AbortSignal): Promise<RestaurantDashboard> {
+  return request<RestaurantDashboard>('/api/restaurant/dashboard', { signal })
+}
+
+export function getRestaurantOrders(signal?: AbortSignal): Promise<PaginatedResponse<RestaurantOrderSummary> & { orders: RestaurantOrderSummary[] }> {
+  return request<PaginatedResponse<RestaurantOrderSummary> & { orders: RestaurantOrderSummary[] }>('/api/restaurant/orders?perPage=100', { signal })
+}
+
+export function acceptRestaurantOrder(id: string, estimatedPrepMinutes: number): Promise<{ order: RestaurantOrderSummary }> {
+  return request<{ order: RestaurantOrderSummary }>(`/api/restaurant/orders/${encodeURIComponent(id)}/accept`, {
+    method: 'POST',
+    body: JSON.stringify({ estimated_prep_minutes: estimatedPrepMinutes }),
+  })
+}
+
+export function rejectRestaurantOrder(id: string, reason: string): Promise<{ order: RestaurantOrderSummary }> {
+  return request<{ order: RestaurantOrderSummary }>(`/api/restaurant/orders/${encodeURIComponent(id)}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function extendRestaurantOrderPrepTime(id: string, minutes: number): Promise<{ order: RestaurantOrderSummary }> {
+  return request<{ order: RestaurantOrderSummary }>(`/api/restaurant/orders/${encodeURIComponent(id)}/extend-prep-time`, {
+    method: 'POST',
+    body: JSON.stringify({ minutes }),
+  })
+}
+
+export function markRestaurantOrderReady(id: string): Promise<{ order: RestaurantOrderSummary }> {
+  return request<{ order: RestaurantOrderSummary }>(`/api/restaurant/orders/${encodeURIComponent(id)}/mark-ready`, {
+    method: 'POST',
+  })
+}
+
 export interface RestaurantSummary {
   id: string
   name: string
@@ -503,11 +612,11 @@ export interface AuthUser {
   phone: string
   role: string
   status: string
-  approval_status: string | null
+  approval_status?: string | null
 }
 
-export function getCurrentUser(signal?: AbortSignal): Promise<Omit<AuthUser, 'approval_status'>> {
-  return request<Omit<AuthUser, 'approval_status'>>('/api/me', { signal })
+export function getCurrentUser(signal?: AbortSignal): Promise<AuthUser> {
+  return request<AuthUser>('/api/me', { signal })
 }
 
 export interface LoginResponse {

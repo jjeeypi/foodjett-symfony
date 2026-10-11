@@ -7,7 +7,8 @@ import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter'
 import { SubmitButton } from '../components/SubmitButton'
-import { isApiError, registerCustomer, setToken } from '../lib/api'
+import { useAuth } from '../auth/useAuth'
+import { isApiError, registerCustomer } from '../lib/api'
 
 const emptyFields = {
   name: '',
@@ -64,6 +65,7 @@ function validateAll(fields: typeof emptyFields): FieldErrors {
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { completeLogin } = useAuth()
   const [fields, setFields] = useState(emptyFields)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [globalError, setGlobalError] = useState('')
@@ -110,7 +112,7 @@ export default function RegisterPage() {
         password: fields.password,
         password_confirmation: fields.password_confirmation,
       })
-      setToken(response.token)
+      await completeLogin(response.token)
       navigate('/', { replace: true })
     } catch (error: unknown) {
       if (isApiError(error) && error.errors) {

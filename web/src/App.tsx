@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './auth/AuthProvider'
+import { homeForRole } from './auth/auth-routing'
+import { useAuth } from './auth/useAuth'
 import { CartProvider } from './cart/CartProvider'
 import { CustomerLayout } from './layouts/CustomerLayout'
-import { isAuthenticated } from './lib/api'
+import { RestaurantLayout } from './layouts/RestaurantLayout'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
@@ -12,39 +15,81 @@ import CheckoutPage from './pages/CheckoutPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import RegisterPage from './pages/RegisterPage'
 import RestaurantPage from './pages/RestaurantPage'
+import { RestaurantDashboardPage } from './pages/restaurant/RestaurantDashboardPage'
+import { RestaurantComingSoonPage } from './pages/restaurant/RestaurantComingSoonPage'
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  return isAuthenticated() ? children : <Navigate to="/login" replace />
+function LoadingSession() {
+  return (
+    <div className="flex min-h-svh items-center justify-center bg-brand-black px-5 text-white">
+      <div className="flex items-center gap-3 text-sm text-white/60">
+        <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/15 border-t-neon-green" aria-hidden="true" />
+        Checking your session…
+      </div>
+    </div>
+  )
+}
+
+function ProtectedRoute({ children, role }: { children: ReactNode; role?: 'customer' | 'restaurant' }) {
+  const { loading, user } = useAuth()
+  if (loading) return <LoadingSession />
+  if (!user) return <Navigate to="/login" replace />
+  if (role && user.role !== role) return <Navigate to={homeForRole(user.role)} replace />
+
+  return children
 }
 
 function GuestRoute({ children }: { children: ReactNode }) {
-  return isAuthenticated() ? <Navigate to="/" replace /> : children
+  const { loading, user } = useAuth()
+  if (loading) return <LoadingSession />
+
+  return user ? <Navigate to={homeForRole(user.role)} replace /> : children
+}
+
+function RoleHomeRedirect() {
+  const { loading, user } = useAuth()
+  if (loading) return <LoadingSession />
+
+  return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <CartProvider>
-        <Routes>
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+      <AuthProvider>
+        <CartProvider>
+          <Routes>
+            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
 
-          <Route element={<ProtectedRoute><CustomerLayout /></ProtectedRoute>}>
-            <Route index element={<HomePage />} />
-            <Route path="/foods" element={<ComingSoonPage title="Foods" message="Dish browsing will live here. For now, choose an open restaurant from Home." />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/messages/:conversationId" element={<MessagesPage />} />
-            <Route path="/orders" element={<ComingSoonPage title="Orders" message="Your active and past orders will appear here once the orders screen is connected." />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/orders/:id" element={<OrderTrackingPage />} />
-            <Route path="/restaurants/:id" element={<RestaurantPage />} />
-            <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
-            <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />
-          </Route>
-          <Route path="*" element={<Navigate to={isAuthenticated() ? '/' : '/login'} replace />} />
-        </Routes>
-      </CartProvider>
+            <Route element={<ProtectedRoute role="customer"><CustomerLayout /></ProtectedRoute>}>
+              <Route index element={<HomePage />} />
+              <Route path="/foods" element={<ComingSoonPage title="Foods" message="Dish browsing will live here. For now, choose an open restaurant from Home." />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/messages/:conversationId" element={<MessagesPage />} />
+              <Route path="/orders" element={<ComingSoonPage title="Orders" message="Your active and past orders will appear here once the orders screen is connected." />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/orders/:id" element={<OrderTrackingPage />} />
+              <Route path="/restaurants/:id" element={<RestaurantPage />} />
+              <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
+              <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />
+            </Route>
+
+            <Route path="/restaurant" element={<ProtectedRoute role="restaurant"><RestaurantLayout /></ProtectedRoute>}>
+              <Route index element={<Navigate to="/restaurant/dashboard" replace />} />
+              <Route path="dashboard" element={<RestaurantDashboardPage />} />
+              <Route path="orders" element={<Navigate to="/restaurant/dashboard" replace />} />
+              <Route path="menu" element={<RestaurantComingSoonPage section="Menu" />} />
+              <Route path="earnings" element={<RestaurantComingSoonPage section="Earnings" />} />
+              <Route path="profile" element={<RestaurantComingSoonPage section="Profile" />} />
+              <Route path="reviews" element={<RestaurantComingSoonPage section="Reviews" />} />
+            </Route>
+
+            <Route path="/unsupported-role" element={<ProtectedRoute><ComingSoonPage title="Dashboard unavailable" message="This role's web dashboard has not been connected yet." /></ProtectedRoute>} />
+            <Route path="*" element={<RoleHomeRedirect />} />
+          </Routes>
+        </CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

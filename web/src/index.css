@@ -50,6 +50,10 @@ input {
   padding-top: env(safe-area-inset-top);
 }
 
+.restaurant-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {

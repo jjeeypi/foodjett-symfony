@@ -6,7 +6,9 @@ import { FormAlert } from '../components/FormAlert'
 import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { SubmitButton } from '../components/SubmitButton'
-import { isApiError, login, setToken } from '../lib/api'
+import { homeForRole } from '../auth/auth-routing'
+import { useAuth } from '../auth/useAuth'
+import { isApiError, login } from '../lib/api'
 
 type LoginField = 'email' | 'password'
 type LoginErrors = Partial<Record<LoginField, string>>
@@ -23,6 +25,7 @@ function validatePassword(password: string): string | undefined {
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { completeLogin } = useAuth()
   const [fields, setFields] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState<LoginErrors>({})
   const [globalError, setGlobalError] = useState('')
@@ -61,8 +64,8 @@ export default function LoginPage() {
 
     try {
       const response = await login(fields.email.trim().toLowerCase(), fields.password)
-      setToken(response.token)
-      navigate('/', { replace: true })
+      const user = await completeLogin(response.token)
+      navigate(homeForRole(user.role), { replace: true })
     } catch (error: unknown) {
       if (isApiError(error) && error.status === 401) {
         setGlobalError('Incorrect email or password. Please try again.')
