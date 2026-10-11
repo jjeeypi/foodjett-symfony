@@ -8,7 +8,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import CheckoutPage from './pages/CheckoutPage'
-import OrderConfirmationPage from './pages/OrderConfirmationPage'
+import OrderTrackingPage from './pages/OrderTrackingPage'
 import RegisterPage from './pages/RegisterPage'
 import RestaurantPage from './pages/RestaurantPage'
 
@@ -35,7 +35,7 @@ export default function App() {
             <Route path="/messages" element={<ComingSoonPage title="Messages" message="Order conversations will appear here once the messaging screen is connected." />} />
             <Route path="/orders" element={<ComingSoonPage title="Orders" message="Your active and past orders will appear here once the orders screen is connected." />} />
             <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/orders/:id" element={<OrderConfirmationPage />} />
+            <Route path="/orders/:id" element={<OrderTrackingPage />} />
             <Route path="/restaurants/:id" element={<RestaurantPage />} />
             <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
             <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />

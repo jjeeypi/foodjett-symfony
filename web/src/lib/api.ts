@@ -318,6 +318,95 @@ export interface CheckoutOrder {
   placed_at: string
 }
 
+export type OrderStatus =
+  | 'placed'
+  | 'accepted'
+  | 'preparing'
+  | 'ready'
+  | 'finding_rider'
+  | 'rider_assigned'
+  | 'at_restaurant'
+  | 'picked_up'
+  | 'on_the_way'
+  | 'arrived'
+  | 'delivered'
+  | 'rejected_by_restaurant'
+  | 'cancelled_by_customer'
+  | 'cancelled_by_restaurant'
+  | 'cancelled_no_rider'
+  | 'cancelled_by_admin'
+  | 'failed_delivery'
+
+export interface CustomerOrderItem {
+  id: string
+  menu_item_id: string
+  name: string
+  variant: { id: string; name: string } | null
+  quantity: number
+  unit_price: string
+  special_instructions: string | null
+  addons: Array<{ id: string; name: string; price: string }>
+}
+
+export interface CustomerOrderDetail {
+  id: string
+  order_number: string
+  status: OrderStatus
+  restaurant: { id: string; name: string; logo_path: string | null; address: string }
+  item_count: number
+  subtotal: string
+  delivery_fee: string
+  service_fee: string
+  discount_amount: string
+  tip_amount: string
+  total_amount: string
+  payment_method: PaymentMethod
+  customer_notes: string | null
+  estimated_ready_at: string | null
+  can_cancel: boolean
+  cancellation_reason: string | null
+  cancelled_by: string | null
+  placed_at: string
+  delivered_at: string | null
+  rider: { id: string; name: string; vehicle_type: string } | null
+  delivery_address: {
+    id: string
+    label: string
+    address_line: string
+    landmark: string | null
+    delivery_instructions: string | null
+    latitude: string
+    longitude: string
+  }
+  items: CustomerOrderItem[]
+  status_history: Array<{
+    id: string
+    status: OrderStatus
+    changed_by: string
+    note: string | null
+    created_at: string
+  }>
+  payment: { status: string; amount: string; refunded_amount: string } | null
+  timestamps: {
+    placed_at: string
+    accepted_at: string | null
+    estimated_ready_at: string | null
+    ready_at: string | null
+    rider_search_started_at: string | null
+    rider_assigned_at: string | null
+    rider_arrived_restaurant_at: string | null
+    picked_up_at: string | null
+    delivered_at: string | null
+    updated_at: string | null
+  }
+}
+
+export interface MercureAuthorization {
+  hub_url: string
+  subscription_parameter: string
+  topics: string[]
+}
+
 export function previewCheckout(data: CheckoutInput, signal?: AbortSignal): Promise<{ quote: CheckoutQuote }> {
   return request<{ quote: CheckoutQuote }>('/api/customer/checkout/preview', {
     method: 'POST',
@@ -330,6 +419,24 @@ export function placeOrder(data: CheckoutInput): Promise<{ created: boolean; ord
   return request<{ created: boolean; order: CheckoutOrder }>('/api/customer/checkout', {
     method: 'POST',
     body: JSON.stringify(data),
+  })
+}
+
+export function getCustomerOrder(id: string, signal?: AbortSignal): Promise<{ order: CustomerOrderDetail }> {
+  return request<{ order: CustomerOrderDetail }>(`/api/customer/orders/${encodeURIComponent(id)}`, { signal })
+}
+
+export function cancelCustomerOrder(id: string, reason: string): Promise<{ order: { id: string; status: OrderStatus; cancellation_reason: string; cancelled_by: string; payment_status: string | null } }> {
+  return request<{ order: { id: string; status: OrderStatus; cancellation_reason: string; cancelled_by: string; payment_status: string | null } }>(`/api/customer/orders/${encodeURIComponent(id)}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function authorizeMercure(): Promise<MercureAuthorization> {
+  return request<MercureAuthorization>('/api/mercure-auth', {
+    method: 'POST',
+    credentials: 'include',
   })
 }
 
