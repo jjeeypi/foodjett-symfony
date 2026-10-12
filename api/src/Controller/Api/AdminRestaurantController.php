@@ -62,6 +62,12 @@ final class AdminRestaurantController extends AbstractController
         return $this->json($this->paginator->paginate($query, $request, fn (Restaurant $restaurant): array => $this->normalize($restaurant, true)));
     }
 
+    #[Route('/{id}', name: 'show', methods: ['GET'], priority: -10)]
+    public function show(Restaurant $restaurant): JsonResponse
+    {
+        return $this->json(['restaurant' => $this->normalize($restaurant, true)]);
+    }
+
     #[Route('/{id}/approve', name: 'approve', methods: ['POST'])]
     public function approve(Restaurant $restaurant): JsonResponse
     {
@@ -191,6 +197,8 @@ final class AdminRestaurantController extends AbstractController
             'id' => $restaurant->getId(),
             'name' => $restaurant->getName(),
             'description' => $restaurant->getDescription(),
+            'logo_path' => $restaurant->getLogoPath(),
+            'cover_photo_path' => $restaurant->getCoverPhotoPath(),
             'cuisine_type' => $restaurant->getCuisineType(),
             'address' => $restaurant->getAddress(),
             'latitude' => $restaurant->getLatitude(),
@@ -206,6 +214,7 @@ final class AdminRestaurantController extends AbstractController
                 'name' => $restaurant->getUser()->getName(),
                 'email' => $restaurant->getUser()->getEmail(),
                 'phone' => $restaurant->getUser()->getPhone(),
+                'avatar_path' => $restaurant->getUser()->getAvatarPath(),
                 'status' => $restaurant->getUser()->getStatus()->value,
             ],
             'created_at' => $restaurant->getCreatedAt()?->format(\DateTimeInterface::ATOM),
