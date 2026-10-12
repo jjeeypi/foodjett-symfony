@@ -378,6 +378,13 @@ final readonly class CheckoutService
             throw new CheckoutValidationException('This restaurant is currently closed.');
         }
 
+        // Operating hours are optional until the restaurant configures a
+        // schedule. In that state, the explicit open/closed toggle is the
+        // source of truth instead of silently making an open store unusable.
+        if ($restaurant->getOperatingHours()->isEmpty()) {
+            return;
+        }
+
         $today = (int) $now->format('w');
         $previousDay = (6 + $today) % 7;
         $time = $now->format('H:i:s');

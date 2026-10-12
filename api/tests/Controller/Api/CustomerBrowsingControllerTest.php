@@ -7,9 +7,28 @@ namespace App\Tests\Controller\Api;
 use App\Entity\RestaurantReview;
 use App\Enum\ApprovalStatus;
 use App\Enum\OrderStatus;
+use App\Enum\RestaurantOperatingStatus;
 
 final class CustomerBrowsingControllerTest extends CustomerApiTestCase
 {
+    public function testManualOpenStatusIsUsedWhenNoOperatingHoursAreConfigured(): void
+    {
+        self::assertTrue($this->restaurant->getOperatingHours()->isEmpty());
+
+        $this->client->request('GET', '/api/restaurants?open_now=1', server: $this->auth());
+        self::assertResponseIsSuccessful();
+        self::assertContains((string) $this->restaurant->getId(), array_column($this->payload()['data'], 'id'));
+
+        /** @var \App\Entity\Restaurant $restaurant */
+        $restaurant = $this->fresh(\App\Entity\Restaurant::class, (string) $this->restaurant->getId());
+        $restaurant->setOperatingStatus(RestaurantOperatingStatus::CLOSED);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/api/restaurants?open_now=1', server: $this->auth());
+        self::assertResponseIsSuccessful();
+        self::assertNotContains((string) $restaurant->getId(), array_column($this->payload()['data'], 'id'));
+    }
+
     public function testRestaurantIndexFiltersApprovedRestaurantsAndSortsByDistance(): void
     {
         $this->addCurrentHours($this->restaurant);

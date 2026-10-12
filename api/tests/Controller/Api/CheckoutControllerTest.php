@@ -182,6 +182,24 @@ final class CheckoutControllerTest extends WebTestCase
         self::assertSame(0, $entityManager->getRepository(Order::class)->count([]));
     }
 
+    public function testCheckoutUsesManualOpenStatusWhenNoOperatingHoursAreConfigured(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $restaurant = $entityManager->find(Restaurant::class, $this->fixture['restaurant_id']);
+        self::assertInstanceOf(Restaurant::class, $restaurant);
+        $hours = $entityManager->getRepository(RestaurantOperatingHour::class)->findOneBy(['restaurant' => $restaurant]);
+        self::assertInstanceOf(RestaurantOperatingHour::class, $hours);
+        $restaurant->removeOperatingHour($hours);
+        $entityManager->remove($hours);
+        $entityManager->flush();
+
+        $response = $this->checkout('cod', $this->uuid());
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('placed', $response['order']['status'] ?? null);
+        self::assertSame(1, $entityManager->getRepository(Order::class)->count([]));
+    }
+
     public function testCheckoutEnforcesOperatingHoursOnTheServer(): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
