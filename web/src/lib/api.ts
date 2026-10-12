@@ -153,6 +153,7 @@ export interface RestaurantProfile {
   logo_path: string | null
   cover_photo_path: string | null
   cuisine_type: string | null
+  phone: string | null
   address: string
   latitude: string
   longitude: string
@@ -1084,6 +1085,174 @@ export function suspendAdminRider(id: string): Promise<{ rider: AdminRiderApplic
 
 export function reactivateAdminRider(id: string): Promise<{ rider: AdminRiderApplication }> {
   return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
+}
+
+export interface FoodMenuItem extends CustomerMenuItem {
+  restaurant: { id: string; name: string }
+}
+
+export function getAvailableMenuItems(filters: { q?: string; category?: string; minPrice?: string; maxPrice?: string; page?: number; perPage?: number } = {}, signal?: AbortSignal): Promise<PaginatedResponse<FoodMenuItem>> {
+  const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.category) params.set('category', filters.category)
+  if (filters.minPrice) params.set('min_price', filters.minPrice)
+  if (filters.maxPrice) params.set('max_price', filters.maxPrice)
+  params.set('page', String(filters.page ?? 1))
+  params.set('perPage', String(filters.perPage ?? 24))
+  return request<PaginatedResponse<FoodMenuItem>>(`/api/menu-items/search?${params}`, { signal })
+}
+
+export function updateCustomerAddress(id: string, data: CustomerAddressInput): Promise<{ message: string; address: CustomerAddress }> {
+  return request<{ message: string; address: CustomerAddress }>(`/api/customer/addresses/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteCustomerAddress(id: string): Promise<void> {
+  return request<void>(`/api/customer/addresses/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export interface CustomerProfile {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_path: string | null
+  email_verified_at: string | null
+}
+
+export function getCustomerProfile(signal?: AbortSignal): Promise<{ profile: CustomerProfile }> {
+  return request<{ profile: CustomerProfile }>('/api/customer/profile', { signal })
+}
+
+export function updateCustomerProfile(data: { name: string; email: string; phone: string }): Promise<{ message: string; email_verification_reset: boolean; profile: CustomerProfile }> {
+  return request<{ message: string; email_verification_reset: boolean; profile: CustomerProfile }>('/api/customer/profile', { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export interface RestaurantProfileInput {
+  name: string
+  description: string
+  cuisine_type: string
+  phone: string
+  address: string
+  latitude: string
+  longitude: string
+  default_prep_time_minutes: number
+  min_order_amount: string
+}
+
+export function updateRestaurantProfile(data: RestaurantProfileInput): Promise<{ message: string; restaurant: RestaurantProfile }> {
+  return request<{ message: string; restaurant: RestaurantProfile }>('/api/restaurant/profile', { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export interface RestaurantProfileOperatingHour extends RestaurantOperatingHour { id?: string }
+
+export function getRestaurantOperatingHours(signal?: AbortSignal): Promise<{ hours: RestaurantProfileOperatingHour[] }> {
+  return request<{ hours: RestaurantProfileOperatingHour[] }>('/api/restaurant/operating-hours', { signal })
+}
+
+export function updateRestaurantOperatingHours(hours: RestaurantOperatingHour[]): Promise<{ message: string; hours: RestaurantProfileOperatingHour[] }> {
+  return request<{ message: string; hours: RestaurantProfileOperatingHour[] }>('/api/restaurant/operating-hours', { method: 'PUT', body: JSON.stringify({ hours }) })
+}
+
+export interface RestaurantDocument {
+  id: string
+  type: string
+  file_path: string
+  status: DocumentStatus
+  rejection_reason: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export function getRestaurantDocuments(signal?: AbortSignal): Promise<{ documents: RestaurantDocument[] }> {
+  return request<{ documents: RestaurantDocument[] }>('/api/restaurant/documents', { signal })
+}
+
+export function replaceRestaurantDocument(id: string, file: File): Promise<{ message: string; document: RestaurantDocument }> {
+  const body = new FormData()
+  body.set('file', file)
+  return request<{ message: string; document: RestaurantDocument }>(`/api/restaurant/documents/${encodeURIComponent(id)}`, { method: 'POST', body })
+}
+
+export interface RestaurantEarningsPeriod { order_count: number; gross_revenue: string; commission: string; net_revenue: string }
+export interface RestaurantPayout {
+  id: string
+  period_start: string
+  period_end: string
+  gross_sales: string
+  commission_deducted: string
+  net_amount: string
+  status: string
+  paid_at: string | null
+}
+
+export function getRestaurantEarningsSummary(signal?: AbortSignal): Promise<{ summary: { today: RestaurantEarningsPeriod; week: RestaurantEarningsPeriod; month: RestaurantEarningsPeriod } }> {
+  return request('/api/restaurant/earnings/summary', { signal })
+}
+
+export function getRestaurantPayouts(page: number, signal?: AbortSignal): Promise<PaginatedResponse<RestaurantPayout>> {
+  return request<PaginatedResponse<RestaurantPayout>>(`/api/restaurant/payouts?page=${page}&perPage=20`, { signal })
+}
+
+export interface RestaurantReview {
+  id: string
+  order_id: string
+  order_number: string
+  customer: { id: string; name: string }
+  rating: number
+  comment: string | null
+  photo_path: string | null
+  restaurant_reply: string | null
+  replied_at: string | null
+  created_at: string | null
+}
+
+export function getRestaurantReviews(page: number, signal?: AbortSignal): Promise<PaginatedResponse<RestaurantReview>> {
+  return request<PaginatedResponse<RestaurantReview>>(`/api/restaurant/reviews?page=${page}&perPage=20`, { signal })
+}
+
+export function replyToRestaurantReview(id: string, restaurantReply: string): Promise<{ message: string; review: RestaurantReview }> {
+  return request<{ message: string; review: RestaurantReview }>(`/api/restaurant/reviews/${encodeURIComponent(id)}/reply`, { method: 'PATCH', body: JSON.stringify({ restaurant_reply: restaurantReply }) })
+}
+
+export interface AdminCustomerOverview {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_path: string | null
+  status: string
+  created_at: string | null
+}
+
+export interface AdminCustomerDetail extends AdminCustomerOverview {
+  order_summary: { order_count: number; lifetime_spend: string }
+  recent_orders: Array<{
+    id: string
+    order_number: string
+    restaurant_name: string
+    status: OrderStatus
+    total_amount: string
+    placed_at: string
+  }>
+}
+
+export function getAdminCustomers(page: number, search?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminCustomerOverview>> {
+  return request<PaginatedResponse<AdminCustomerOverview>>(`/api/admin/customers?${adminPageQuery(page, { search })}`, { signal })
+}
+
+export function getAdminCustomer(id: string, signal?: AbortSignal): Promise<{ customer: AdminCustomerDetail }> {
+  return request<{ customer: AdminCustomerDetail }>(`/api/admin/customers/${encodeURIComponent(id)}`, { signal })
+}
+
+export function suspendAdminCustomer(id: string): Promise<{ customer: AdminCustomerOverview }> {
+  return request<{ customer: AdminCustomerOverview }>(`/api/admin/customers/${encodeURIComponent(id)}/suspend`, { method: 'POST' })
+}
+
+export function reactivateAdminCustomer(id: string): Promise<{ customer: AdminCustomerOverview }> {
+  return request<{ customer: AdminCustomerOverview }>(`/api/admin/customers/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
 }
 
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'failed'

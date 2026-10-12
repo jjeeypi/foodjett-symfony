@@ -14,7 +14,7 @@ final class RestaurantProfileControllerTest extends RestaurantApiTestCase
     {
         $this->client->jsonRequest('PATCH', '/api/restaurant/profile', [
             'name' => 'Updated Kitchen', 'description' => 'Fresh test food', 'cuisine_type' => 'Filipino',
-            'address' => '456 Updated Avenue', 'latitude' => '14.7000000', 'longitude' => '121.1000000',
+            'address' => '456 Updated Avenue', 'phone' => '09171234567', 'latitude' => '14.7000000', 'longitude' => '121.1000000',
             'default_prep_time_minutes' => 25, 'min_order_amount' => '199.50', 'payout_method' => 'ewallet',
             'payout_account_details' => ['provider' => 'GCash', 'account' => '09123456789'],
         ], server: $this->auth());
@@ -22,11 +22,13 @@ final class RestaurantProfileControllerTest extends RestaurantApiTestCase
         self::assertResponseIsSuccessful();
         $profile = $this->payload()['restaurant'];
         self::assertSame('Updated Kitchen', $profile['name']);
+        self::assertSame('09171234567', $profile['phone']);
         self::assertSame('199.50', $profile['min_order_amount']);
         self::assertSame('ewallet', $profile['payout_method']);
         /** @var Restaurant $restaurant */
         $restaurant = $this->fresh(Restaurant::class, (string) $this->restaurant->getId());
         self::assertSame('Updated Kitchen', $restaurant->getName());
+        self::assertSame('09171234567', $restaurant->getUser()->getPhone());
         self::assertSame(25, $restaurant->getDefaultPrepTimeMinutes());
         self::assertSame(['provider' => 'GCash', 'account' => '09123456789'], $restaurant->getPayoutAccountDetails());
     }

@@ -22,15 +22,16 @@ import RiderRegistrationPage from './pages/RiderRegistrationPage'
 import PendingReviewPage from './pages/PendingReviewPage'
 import RestaurantPage from './pages/RestaurantPage'
 import { RestaurantDashboardPage } from './pages/restaurant/RestaurantDashboardPage'
-import { RestaurantComingSoonPage } from './pages/restaurant/RestaurantComingSoonPage'
 import { RestaurantMenuPage } from './pages/restaurant/RestaurantMenuPage'
+import { RestaurantEarningsPage } from './pages/restaurant/RestaurantEarningsPage'
+import { RestaurantProfilePage } from './pages/restaurant/RestaurantProfilePage'
+import { RestaurantReviewsPage } from './pages/restaurant/RestaurantReviewsPage'
 import { RiderAccountPage } from './pages/rider/RiderAccountPage'
 import { RiderActivePage } from './pages/rider/RiderActivePage'
 import { RiderChatPage } from './pages/rider/RiderChatPage'
 import { RiderEarningsPage } from './pages/rider/RiderEarningsPage'
 import { RiderPoolPage } from './pages/rider/RiderPoolPage'
 import { AdminApprovalsPage } from './pages/admin/AdminApprovalsPage'
-import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminRestaurantsPage } from './pages/admin/AdminRestaurantsPage'
 import { AdminRidersPage } from './pages/admin/AdminRidersPage'
@@ -41,6 +42,10 @@ import { AdminReviewsPage } from './pages/admin/AdminReviewsPage'
 import { AdminSupportPage } from './pages/admin/AdminSupportPage'
 import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage'
 import { AdminPlatformSettingsPage } from './pages/admin/AdminPlatformSettingsPage'
+import { AdminCustomersPage } from './pages/admin/AdminCustomersPage'
+import CustomerProfilePage from './pages/CustomerProfilePage'
+import CustomerAddressesPage from './pages/CustomerAddressesPage'
+import FoodsPage from './pages/FoodsPage'
 
 function LoadingSession() {
   return (
@@ -91,15 +96,16 @@ export default function App() {
 
             <Route element={<ProtectedRoute role="customer"><CustomerLayout /></ProtectedRoute>}>
               <Route index element={<HomePage />} />
-              <Route path="/foods" element={<ComingSoonPage title="Foods" message="Dish browsing will live here. For now, choose an open restaurant from Home." />} />
+              <Route path="/foods" element={<FoodsPage />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/messages/:conversationId" element={<MessagesPage />} />
               <Route path="/orders" element={<CustomerOrdersPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/orders/:id" element={<OrderTrackingPage />} />
               <Route path="/restaurants/:id" element={<RestaurantPage />} />
-              <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
-              <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />
+              <Route path="/profile" element={<CustomerProfilePage />} />
+              <Route path="/account" element={<Navigate to="/profile" replace />} />
+              <Route path="/addresses" element={<CustomerAddressesPage />} />
             </Route>
 
             <Route path="/restaurant" element={<ProtectedRoute role="restaurant"><RestaurantLayout /></ProtectedRoute>}>
@@ -107,9 +113,10 @@ export default function App() {
               <Route path="dashboard" element={<RestaurantDashboardPage />} />
               <Route path="orders" element={<Navigate to="/restaurant/dashboard" replace />} />
               <Route path="menu" element={<RestaurantMenuPage />} />
-              <Route path="earnings" element={<RestaurantComingSoonPage section="Earnings" />} />
-              <Route path="profile" element={<RestaurantComingSoonPage section="Profile" />} />
-              <Route path="reviews" element={<RestaurantComingSoonPage section="Reviews" />} />
+              <Route path="earnings" element={<RestaurantEarningsPage />} />
+              <Route path="payouts" element={<Navigate to="/restaurant/earnings" replace />} />
+              <Route path="profile" element={<RestaurantProfilePage />} />
+              <Route path="reviews" element={<RestaurantReviewsPage />} />
             </Route>
 
             <Route path="/rider" element={<ProtectedRoute role="rider"><RiderLayout /></ProtectedRoute>}>
@@ -132,7 +139,8 @@ export default function App() {
               <Route path="restaurants/:id" element={<AdminRestaurantsPage />} />
               <Route path="riders" element={<AdminRidersPage />} />
               <Route path="riders/:id" element={<AdminRidersPage />} />
-              <Route path="customers" element={<AdminComingSoonPage section="Customers" />} />
+              <Route path="customers" element={<AdminCustomersPage />} />
+              <Route path="customers/:id" element={<AdminCustomersPage />} />
               <Route path="payments" element={<AdminPaymentsPage />} />
               <Route path="remittances" element={<AdminRemittancesPage />} />
               <Route path="vouchers" element={<AdminVouchersPage />} />

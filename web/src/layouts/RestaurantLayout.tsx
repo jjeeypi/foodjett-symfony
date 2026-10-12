@@ -12,6 +12,7 @@ import type { RestaurantOperatingStatus, RestaurantProfile } from '../lib/api'
 
 export interface RestaurantOutletContext {
   restaurant: RestaurantProfile
+  updateRestaurant: (restaurant: RestaurantProfile) => void
 }
 
 const navigation = [
@@ -178,7 +179,7 @@ export function RestaurantLayout() {
         {statusMessage && <div role="status" className="border-b border-neon-green/15 bg-neon-green/[0.06] px-4 py-2 text-center text-xs font-semibold text-neon-green sm:px-6 lg:px-8">{statusMessage}</div>}
 
         <main className="mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-          <Outlet context={{ restaurant } satisfies RestaurantOutletContext} />
+          <Outlet context={{ restaurant, updateRestaurant: setRestaurant } satisfies RestaurantOutletContext} />
         </main>
       </div>
     </div>
