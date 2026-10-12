@@ -936,6 +936,7 @@ export interface AdminApplicantOwner {
   name: string
   email: string | null
   phone: string | null
+  avatar_path?: string | null
   status: string
 }
 
@@ -943,6 +944,8 @@ export interface AdminRestaurantApplication {
   id: string
   name: string
   description: string | null
+  logo_path?: string | null
+  cover_photo_path?: string | null
   cuisine_type: string | null
   address: string
   latitude: string
@@ -970,6 +973,115 @@ export interface AdminRiderApplication {
   owner: AdminApplicantOwner
   documents: AdminApprovalDocument[]
   created_at: string | null
+}
+
+export type AdminRestaurantOverview = Omit<AdminRestaurantApplication, 'documents'> & { documents?: AdminApprovalDocument[] }
+export type AdminRiderOverview = Omit<AdminRiderApplication, 'documents'> & { documents?: AdminApprovalDocument[] }
+
+export interface AdminOrderSummary {
+  id: string
+  order_number: string
+  restaurant: { id: string; name: string }
+  customer: { id: string; name: string }
+  rider: { id: string; name: string } | null
+  status: OrderStatus
+  total_amount: string
+  payment_method: PaymentMethod
+  placed_at: string
+}
+
+export interface AdminOrderDetail extends AdminOrderSummary {
+  subtotal: string
+  delivery_fee: string
+  service_fee: string
+  discount_amount: string
+  tip_amount: string
+  commission_amount: string | null
+  customer_notes: string | null
+  rejection_reason: string | null
+  cancellation_reason: string | null
+  cancelled_by: string | null
+  accepted_at: string | null
+  estimated_ready_at: string | null
+  ready_at: string | null
+  rider_search_started_at: string | null
+  rider_assigned_at: string | null
+  picked_up_at: string | null
+  delivered_at: string | null
+  delivery_address: {
+    id: string
+    label: string
+    address_line: string
+    landmark: string | null
+    delivery_instructions: string | null
+    latitude: string
+    longitude: string
+  }
+  items: CustomerOrderItem[]
+  status_history: Array<{ id: string; status: string; changed_by: string; note: string | null; created_at: string }>
+  payment: {
+    id: string
+    method: PaymentMethod
+    status: string
+    amount: string
+    refunded_amount: string
+    transaction_reference: string | null
+    paid_at: string | null
+    refunded_at: string | null
+  } | null
+  rider_pool_offer: {
+    id: string
+    search_radius_km: string
+    incentive_amount: string
+    escalation_stage: string
+    admin_assigned: boolean
+  } | null
+}
+
+function adminPageQuery(page: number, filters: Record<string, string | undefined>): string {
+  const params = new URLSearchParams({ page: String(page), perPage: '20' })
+  for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value)
+  return params.toString()
+}
+
+export function getAdminOrders(page: number, status?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminOrderSummary>> {
+  return request<PaginatedResponse<AdminOrderSummary>>(`/api/admin/orders?${adminPageQuery(page, { status })}`, { signal })
+}
+
+export function getAdminOrder(id: string, signal?: AbortSignal): Promise<{ order: AdminOrderDetail }> {
+  return request<{ order: AdminOrderDetail }>(`/api/admin/orders/${encodeURIComponent(id)}`, { signal })
+}
+
+export function getAdminRestaurants(page: number, search?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminRestaurantOverview>> {
+  return request<PaginatedResponse<AdminRestaurantOverview>>(`/api/admin/restaurants?${adminPageQuery(page, { approval_status: 'approved', search })}`, { signal })
+}
+
+export function getAdminRestaurant(id: string, signal?: AbortSignal): Promise<{ restaurant: AdminRestaurantApplication }> {
+  return request<{ restaurant: AdminRestaurantApplication }>(`/api/admin/restaurants/${encodeURIComponent(id)}`, { signal })
+}
+
+export function suspendAdminRestaurant(id: string): Promise<{ restaurant: AdminRestaurantApplication }> {
+  return request<{ restaurant: AdminRestaurantApplication }>(`/api/admin/restaurants/${encodeURIComponent(id)}/suspend`, { method: 'POST' })
+}
+
+export function reactivateAdminRestaurant(id: string): Promise<{ restaurant: AdminRestaurantApplication }> {
+  return request<{ restaurant: AdminRestaurantApplication }>(`/api/admin/restaurants/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
+}
+
+export function getAdminRiders(page: number, search?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminRiderOverview>> {
+  return request<PaginatedResponse<AdminRiderOverview>>(`/api/admin/riders?${adminPageQuery(page, { approval_status: 'approved', search })}`, { signal })
+}
+
+export function getAdminRider(id: string, signal?: AbortSignal): Promise<{ rider: AdminRiderApplication }> {
+  return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}`, { signal })
+}
+
+export function suspendAdminRider(id: string): Promise<{ rider: AdminRiderApplication }> {
+  return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/suspend`, { method: 'POST' })
+}
+
+export function reactivateAdminRider(id: string): Promise<{ rider: AdminRiderApplication }> {
+  return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
 }
 
 export function getPendingAdminRestaurants(signal?: AbortSignal): Promise<PaginatedResponse<AdminRestaurantApplication>> {
