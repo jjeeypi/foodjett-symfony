@@ -808,6 +808,18 @@ export interface CustomerOrderDetail {
   }
 }
 
+export interface CustomerOrderSummary {
+  id: string
+  order_number: string
+  status: OrderStatus
+  restaurant: { id: string; name: string; logo_path: string | null; address: string }
+  item_count: number
+  total_amount: string
+  payment_method: PaymentMethod
+  placed_at: string
+  delivered_at: string | null
+}
+
 export interface MercureAuthorization {
   hub_url: string
   subscription_parameter: string
@@ -827,6 +839,11 @@ export function placeOrder(data: CheckoutInput): Promise<{ created: boolean; ord
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+export function getCustomerOrders(filter: 'active' | 'past', page = 1, signal?: AbortSignal): Promise<PaginatedResponse<CustomerOrderSummary>> {
+  const params = new URLSearchParams({ filter, page: String(page), perPage: '10' })
+  return request<PaginatedResponse<CustomerOrderSummary>>(`/api/customer/orders?${params.toString()}`, { signal })
 }
 
 export function getCustomerOrder(id: string, signal?: AbortSignal): Promise<{ order: CustomerOrderDetail }> {

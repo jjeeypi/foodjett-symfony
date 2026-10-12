@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage'
 import MessagesPage from './pages/MessagesPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
+import CustomerOrdersPage from './pages/CustomerOrdersPage'
 import RegisterPage from './pages/RegisterPage'
 import RestaurantRegistrationPage from './pages/RestaurantRegistrationPage'
 import RiderRegistrationPage from './pages/RiderRegistrationPage'
@@ -83,7 +84,7 @@ export default function App() {
               <Route path="/foods" element={<ComingSoonPage title="Foods" message="Dish browsing will live here. For now, choose an open restaurant from Home." />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/messages/:conversationId" element={<MessagesPage />} />
-              <Route path="/orders" element={<ComingSoonPage title="Orders" message="Your active and past orders will appear here once the orders screen is connected." />} />
+              <Route path="/orders" element={<CustomerOrdersPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/orders/:id" element={<OrderTrackingPage />} />
               <Route path="/restaurants/:id" element={<RestaurantPage />} />
