@@ -144,6 +144,7 @@ final class AdminPaymentController extends AbstractController
             'amount' => $payment->getAmount(),
             'refunded_amount' => $payment->getRefundedAmount(),
             'transaction_reference' => $payment->getTransactionReference(),
+            'created_at' => $payment->getCreatedAt()?->format(\DateTimeInterface::ATOM),
             'paid_at' => $payment->getPaidAt()?->format(\DateTimeInterface::ATOM),
             'refunded_at' => $payment->getRefundedAt()?->format(\DateTimeInterface::ATOM),
         ];

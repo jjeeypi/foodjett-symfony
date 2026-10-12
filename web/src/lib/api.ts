@@ -119,6 +119,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     } satisfies ApiError
   }
 
+  if (response.status === 204) return undefined as T
+
   return response.json() as Promise<T>
 }
 
@@ -1082,6 +1084,178 @@ export function suspendAdminRider(id: string): Promise<{ rider: AdminRiderApplic
 
 export function reactivateAdminRider(id: string): Promise<{ rider: AdminRiderApplication }> {
   return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
+}
+
+export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'failed'
+
+export interface AdminPayment {
+  id: string
+  order: { id: string; order_number: string; restaurant_name: string; customer_name: string }
+  method: PaymentMethod
+  status: PaymentStatus
+  amount: string
+  refunded_amount: string
+  transaction_reference: string | null
+  created_at: string | null
+  paid_at: string | null
+  refunded_at: string | null
+}
+
+export type RemittanceStatus = 'pending' | 'confirmed'
+
+export interface AdminRemittance {
+  id: string
+  rider: { id: string; name: string; cash_on_hand: string }
+  amount: string
+  reference_note: string | null
+  status: RemittanceStatus
+  confirmed_by_admin_id: string | null
+  remitted_at: string | null
+  created_at: string | null
+}
+
+export type VoucherType = 'percentage' | 'fixed' | 'free_delivery'
+
+export interface AdminVoucher {
+  id: string
+  code: string
+  scope: 'platform'
+  type: VoucherType
+  value: string | null
+  min_order_amount: string
+  usage_limit_total: number | null
+  usage_limit_per_customer: number
+  redemption_count: number
+  starts_at: string | null
+  ends_at: string | null
+  is_active: boolean
+}
+
+export interface AdminVoucherInput {
+  code: string
+  type: VoucherType
+  value: string | null
+  min_order_amount: string
+  usage_limit_total: number | null
+  usage_limit_per_customer: number
+  starts_at: string | null
+  ends_at: string | null
+  is_active: boolean
+}
+
+export interface AdminReview {
+  id: string
+  type: 'restaurant' | 'rider'
+  order_id: string
+  order_number: string
+  customer_name: string
+  subject: { id: string; name: string }
+  rating: number
+  comment: string | null
+  photo_path: string | null
+  reply: string | null
+  created_at: string | null
+}
+
+export type SupportTicketStatus = 'open' | 'in_progress' | 'closed'
+
+export interface AdminSupportTicket {
+  id: string
+  user: { id: string; name: string; email: string | null }
+  subject: string
+  message: string
+  status: SupportTicketStatus
+  created_at: string | null
+  updated_at: string | null
+  reply_capability: false
+}
+
+export interface AdminAuditLog {
+  id: string
+  action: string
+  subject_type: string
+  subject_id: string | null
+  changes: Record<string, unknown> | null
+  admin: { id: string | null; user_id: string; name: string; email: string | null } | null
+  created_at: string
+}
+
+export interface AdminAccountSummary {
+  id: string
+  user_id: string
+  name: string
+  email: string | null
+  phone: string | null
+  status: string
+  last_login_at: string | null
+  created_at: string | null
+}
+
+export interface AdminPlatformSetting {
+  id: string
+  key: string
+  value: string
+  description: string | null
+}
+
+export function getAdminPayments(page: number, method?: string, status?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminPayment>> {
+  return request<PaginatedResponse<AdminPayment>>(`/api/admin/payments?${adminPageQuery(page, { method, status })}`, { signal })
+}
+
+export function getAdminRemittances(page: number, status?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminRemittance>> {
+  return request<PaginatedResponse<AdminRemittance>>(`/api/admin/rider-cash-remittances?${adminPageQuery(page, { status })}`, { signal })
+}
+
+export function confirmAdminRemittance(id: string): Promise<{ remittance: AdminRemittance }> {
+  return request<{ remittance: AdminRemittance }>(`/api/admin/rider-cash-remittances/${encodeURIComponent(id)}/confirm`, { method: 'POST' })
+}
+
+export function getAdminVouchers(page: number, signal?: AbortSignal): Promise<PaginatedResponse<AdminVoucher>> {
+  return request<PaginatedResponse<AdminVoucher>>(`/api/admin/vouchers?${adminPageQuery(page, {})}`, { signal })
+}
+
+export function createAdminVoucher(data: AdminVoucherInput): Promise<{ voucher: AdminVoucher }> {
+  return request<{ voucher: AdminVoucher }>('/api/admin/vouchers', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateAdminVoucher(id: string, data: Partial<AdminVoucherInput>): Promise<{ voucher: AdminVoucher }> {
+  return request<{ voucher: AdminVoucher }>(`/api/admin/vouchers/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteAdminVoucher(id: string): Promise<void> {
+  return request<void>(`/api/admin/vouchers/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function getAdminReviews(page: number, type?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminReview>> {
+  return request<PaginatedResponse<AdminReview>>(`/api/admin/reviews?${adminPageQuery(page, { type: type && type !== 'all' ? type : undefined })}`, { signal })
+}
+
+export function deleteAdminReview(type: AdminReview['type'], id: string): Promise<void> {
+  return request<void>(`/api/admin/reviews/${type}/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function getAdminSupportTickets(page: number, status?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminSupportTicket>> {
+  return request<PaginatedResponse<AdminSupportTicket>>(`/api/admin/support-tickets?${adminPageQuery(page, { status })}`, { signal })
+}
+
+export function updateAdminSupportTicketStatus(id: string, status: SupportTicketStatus): Promise<{ ticket: AdminSupportTicket }> {
+  return request<{ ticket: AdminSupportTicket }>(`/api/admin/support-tickets/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+}
+
+export function getAdminAuditLogs(page: number, filters: { action?: string; admin_id?: string; date_from?: string; date_to?: string }, signal?: AbortSignal): Promise<PaginatedResponse<AdminAuditLog>> {
+  return request<PaginatedResponse<AdminAuditLog>>(`/api/admin/audit-logs?${adminPageQuery(page, filters)}`, { signal })
+}
+
+export function getAdminAccounts(signal?: AbortSignal): Promise<PaginatedResponse<AdminAccountSummary>> {
+  return request<PaginatedResponse<AdminAccountSummary>>('/api/admin/admins?perPage=100', { signal })
+}
+
+export function getAdminPlatformSettings(signal?: AbortSignal): Promise<{ settings: AdminPlatformSetting[] }> {
+  return request<{ settings: AdminPlatformSetting[] }>('/api/admin/platform-settings', { signal })
+}
+
+export function updateAdminPlatformSettings(settings: Record<string, string>): Promise<{ settings: AdminPlatformSetting[] }> {
+  return request<{ settings: AdminPlatformSetting[] }>('/api/admin/platform-settings', { method: 'PATCH', body: JSON.stringify({ settings }) })
 }
 
 export function getPendingAdminRestaurants(signal?: AbortSignal): Promise<PaginatedResponse<AdminRestaurantApplication>> {
