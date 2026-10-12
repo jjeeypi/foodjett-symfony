@@ -56,6 +56,12 @@ final class AdminFinanceControllerTest extends WebTestCase
     public function testAdminCanRecordPartialAndFullRefundWithHistory(): void
     {
         $token = $this->login();
+        $this->client->request('GET', '/api/admin/payments?method=card&status=paid', server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        $listed = $this->payload()['data'][0] ?? [];
+        self::assertSame($this->paymentId, (string) ($listed['id'] ?? ''));
+        self::assertNotNull($listed['created_at'] ?? null);
+
         $this->client->jsonRequest('POST', '/api/admin/payments/'.$this->paymentId.'/refund', ['amount' => 25, 'reason' => 'Missing item'], server: $this->auth($token));
         self::assertResponseIsSuccessful();
         self::assertSame('partially_refunded', $this->payload()['payment']['status']);

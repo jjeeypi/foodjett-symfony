@@ -23,7 +23,7 @@ const navigation: AdminNavItem[] = [
   { label: 'Reviews', to: '/admin/reviews', icon: 'reviews' },
   { label: 'Support', to: '/admin/support', icon: 'support' },
   { label: 'Audit Log', to: '/admin/audit-log', icon: 'audit' },
-  { label: 'Platform Settings', to: '/admin/platform-settings', icon: 'settings' },
+  { label: 'Platform Settings', to: '/admin/settings', icon: 'settings' },
 ]
 
 function isActivePath(pathname: string, item: AdminNavItem): boolean {
