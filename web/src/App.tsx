@@ -30,7 +30,6 @@ import { RiderChatPage } from './pages/rider/RiderChatPage'
 import { RiderEarningsPage } from './pages/rider/RiderEarningsPage'
 import { RiderPoolPage } from './pages/rider/RiderPoolPage'
 import { AdminApprovalsPage } from './pages/admin/AdminApprovalsPage'
-import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminRestaurantsPage } from './pages/admin/AdminRestaurantsPage'
 import { AdminRidersPage } from './pages/admin/AdminRidersPage'
@@ -41,6 +40,7 @@ import { AdminReviewsPage } from './pages/admin/AdminReviewsPage'
 import { AdminSupportPage } from './pages/admin/AdminSupportPage'
 import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage'
 import { AdminPlatformSettingsPage } from './pages/admin/AdminPlatformSettingsPage'
+import { AdminCustomersPage } from './pages/admin/AdminCustomersPage'
 
 function LoadingSession() {
   return (
@@ -132,7 +132,8 @@ export default function App() {
               <Route path="restaurants/:id" element={<AdminRestaurantsPage />} />
               <Route path="riders" element={<AdminRidersPage />} />
               <Route path="riders/:id" element={<AdminRidersPage />} />
-              <Route path="customers" element={<AdminComingSoonPage section="Customers" />} />
+              <Route path="customers" element={<AdminCustomersPage />} />
+              <Route path="customers/:id" element={<AdminCustomersPage />} />
               <Route path="payments" element={<AdminPaymentsPage />} />
               <Route path="remittances" element={<AdminRemittancesPage />} />
               <Route path="vouchers" element={<AdminVouchersPage />} />

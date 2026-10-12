@@ -1086,6 +1086,44 @@ export function reactivateAdminRider(id: string): Promise<{ rider: AdminRiderApp
   return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
 }
 
+export interface AdminCustomerOverview {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_path: string | null
+  status: string
+  created_at: string | null
+}
+
+export interface AdminCustomerDetail extends AdminCustomerOverview {
+  order_summary: { order_count: number; lifetime_spend: string }
+  recent_orders: Array<{
+    id: string
+    order_number: string
+    restaurant_name: string
+    status: OrderStatus
+    total_amount: string
+    placed_at: string
+  }>
+}
+
+export function getAdminCustomers(page: number, search?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminCustomerOverview>> {
+  return request<PaginatedResponse<AdminCustomerOverview>>(`/api/admin/customers?${adminPageQuery(page, { search })}`, { signal })
+}
+
+export function getAdminCustomer(id: string, signal?: AbortSignal): Promise<{ customer: AdminCustomerDetail }> {
+  return request<{ customer: AdminCustomerDetail }>(`/api/admin/customers/${encodeURIComponent(id)}`, { signal })
+}
+
+export function suspendAdminCustomer(id: string): Promise<{ customer: AdminCustomerOverview }> {
+  return request<{ customer: AdminCustomerOverview }>(`/api/admin/customers/${encodeURIComponent(id)}/suspend`, { method: 'POST' })
+}
+
+export function reactivateAdminCustomer(id: string): Promise<{ customer: AdminCustomerOverview }> {
+  return request<{ customer: AdminCustomerOverview }>(`/api/admin/customers/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
+}
+
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'failed'
 
 export interface AdminPayment {
