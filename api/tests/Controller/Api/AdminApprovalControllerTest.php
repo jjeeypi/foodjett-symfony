@@ -66,6 +66,27 @@ final class AdminApprovalControllerTest extends WebTestCase
         self::assertSame(1, $this->payload()['meta']['total']);
     }
 
+    public function testRestaurantAndRiderDetailsIncludeProfilesAndDocuments(): void
+    {
+        $token = $this->login();
+
+        $this->client->request('GET', '/api/admin/restaurants/'.$this->restaurantId, server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        $restaurant = $this->payload()['restaurant'] ?? [];
+        self::assertSame($this->restaurantId, (string) ($restaurant['id'] ?? ''));
+        self::assertSame('Approval Restaurant', $restaurant['name'] ?? null);
+        self::assertSame('Restaurant Owner', $restaurant['owner']['name'] ?? null);
+        self::assertSame($this->restaurantDocumentId, (string) ($restaurant['documents'][0]['id'] ?? ''));
+
+        $this->client->request('GET', '/api/admin/riders/'.$this->riderId, server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        $rider = $this->payload()['rider'] ?? [];
+        self::assertSame($this->riderId, (string) ($rider['id'] ?? ''));
+        self::assertSame('Approval Rider', $rider['owner']['name'] ?? null);
+        self::assertSame('motorcycle', $rider['vehicle_type'] ?? null);
+        self::assertSame($this->riderDocumentId, (string) ($rider['documents'][0]['id'] ?? ''));
+    }
+
     public function testRestaurantApprovalRejectionAndSuspensionAreAudited(): void
     {
         $token = $this->login();

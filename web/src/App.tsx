@@ -31,6 +31,9 @@ import { RiderEarningsPage } from './pages/rider/RiderEarningsPage'
 import { RiderPoolPage } from './pages/rider/RiderPoolPage'
 import { AdminApprovalsPage } from './pages/admin/AdminApprovalsPage'
 import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage'
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
+import { AdminRestaurantsPage } from './pages/admin/AdminRestaurantsPage'
+import { AdminRidersPage } from './pages/admin/AdminRidersPage'
 
 function LoadingSession() {
   return (
@@ -116,9 +119,12 @@ export default function App() {
               <Route path="dashboard" element={<AdminApprovalsPage />} />
               <Route path="approvals" element={<AdminApprovalsPage />} />
               <Route path="approvals/:kind/:id" element={<AdminApprovalsPage />} />
-              <Route path="orders" element={<AdminComingSoonPage section="Orders" />} />
-              <Route path="restaurants" element={<AdminComingSoonPage section="Restaurants" />} />
-              <Route path="riders" element={<AdminComingSoonPage section="Riders" />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="orders/:id" element={<AdminOrdersPage />} />
+              <Route path="restaurants" element={<AdminRestaurantsPage />} />
+              <Route path="restaurants/:id" element={<AdminRestaurantsPage />} />
+              <Route path="riders" element={<AdminRidersPage />} />
+              <Route path="riders/:id" element={<AdminRidersPage />} />
               <Route path="customers" element={<AdminComingSoonPage section="Customers" />} />
               <Route path="payments" element={<AdminComingSoonPage section="Payments" />} />
               <Route path="remittances" element={<AdminComingSoonPage section="Remittances" />} />

@@ -64,6 +64,12 @@ final class AdminRiderController extends AbstractController
         return $this->json($this->paginator->paginate($query, $request, fn (Rider $rider): array => $this->normalize($rider, true)));
     }
 
+    #[Route('/{id}', name: 'show', methods: ['GET'], priority: -10)]
+    public function show(Rider $rider): JsonResponse
+    {
+        return $this->json(['rider' => $this->normalize($rider, true)]);
+    }
+
     #[Route('/{id}/approve', name: 'approve', methods: ['POST'])]
     public function approve(Rider $rider): JsonResponse
     {
@@ -187,6 +193,7 @@ final class AdminRiderController extends AbstractController
                 'name' => $rider->getUser()->getName(),
                 'email' => $rider->getUser()->getEmail(),
                 'phone' => $rider->getUser()->getPhone(),
+                'avatar_path' => $rider->getUser()->getAvatarPath(),
                 'status' => $rider->getUser()->getStatus()->value,
             ],
             'created_at' => $rider->getCreatedAt()?->format(\DateTimeInterface::ATOM),
