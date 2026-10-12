@@ -225,6 +225,13 @@ final class CustomerBrowsingController extends AbstractController
         if (RestaurantOperatingStatus::OPEN !== $restaurant->getOperatingStatus()) {
             return false;
         }
+
+        // Operating hours are optional. Until a restaurant configures a schedule,
+        // its explicit manual toggle is the source of truth.
+        if ($restaurant->getOperatingHours()->isEmpty()) {
+            return true;
+        }
+
         $now ??= new \DateTimeImmutable();
         $today = (int) $now->format('w');
         $previousDay = (6 + $today) % 7;

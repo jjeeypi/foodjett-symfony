@@ -23,6 +23,11 @@ services:
   mercure:
     image: dunglas/mercure
     restart: unless-stopped
+    labels:
+      # Keep Symfony CLI from replacing the localhost URLs in .env.local with
+      # 127.0.0.1. The browser and API must share a hostname for Mercure's
+      # HttpOnly subscriber cookie to be accepted.
+      com.symfony.server.service-ignore: true
     environment:
       SERVER_NAME: ':80'
       MERCURE_TRUSTED_ISSUERS: 'foodjett-api'
@@ -32,6 +37,11 @@ services:
         anonymous
         cookie_name mercure_access_token
         cors_origins http://localhost:5173 http://127.0.0.1:5173 http://localhost:8000 http://127.0.0.1:8000
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/mercure/health/ready"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     volumes:
       - mercure_data:/data
       - mercure_config:/config
