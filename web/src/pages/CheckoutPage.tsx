@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useCart } from '../cart/CartContext'
-import { CheckoutAddressForm } from '../components/customer/CheckoutAddressForm'
+import { AddressForm } from '../components/customer/AddressForm'
 import { getCustomerAddresses, isApiError, placeOrder, previewCheckout } from '../lib/api'
 import type { CheckoutInput, CheckoutQuote, CustomerAddress, PaymentMethod } from '../lib/api'
 
@@ -195,7 +195,7 @@ export default function CheckoutPage() {
 
             {showAddressForm && addressState.status !== 'loading' && (
               <div className="mt-5">
-                <CheckoutAddressForm makeDefault={addressState.status === 'success' && addressState.addresses.length === 0} onCreated={addressCreated} onCancel={addressState.status === 'success' && addressState.addresses.length > 0 ? () => setShowAddressForm(false) : undefined} />
+                <AddressForm makeDefault={addressState.status === 'success' && addressState.addresses.length === 0} onSaved={addressCreated} onCancel={addressState.status === 'success' && addressState.addresses.length > 0 ? () => setShowAddressForm(false) : undefined} />
               </div>
             )}
 

@@ -46,8 +46,6 @@ export function RestaurantProfilePage() {
     return () => controller.abort()
   }, [retry])
 
-  useEffect(() => setProfile(profileFields(restaurant)), [restaurant])
-
   function updateField<K extends keyof RestaurantProfileInput>(field: K, value: RestaurantProfileInput[K]) {
     setProfile((current) => ({ ...current, [field]: value }))
     setError(''); setNotice('')
@@ -58,6 +56,7 @@ export function RestaurantProfilePage() {
     setProfileBusy(true); setError(''); setNotice('')
     try {
       const response = await updateRestaurantProfile(profile)
+      setProfile(profileFields(response.restaurant))
       updateRestaurant(response.restaurant)
       setNotice('Business profile saved.')
     } catch (requestError) { setError(apiMessage(requestError, 'The profile could not be saved.')) } finally { setProfileBusy(false) }

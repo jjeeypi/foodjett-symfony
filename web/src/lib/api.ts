@@ -1087,6 +1087,49 @@ export function reactivateAdminRider(id: string): Promise<{ rider: AdminRiderApp
   return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
 }
 
+export interface FoodMenuItem extends CustomerMenuItem {
+  restaurant: { id: string; name: string }
+}
+
+export function getAvailableMenuItems(filters: { q?: string; category?: string; minPrice?: string; maxPrice?: string; page?: number; perPage?: number } = {}, signal?: AbortSignal): Promise<PaginatedResponse<FoodMenuItem>> {
+  const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.category) params.set('category', filters.category)
+  if (filters.minPrice) params.set('min_price', filters.minPrice)
+  if (filters.maxPrice) params.set('max_price', filters.maxPrice)
+  params.set('page', String(filters.page ?? 1))
+  params.set('perPage', String(filters.perPage ?? 24))
+  return request<PaginatedResponse<FoodMenuItem>>(`/api/menu-items/search?${params}`, { signal })
+}
+
+export function updateCustomerAddress(id: string, data: CustomerAddressInput): Promise<{ message: string; address: CustomerAddress }> {
+  return request<{ message: string; address: CustomerAddress }>(`/api/customer/addresses/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteCustomerAddress(id: string): Promise<void> {
+  return request<void>(`/api/customer/addresses/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export interface CustomerProfile {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_path: string | null
+  email_verified_at: string | null
+}
+
+export function getCustomerProfile(signal?: AbortSignal): Promise<{ profile: CustomerProfile }> {
+  return request<{ profile: CustomerProfile }>('/api/customer/profile', { signal })
+}
+
+export function updateCustomerProfile(data: { name: string; email: string; phone: string }): Promise<{ message: string; email_verification_reset: boolean; profile: CustomerProfile }> {
+  return request<{ message: string; email_verification_reset: boolean; profile: CustomerProfile }>('/api/customer/profile', { method: 'PATCH', body: JSON.stringify(data) })
+}
+
 export interface RestaurantProfileInput {
   name: string
   description: string

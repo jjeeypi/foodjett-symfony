@@ -43,6 +43,9 @@ import { AdminSupportPage } from './pages/admin/AdminSupportPage'
 import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage'
 import { AdminPlatformSettingsPage } from './pages/admin/AdminPlatformSettingsPage'
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage'
+import CustomerProfilePage from './pages/CustomerProfilePage'
+import CustomerAddressesPage from './pages/CustomerAddressesPage'
+import FoodsPage from './pages/FoodsPage'
 
 function LoadingSession() {
   return (
@@ -93,15 +96,16 @@ export default function App() {
 
             <Route element={<ProtectedRoute role="customer"><CustomerLayout /></ProtectedRoute>}>
               <Route index element={<HomePage />} />
-              <Route path="/foods" element={<ComingSoonPage title="Foods" message="Dish browsing will live here. For now, choose an open restaurant from Home." />} />
+              <Route path="/foods" element={<FoodsPage />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/messages/:conversationId" element={<MessagesPage />} />
               <Route path="/orders" element={<CustomerOrdersPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/orders/:id" element={<OrderTrackingPage />} />
               <Route path="/restaurants/:id" element={<RestaurantPage />} />
-              <Route path="/profile" element={<ComingSoonPage title="Profile" message="Customer profile settings will appear here." />} />
-              <Route path="/addresses" element={<ComingSoonPage title="Addresses" message="Saved delivery addresses will appear here." />} />
+              <Route path="/profile" element={<CustomerProfilePage />} />
+              <Route path="/account" element={<Navigate to="/profile" replace />} />
+              <Route path="/addresses" element={<CustomerAddressesPage />} />
             </Route>
 
             <Route path="/restaurant" element={<ProtectedRoute role="restaurant"><RestaurantLayout /></ProtectedRoute>}>
