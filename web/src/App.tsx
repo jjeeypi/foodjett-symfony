@@ -34,6 +34,13 @@ import { AdminComingSoonPage } from './pages/admin/AdminComingSoonPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminRestaurantsPage } from './pages/admin/AdminRestaurantsPage'
 import { AdminRidersPage } from './pages/admin/AdminRidersPage'
+import { AdminPaymentsPage } from './pages/admin/AdminPaymentsPage'
+import { AdminRemittancesPage } from './pages/admin/AdminRemittancesPage'
+import { AdminVouchersPage } from './pages/admin/AdminVouchersPage'
+import { AdminReviewsPage } from './pages/admin/AdminReviewsPage'
+import { AdminSupportPage } from './pages/admin/AdminSupportPage'
+import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage'
+import { AdminPlatformSettingsPage } from './pages/admin/AdminPlatformSettingsPage'
 
 function LoadingSession() {
   return (
@@ -126,13 +133,14 @@ export default function App() {
               <Route path="riders" element={<AdminRidersPage />} />
               <Route path="riders/:id" element={<AdminRidersPage />} />
               <Route path="customers" element={<AdminComingSoonPage section="Customers" />} />
-              <Route path="payments" element={<AdminComingSoonPage section="Payments" />} />
-              <Route path="remittances" element={<AdminComingSoonPage section="Remittances" />} />
-              <Route path="vouchers" element={<AdminComingSoonPage section="Vouchers" />} />
-              <Route path="reviews" element={<AdminComingSoonPage section="Reviews" />} />
-              <Route path="support" element={<AdminComingSoonPage section="Support" />} />
-              <Route path="audit-log" element={<AdminComingSoonPage section="Audit Log" />} />
-              <Route path="platform-settings" element={<AdminComingSoonPage section="Platform Settings" />} />
+              <Route path="payments" element={<AdminPaymentsPage />} />
+              <Route path="remittances" element={<AdminRemittancesPage />} />
+              <Route path="vouchers" element={<AdminVouchersPage />} />
+              <Route path="reviews" element={<AdminReviewsPage />} />
+              <Route path="support" element={<AdminSupportPage />} />
+              <Route path="audit-log" element={<AdminAuditLogPage />} />
+              <Route path="settings" element={<AdminPlatformSettingsPage />} />
+              <Route path="platform-settings" element={<Navigate to="/admin/settings" replace />} />
             </Route>
 
             <Route path="/unsupported-role" element={<ProtectedRoute><ComingSoonPage title="Dashboard unavailable" message="This role's web dashboard has not been connected yet." /></ProtectedRoute>} />
