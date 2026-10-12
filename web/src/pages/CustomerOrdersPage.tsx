@@ -40,17 +40,19 @@ export default function CustomerOrdersPage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
-    setError('')
+    queueMicrotask(() => {
+      setLoading(true)
+      setError('')
 
-    void getCustomerOrders(tab, page, controller.signal).then((response) => {
-      setOrders(response.data)
-      setMeta(response.meta)
-    }).catch((requestError: unknown) => {
-      if (controller.signal.aborted) return
-      setError(isApiError(requestError) ? requestError.message : 'We could not load your orders right now.')
-    }).finally(() => {
-      if (!controller.signal.aborted) setLoading(false)
+      void getCustomerOrders(tab, page, controller.signal).then((response) => {
+        setOrders(response.data)
+        setMeta(response.meta)
+      }).catch((requestError: unknown) => {
+        if (controller.signal.aborted) return
+        setError(isApiError(requestError) ? requestError.message : 'We could not load your orders right now.')
+      }).finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
     })
 
     return () => controller.abort()
