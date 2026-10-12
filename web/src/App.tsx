@@ -22,8 +22,10 @@ import RiderRegistrationPage from './pages/RiderRegistrationPage'
 import PendingReviewPage from './pages/PendingReviewPage'
 import RestaurantPage from './pages/RestaurantPage'
 import { RestaurantDashboardPage } from './pages/restaurant/RestaurantDashboardPage'
-import { RestaurantComingSoonPage } from './pages/restaurant/RestaurantComingSoonPage'
 import { RestaurantMenuPage } from './pages/restaurant/RestaurantMenuPage'
+import { RestaurantEarningsPage } from './pages/restaurant/RestaurantEarningsPage'
+import { RestaurantProfilePage } from './pages/restaurant/RestaurantProfilePage'
+import { RestaurantReviewsPage } from './pages/restaurant/RestaurantReviewsPage'
 import { RiderAccountPage } from './pages/rider/RiderAccountPage'
 import { RiderActivePage } from './pages/rider/RiderActivePage'
 import { RiderChatPage } from './pages/rider/RiderChatPage'
@@ -107,9 +109,10 @@ export default function App() {
               <Route path="dashboard" element={<RestaurantDashboardPage />} />
               <Route path="orders" element={<Navigate to="/restaurant/dashboard" replace />} />
               <Route path="menu" element={<RestaurantMenuPage />} />
-              <Route path="earnings" element={<RestaurantComingSoonPage section="Earnings" />} />
-              <Route path="profile" element={<RestaurantComingSoonPage section="Profile" />} />
-              <Route path="reviews" element={<RestaurantComingSoonPage section="Reviews" />} />
+              <Route path="earnings" element={<RestaurantEarningsPage />} />
+              <Route path="payouts" element={<Navigate to="/restaurant/earnings" replace />} />
+              <Route path="profile" element={<RestaurantProfilePage />} />
+              <Route path="reviews" element={<RestaurantReviewsPage />} />
             </Route>
 
             <Route path="/rider" element={<ProtectedRoute role="rider"><RiderLayout /></ProtectedRoute>}>

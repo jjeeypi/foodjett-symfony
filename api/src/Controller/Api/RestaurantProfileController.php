@@ -6,6 +6,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Restaurant;
 use App\Entity\RestaurantOperatingHour;
+use App\Entity\User;
 use App\Enum\PayoutMethod;
 use App\Enum\RestaurantOperatingStatus;
 use App\Security\Voter\ApprovedAccountVoter;
@@ -48,6 +49,14 @@ final class RestaurantProfileController extends AbstractRestaurantController
         foreach (['name', 'address'] as $required) {
             if (array_key_exists($required, $data) && '' === trim((string) $data[$required])) {
                 $errors[$required][] = 'This value cannot be blank.';
+            }
+        }
+        if (array_key_exists('phone', $data)) {
+            $phone = trim((string) $data['phone']);
+            if ('' === $phone || mb_strlen($phone) > 255) {
+                $errors['phone'][] = 'Phone must be between 1 and 255 characters.';
+            } elseif ($this->phoneExists($phone, $restaurant->getUser())) {
+                $errors['phone'][] = 'This phone number is already in use.';
             }
         }
         foreach (['latitude', 'longitude', 'min_order_amount'] as $numeric) {
@@ -97,6 +106,9 @@ final class RestaurantProfileController extends AbstractRestaurantController
         }
         if (array_key_exists('address', $data)) {
             $restaurant->setAddress(trim((string) $data['address']));
+        }
+        if (array_key_exists('phone', $data)) {
+            $restaurant->getUser()->setPhone(trim((string) $data['phone']))->setUpdatedAt(new \DateTimeImmutable());
         }
         if (array_key_exists('latitude', $data)) {
             $restaurant->setLatitude((string) $data['latitude']);
@@ -236,6 +248,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
             'id' => $restaurant->getId(), 'name' => $restaurant->getName(), 'slug' => $restaurant->getSlug(),
             'description' => $restaurant->getDescription(), 'logo_path' => $restaurant->getLogoPath(),
             'cover_photo_path' => $restaurant->getCoverPhotoPath(), 'cuisine_type' => $restaurant->getCuisineType(),
+            'phone' => $restaurant->getUser()->getPhone(),
             'address' => $restaurant->getAddress(), 'latitude' => $restaurant->getLatitude(), 'longitude' => $restaurant->getLongitude(),
             'default_prep_time_minutes' => $restaurant->getDefaultPrepTimeMinutes(), 'min_order_amount' => $restaurant->getMinOrderAmount(),
             'commission_rate' => $restaurant->getCommissionRate(), 'approval_status' => $restaurant->getApprovalStatus()->value,
@@ -255,6 +268,14 @@ final class RestaurantProfileController extends AbstractRestaurantController
         $value = trim((string) $value);
 
         return '' === $value ? null : $value;
+    }
+
+    private function phoneExists(string $phone, User $current): bool
+    {
+        return null !== $this->entityManager->getRepository(User::class)->createQueryBuilder('account')
+            ->select('account.id')->andWhere('account.phone = :phone')->setParameter('phone', $phone)
+            ->andWhere('account.id != :current')->setParameter('current', $current->getId())
+            ->setMaxResults(1)->getQuery()->getOneOrNullResult();
     }
 
     private function parseTime(mixed $value): ?\DateTimeImmutable

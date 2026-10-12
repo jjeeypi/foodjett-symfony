@@ -153,6 +153,7 @@ export interface RestaurantProfile {
   logo_path: string | null
   cover_photo_path: string | null
   cuisine_type: string | null
+  phone: string | null
   address: string
   latitude: string
   longitude: string
@@ -1084,6 +1085,93 @@ export function suspendAdminRider(id: string): Promise<{ rider: AdminRiderApplic
 
 export function reactivateAdminRider(id: string): Promise<{ rider: AdminRiderApplication }> {
   return request<{ rider: AdminRiderApplication }>(`/api/admin/riders/${encodeURIComponent(id)}/reactivate`, { method: 'POST' })
+}
+
+export interface RestaurantProfileInput {
+  name: string
+  description: string
+  cuisine_type: string
+  phone: string
+  address: string
+  latitude: string
+  longitude: string
+  default_prep_time_minutes: number
+  min_order_amount: string
+}
+
+export function updateRestaurantProfile(data: RestaurantProfileInput): Promise<{ message: string; restaurant: RestaurantProfile }> {
+  return request<{ message: string; restaurant: RestaurantProfile }>('/api/restaurant/profile', { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export interface RestaurantProfileOperatingHour extends RestaurantOperatingHour { id?: string }
+
+export function getRestaurantOperatingHours(signal?: AbortSignal): Promise<{ hours: RestaurantProfileOperatingHour[] }> {
+  return request<{ hours: RestaurantProfileOperatingHour[] }>('/api/restaurant/operating-hours', { signal })
+}
+
+export function updateRestaurantOperatingHours(hours: RestaurantOperatingHour[]): Promise<{ message: string; hours: RestaurantProfileOperatingHour[] }> {
+  return request<{ message: string; hours: RestaurantProfileOperatingHour[] }>('/api/restaurant/operating-hours', { method: 'PUT', body: JSON.stringify({ hours }) })
+}
+
+export interface RestaurantDocument {
+  id: string
+  type: string
+  file_path: string
+  status: DocumentStatus
+  rejection_reason: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export function getRestaurantDocuments(signal?: AbortSignal): Promise<{ documents: RestaurantDocument[] }> {
+  return request<{ documents: RestaurantDocument[] }>('/api/restaurant/documents', { signal })
+}
+
+export function replaceRestaurantDocument(id: string, file: File): Promise<{ message: string; document: RestaurantDocument }> {
+  const body = new FormData()
+  body.set('file', file)
+  return request<{ message: string; document: RestaurantDocument }>(`/api/restaurant/documents/${encodeURIComponent(id)}`, { method: 'POST', body })
+}
+
+export interface RestaurantEarningsPeriod { order_count: number; gross_revenue: string; commission: string; net_revenue: string }
+export interface RestaurantPayout {
+  id: string
+  period_start: string
+  period_end: string
+  gross_sales: string
+  commission_deducted: string
+  net_amount: string
+  status: string
+  paid_at: string | null
+}
+
+export function getRestaurantEarningsSummary(signal?: AbortSignal): Promise<{ summary: { today: RestaurantEarningsPeriod; week: RestaurantEarningsPeriod; month: RestaurantEarningsPeriod } }> {
+  return request('/api/restaurant/earnings/summary', { signal })
+}
+
+export function getRestaurantPayouts(page: number, signal?: AbortSignal): Promise<PaginatedResponse<RestaurantPayout>> {
+  return request<PaginatedResponse<RestaurantPayout>>(`/api/restaurant/payouts?page=${page}&perPage=20`, { signal })
+}
+
+export interface RestaurantReview {
+  id: string
+  order_id: string
+  order_number: string
+  customer: { id: string; name: string }
+  rating: number
+  comment: string | null
+  photo_path: string | null
+  restaurant_reply: string | null
+  replied_at: string | null
+  created_at: string | null
+}
+
+export function getRestaurantReviews(page: number, signal?: AbortSignal): Promise<PaginatedResponse<RestaurantReview>> {
+  return request<PaginatedResponse<RestaurantReview>>(`/api/restaurant/reviews?page=${page}&perPage=20`, { signal })
+}
+
+export function replyToRestaurantReview(id: string, restaurantReply: string): Promise<{ message: string; review: RestaurantReview }> {
+  return request<{ message: string; review: RestaurantReview }>(`/api/restaurant/reviews/${encodeURIComponent(id)}/reply`, { method: 'PATCH', body: JSON.stringify({ restaurant_reply: restaurantReply }) })
 }
 
 export interface AdminCustomerOverview {
