@@ -35,6 +35,60 @@ body {
   background: var(--color-brand-black);
 }
 
+.foodjett-map-marker {
+  background: transparent;
+  border: 0;
+}
+
+.foodjett-map-marker__bubble {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgb(255 255 255 / 18%);
+  border-radius: 9999px;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 48%);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.foodjett-map-marker__bubble--rider {
+  color: #0a0a0a;
+  background: #39ff14;
+  border-color: rgb(57 255 20 / 70%);
+  box-shadow: 0 0 0 0.35rem rgb(57 255 20 / 15%), 0 0.75rem 2rem rgb(0 0 0 / 48%);
+}
+
+.foodjett-map-marker__bubble--destination {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #fff;
+  background: #111;
+  border-color: rgb(255 255 255 / 34%);
+  border-radius: 9999px 9999px 9999px 0.35rem;
+  font-size: 1.2rem;
+  transform: rotate(-45deg);
+}
+
+.foodjett-map-marker__bubble--destination::first-letter {
+  transform: rotate(45deg);
+}
+
+.leaflet-container {
+  background: #111;
+  font-family: inherit;
+}
+
+.leaflet-control-attribution {
+  background: rgb(10 10 10 / 72%) !important;
+  color: rgb(255 255 255 / 52%) !important;
+}
+
+.leaflet-control-attribution a {
+  color: #39ff14 !important;
+}
+
 button,
 a,
 input {

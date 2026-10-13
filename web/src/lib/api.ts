@@ -792,7 +792,14 @@ export interface CustomerOrderDetail {
   cancelled_by: string | null
   placed_at: string
   delivered_at: string | null
-  rider: { id: string; name: string; vehicle_type: string } | null
+  rider: {
+    id: string
+    name: string
+    vehicle_type: string
+    current_latitude: string | null
+    current_longitude: string | null
+    last_location_at: string | null
+  } | null
   delivery_address: {
     id: string
     label: string
