@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-#[Route('/api/rider/location', name: 'api_rider_location_update', methods: ['POST'])]
+#[Route('/api/rider/location', name: 'api_rider_location_update', methods: ['POST', 'PATCH'])]
 #[IsGranted('ROLE_RIDER')]
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your rider account is awaiting approval.')]
 final class RiderLocationController extends AbstractRiderController
@@ -28,7 +28,7 @@ final class RiderLocationController extends AbstractRiderController
     public function __invoke(Request $request): JsonResponse
     {
         $order = $this->activeOrder(false);
-        if (null === $order) {
+        if (null === $order && !$request->isMethod('PATCH')) {
             return $this->json(['message' => 'Location updates require an active delivery.'], 409);
         }
         $data = $this->body($request);
@@ -46,14 +46,16 @@ final class RiderLocationController extends AbstractRiderController
         }
         $rider->setCurrentLatitude($latitude)->setCurrentLongitude($longitude)->setLastLocationAt($now)->setUpdatedAt($now);
         $this->entityManager->flush();
-        $this->eventDispatcher->dispatch(new RiderLocationUpdatedEvent(
-            orderId: (string) $order->getId(),
-            riderId: (string) $rider->getId(),
-            latitude: (string) $latitude,
-            longitude: (string) $longitude,
-            occurredAt: $now,
-        ));
+        if (null !== $order) {
+            $this->eventDispatcher->dispatch(new RiderLocationUpdatedEvent(
+                orderId: (string) $order->getId(),
+                riderId: (string) $rider->getId(),
+                latitude: (string) $latitude,
+                longitude: (string) $longitude,
+                occurredAt: $now,
+            ));
+        }
 
-        return $this->json(['updated' => true, 'throttled' => false, 'order_id' => $order->getId(), 'latitude' => $latitude, 'longitude' => $longitude, 'last_location_at' => $now->format(\DateTimeInterface::ATOM)]);
+        return $this->json(['updated' => true, 'throttled' => false, 'order_id' => $order?->getId(), 'latitude' => $latitude, 'longitude' => $longitude, 'last_location_at' => $now->format(\DateTimeInterface::ATOM)]);
     }
 }

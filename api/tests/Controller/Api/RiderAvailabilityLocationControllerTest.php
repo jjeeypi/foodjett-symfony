@@ -77,4 +77,20 @@ final class RiderAvailabilityLocationControllerTest extends RiderApiTestCase
         self::assertResponseStatusCodeSame(409);
         self::assertStringContainsString('active delivery', $this->payload()['message']);
     }
+
+    public function testRiderCanRefreshPoolLocationWithoutAnActiveDelivery(): void
+    {
+        $hub = self::getContainer()->get(RecordingMercureHub::class);
+        $hub->reset();
+        $this->rider->setLastLocationAt(new \DateTimeImmutable('-10 seconds'));
+        $this->entityManager->flush();
+
+        $this->client->jsonRequest('PATCH', '/api/rider/location', ['latitude' => 9.315412, 'longitude' => 123.302528], server: $this->auth());
+
+        self::assertResponseIsSuccessful();
+        self::assertTrue($this->payload()['updated']);
+        self::assertNull($this->payload()['order_id']);
+        self::assertSame('9.3154120', $this->payload()['latitude']);
+        self::assertCount(0, $hub->updates());
+    }
 }

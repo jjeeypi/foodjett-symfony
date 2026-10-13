@@ -410,6 +410,9 @@ export interface RiderProfile {
   plate_number: string | null
   approval_status: string
   availability_status: RiderAvailabilityStatus
+  current_latitude: string | null
+  current_longitude: string | null
+  last_location_at: string | null
   payout_method: 'bank' | 'ewallet' | null
   payout_account_details: Record<string, unknown> | null
 }
@@ -484,8 +487,18 @@ export function toggleRiderAvailability(location?: { latitude: number; longitude
   })
 }
 
-export function getRiderPool(signal?: AbortSignal): Promise<{ orders: RiderPoolOffer[]; reason?: string }> {
-  return request<{ orders: RiderPoolOffer[]; reason?: string }>('/api/rider/pool', { signal })
+export function getRiderPool(signal?: AbortSignal): Promise<{ orders: RiderPoolOffer[]; reason?: string | null; reason_code?: 'outside_radius' | 'cash_limit' | null }> {
+  return request('/api/rider/pool', { signal })
+}
+
+export function refreshRiderLocation(location: { latitude: number; longitude: number }): Promise<{
+  updated: boolean
+  throttled: boolean
+  latitude?: string
+  longitude?: string
+  last_location_at: string
+}> {
+  return request('/api/rider/location', { method: 'PATCH', body: JSON.stringify(location) })
 }
 
 export function acceptRiderPoolOrder(id: string): Promise<{ order: { id: string; order_number: string; status: OrderStatus; rider_id: string; rider_assigned_at: string; pickup_code: string } }> {

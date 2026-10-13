@@ -115,6 +115,8 @@ final class RiderAccountController extends AbstractRiderController
         return ['id' => $rider->getId(), 'name' => $user->getName(), 'email' => $user->getEmail(), 'phone' => $user->getPhone(),
             'avatar_path' => $user->getAvatarPath(), 'vehicle_type' => $rider->getVehicleType()->value, 'plate_number' => $rider->getPlateNumber(),
             'approval_status' => $rider->getApprovalStatus()->value, 'availability_status' => $rider->getAvailabilityStatus()->value,
+            'current_latitude' => $rider->getCurrentLatitude(), 'current_longitude' => $rider->getCurrentLongitude(),
+            'last_location_at' => $rider->getLastLocationAt()?->format(\DateTimeInterface::ATOM),
             'payout_method' => $rider->getPayoutMethod()?->value,
             'payout_account_details' => null === $encrypted ? null : $this->cipher->decrypt($encrypted)];
     }

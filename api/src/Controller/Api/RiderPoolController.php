@@ -49,7 +49,14 @@ final class RiderPoolController extends AbstractController
             ]);
         }
 
-        return $this->json(['orders' => $this->pool->visibleOrders($rider)]);
+        $orders = $this->pool->visibleOrders($rider);
+        $reason = [] === $orders ? $this->pool->emptyPoolReason($rider) : null;
+
+        return $this->json([
+            'orders' => $orders,
+            'reason' => $reason['message'] ?? null,
+            'reason_code' => $reason['code'] ?? null,
+        ]);
     }
 
     #[Route('/{id}/accept', name: 'accept', methods: ['POST'])]
