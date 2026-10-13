@@ -10,6 +10,7 @@ use App\Entity\Conversation;
 use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Restaurant;
+use App\Entity\Rider;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
 use App\Enum\ConversationType;
@@ -17,8 +18,10 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Enum\RestaurantOperatingStatus;
+use App\Enum\RiderAvailabilityStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use App\Enum\VehicleType;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -29,6 +32,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
     private const PASSWORD = 'TestPassword123!';
     private const RESTAURANT_EMAIL = 'restaurant-orders@foodjett.test';
     private const CUSTOMER_EMAIL = 'restaurant-orders-customer@foodjett.test';
+    private const RIDER_EMAIL = 'restaurant-orders-rider@foodjett.test';
 
     private KernelBrowser $client;
     private string $orderId;
@@ -140,6 +144,40 @@ final class RestaurantOrderControllerTest extends WebTestCase
 
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/accept', $body, server: $this->auth($token));
         self::assertResponseStatusCodeSame(409);
+    }
+
+    public function testPickupCodeIsReturnedOnlyAfterRiderAssignment(): void
+    {
+        $token = $this->login();
+
+        $this->client->request('GET', '/api/restaurant/orders/'.$this->orderId, server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        self::assertNull($this->payload()['order']['pickup_code'] ?? null);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $now = new \DateTimeImmutable();
+        $riderUser = $this->user(self::RIDER_EMAIL, '+639187000003', UserRole::RIDER, $now);
+        $rider = (new Rider())
+            ->setUser($riderUser)
+            ->setVehicleType(VehicleType::MOTORCYCLE)
+            ->setApprovalStatus(ApprovalStatus::APPROVED)
+            ->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)
+            ->setCreatedAt($now)
+            ->setUpdatedAt($now);
+        $order = $entityManager->find(Order::class, $this->orderId);
+        self::assertInstanceOf(Order::class, $order);
+        $order
+            ->setRider($rider)
+            ->setStatus(OrderStatus::RIDER_ASSIGNED)
+            ->setRiderAssignedAt($now)
+            ->setPickupCode('3378');
+        $entityManager->persist($riderUser);
+        $entityManager->persist($rider);
+        $entityManager->flush();
+
+        $this->client->request('GET', '/api/restaurant/orders/'.$this->orderId, server: $this->auth($token));
+        self::assertResponseIsSuccessful();
+        self::assertSame('3378', $this->payload()['order']['pickup_code'] ?? null);
     }
 
     private function createOrder(): Order
@@ -273,6 +311,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
         $connection->executeStatement("DELETE FROM customer_addresses WHERE label = 'Restaurant orders test'");
         $connection->executeStatement('DELETE FROM customers WHERE user_id IN (SELECT id FROM users WHERE email IN (?, ?))', [self::RESTAURANT_EMAIL, self::CUSTOMER_EMAIL]);
         $connection->executeStatement('DELETE FROM restaurants WHERE user_id IN (SELECT id FROM users WHERE email IN (?, ?))', [self::RESTAURANT_EMAIL, self::CUSTOMER_EMAIL]);
-        $connection->executeStatement('DELETE FROM users WHERE email IN (?, ?)', [self::RESTAURANT_EMAIL, self::CUSTOMER_EMAIL]);
+        $connection->executeStatement('DELETE FROM riders WHERE user_id IN (SELECT id FROM users WHERE email = ?)', [self::RIDER_EMAIL]);
+        $connection->executeStatement('DELETE FROM users WHERE email IN (?, ?, ?)', [self::RESTAURANT_EMAIL, self::CUSTOMER_EMAIL, self::RIDER_EMAIL]);
     }
 }

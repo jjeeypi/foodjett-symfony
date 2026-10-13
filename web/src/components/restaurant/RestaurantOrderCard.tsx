@@ -33,6 +33,7 @@ export function RestaurantOrderCard({
 }) {
   const canMarkReady = !order.ready_at && ['finding_rider', 'rider_assigned', 'at_restaurant'].includes(order.status)
   const canExtend = !order.ready_at && Boolean(order.estimated_ready_at)
+  const showPickupCode = Boolean(order.pickup_code) && ['rider_assigned', 'at_restaurant'].includes(order.status)
 
   return (
     <article className={`relative overflow-hidden rounded-2xl border bg-brand-surface p-4 transition duration-500 sm:p-5 ${highlighted ? 'border-neon-green shadow-[0_0_32px_rgba(57,255,20,0.2)]' : 'border-white/10 hover:border-white/20'}`}>
@@ -65,6 +66,13 @@ export function RestaurantOrderCard({
         <div className="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2.5">
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-200/70">Customer note</p>
           <p className="mt-1 text-sm leading-5 text-amber-100">{order.customer_notes}</p>
+        </div>
+      )}
+
+      {showPickupCode && (
+        <div className="mt-4 rounded-2xl border border-neon-green/30 bg-neon-green/[0.08] px-4 py-4 text-center" aria-label={`Pickup code ${order.pickup_code}`}>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neon-green/75">Pickup code · give this to the rider</p>
+          <p className="mt-2 font-mono text-4xl font-black tracking-[0.28em] text-neon-green sm:text-5xl">{order.pickup_code}</p>
         </div>
       )}
 

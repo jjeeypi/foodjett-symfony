@@ -202,6 +202,7 @@ export interface RestaurantOrderSummary {
   estimated_ready_at: string | null
   ready_at: string | null
   rider_search_started_at: string | null
+  pickup_code: string | null
   customer_notes: string | null
   items: RestaurantOrderItem[]
   placed_at: string
