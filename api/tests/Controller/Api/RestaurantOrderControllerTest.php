@@ -7,6 +7,7 @@ namespace App\Tests\Controller\Api;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Conversation;
+use App\Entity\Message;
 use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Restaurant;
@@ -67,6 +68,34 @@ final class RestaurantOrderControllerTest extends WebTestCase
             'type' => ConversationType::CUSTOMER_RESTAURANT,
         ]);
         self::assertInstanceOf(Conversation::class, $conversation);
+        self::assertCount(1, $conversation->getMessages());
+        $message = $conversation->getMessages()->first();
+        self::assertInstanceOf(Message::class, $message);
+        self::assertSame($conversation->getOrder()->getRestaurant()->getUser(), $message->getSender());
+        self::assertSame(
+            sprintf(
+                'Thank you for ordering from Restaurant Orders Test! We\'ve received order %s and are getting it ready. We\'ll keep you updated here.',
+                $conversation->getOrder()->getOrderNumber(),
+            ),
+            $message->getBody(),
+        );
+
+        $messageUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['conversations/'.$conversation->getId()] === $update->getTopics(),
+        ));
+        self::assertCount(1, $messageUpdates);
+        $messagePayload = json_decode($messageUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('message.sent', $messagePayload['event'] ?? null);
+        self::assertSame($message->getBody(), $messagePayload['body'] ?? null);
+
+        $notificationUpdates = array_values(array_filter(
+            self::getContainer()->get(RecordingMercureHub::class)->updates(),
+            static fn ($update): bool => ['users/'.$conversation->getOrder()->getCustomer()->getUser()->getId().'/notifications'] === $update->getTopics(),
+        ));
+        self::assertCount(1, $notificationUpdates);
+        self::assertSame(1, json_decode($notificationUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR)['unread_count'] ?? null);
+
         $acceptUpdates = $this->orderUpdates();
         self::assertCount(3, $acceptUpdates);
         self::assertSame(
@@ -83,6 +112,18 @@ final class RestaurantOrderControllerTest extends WebTestCase
         self::assertSame('rider_pool.offer_created', $poolPayload['event'] ?? null);
         self::assertSame($this->orderId, $poolPayload['order_id'] ?? null);
         self::assertArrayHasKey('estimated_pay', $poolPayload);
+
+        $customerToken = $this->loginAs(self::CUSTOMER_EMAIL);
+        $this->client->request('GET', '/api/customer/conversations', server: $this->auth($customerToken));
+        self::assertResponseIsSuccessful();
+        $customerConversations = $this->payload()['data'] ?? [];
+        self::assertCount(1, $customerConversations);
+        self::assertSame($message->getBody(), $customerConversations[0]['last_message']['body'] ?? null);
+        self::assertSame(1, $customerConversations[0]['unread_count'] ?? null);
+
+        $this->client->request('GET', '/api/customer/conversations/'.$conversation->getId().'/messages', server: $this->auth($customerToken));
+        self::assertResponseIsSuccessful();
+        self::assertSame($message->getBody(), $this->payload()['data'][0]['body'] ?? null);
 
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/extend-prep-time', [
             'minutes' => 5,
@@ -253,8 +294,13 @@ final class RestaurantOrderControllerTest extends WebTestCase
 
     private function login(): string
     {
+        return $this->loginAs(self::RESTAURANT_EMAIL);
+    }
+
+    private function loginAs(string $email): string
+    {
         $this->client->jsonRequest('POST', '/api/login', [
-            'login' => self::RESTAURANT_EMAIL,
+            'login' => $email,
             'password' => self::PASSWORD,
         ]);
         self::assertResponseIsSuccessful();
