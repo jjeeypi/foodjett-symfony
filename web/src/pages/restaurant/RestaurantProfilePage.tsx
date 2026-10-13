@@ -12,6 +12,7 @@ import {
   updateRestaurantProfile,
 } from '../../lib/api'
 import type { RestaurantDocument, RestaurantOperatingHour, RestaurantProfileInput } from '../../lib/api'
+import { getBrowserLocation } from '../../lib/geolocation'
 
 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 type HourDraft = RestaurantOperatingHour & { enabled: boolean }
@@ -27,6 +28,7 @@ export function RestaurantProfilePage() {
   const [profileBusy, setProfileBusy] = useState(false)
   const [hoursBusy, setHoursBusy] = useState(false)
   const [documentBusy, setDocumentBusy] = useState<string | null>(null)
+  const [locating, setLocating] = useState(false)
   const [retry, setRetry] = useState(0)
 
   useEffect(() => {
@@ -71,6 +73,20 @@ export function RestaurantProfilePage() {
     } catch (requestError) { setError(apiMessage(requestError, 'Operating hours could not be saved.')) } finally { setHoursBusy(false) }
   }
 
+  async function loadCurrentLocation() {
+    setLocating(true)
+    setError('')
+    setNotice('')
+    const location = await getBrowserLocation()
+    if (!location) {
+      setError('Location access was unavailable. Allow browser location permission or enter the coordinates manually.')
+    } else {
+      setProfile((current) => ({ ...current, latitude: location.latitude.toFixed(7), longitude: location.longitude.toFixed(7) }))
+      setNotice('Current coordinates loaded. Save the profile to apply this restaurant pickup location.')
+    }
+    setLocating(false)
+  }
+
   async function replaceDocument(document: RestaurantDocument, file: File | undefined) {
     if (!file) return
     setDocumentBusy(document.id); setError(''); setNotice('')
@@ -101,6 +117,7 @@ export function RestaurantProfilePage() {
         <div className="sm:col-span-2"><NeonInput id="restaurant-address" label="Business address" value={profile.address} onChange={(event) => updateField('address', event.target.value)} disabled={profileBusy} /></div>
         <NeonInput id="restaurant-latitude" label="Latitude" inputMode="decimal" value={profile.latitude} onChange={(event) => updateField('latitude', event.target.value)} disabled={profileBusy} />
         <NeonInput id="restaurant-longitude" label="Longitude" inputMode="decimal" value={profile.longitude} onChange={(event) => updateField('longitude', event.target.value)} disabled={profileBusy} />
+        <div className="sm:col-span-2"><button type="button" onClick={() => void loadCurrentLocation()} disabled={profileBusy || locating} className="min-h-11 w-full rounded-xl border border-neon-green/35 px-4 text-sm font-black text-neon-green hover:bg-neon-green/10 disabled:opacity-50">{locating ? 'Finding current location…' : 'Use current location for pickup pin'}</button></div>
         <NeonInput id="restaurant-prep" label="Default prep time (minutes)" type="number" min="1" max="240" value={String(profile.default_prep_time_minutes)} onChange={(event) => updateField('default_prep_time_minutes', Number(event.target.value))} disabled={profileBusy} />
         <label className="sm:col-span-2"><span className="mb-2 block text-sm font-semibold text-white/70">Description</span><textarea rows={4} value={profile.description} onChange={(event) => updateField('description', event.target.value)} disabled={profileBusy} className="w-full rounded-xl border border-white/10 bg-brand-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-neon-green disabled:opacity-50" /></label>
       </div>

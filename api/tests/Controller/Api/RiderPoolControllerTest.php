@@ -93,6 +93,25 @@ final class RiderPoolControllerTest extends WebTestCase
         self::assertSame('Go online to view available orders.', $this->payload()['reason'] ?? null);
     }
 
+    public function testPoolExplainsWhenOffersAreOutsideTheRidersRadius(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $entityManager->getRepository(User::class)->findOneBy(['email' => self::RIDER_EMAIL]);
+        self::assertInstanceOf(User::class, $user);
+        $rider = $user->getRider();
+        self::assertInstanceOf(Rider::class, $rider);
+        $rider->setCurrentLatitude('9.3154120')->setCurrentLongitude('123.3025280');
+        $entityManager->flush();
+
+        $this->client->request('GET', '/api/rider/pool', server: $this->auth($this->login()));
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([], $this->payload()['orders'] ?? null);
+        self::assertSame('outside_radius', $this->payload()['reason_code'] ?? null);
+        self::assertStringContainsString('outside its current', $this->payload()['reason'] ?? '');
+        self::assertStringContainsString('restaurant map pin', $this->payload()['reason'] ?? '');
+    }
+
     public function testRiderAcceptsAtomicallyAndStaleCompetitorLosesTheRace(): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);

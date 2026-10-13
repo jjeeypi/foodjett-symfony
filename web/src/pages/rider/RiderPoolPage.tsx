@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import type { RiderOutletContext } from '../../layouts/RiderLayout'
-import { acceptRiderPoolOrder, authorizeMercure, declineRiderPoolOrder, getRiderPool, isApiError } from '../../lib/api'
+import { acceptRiderPoolOrder, authorizeMercure, declineRiderPoolOrder, getRiderPool, isApiError, refreshRiderLocation } from '../../lib/api'
 import type { RiderPoolOffer } from '../../lib/api'
+import { getBrowserLocation } from '../../lib/geolocation'
 
 const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' })
 
@@ -33,9 +34,11 @@ export function RiderPoolPage() {
   const [loading, setLoading] = useState(profile.availability_status === 'available')
   const [error, setError] = useState('')
   const [reason, setReason] = useState('')
+  const [reasonCode, setReasonCode] = useState<'outside_radius' | 'cash_limit' | ''>('')
   const [notice, setNotice] = useState('')
   const [busyId, setBusyId] = useState('')
   const [connection, setConnection] = useState<'connecting' | 'live' | 'offline'>('offline')
+  const [locationBusy, setLocationBusy] = useState(false)
   const sourceRef = useRef<EventSource | null>(null)
 
   const loadOffers = useCallback(async (signal?: AbortSignal, silent = false) => {
@@ -44,6 +47,7 @@ export function RiderPoolPage() {
       const response = await getRiderPool(signal)
       setOffers(response.orders)
       setReason(response.reason ?? '')
+      setReasonCode(response.reason_code ?? '')
     } catch (requestError) {
       if (signal?.aborted) return
       if (!silent) setError(isApiError(requestError) ? requestError.message : 'Unable to load nearby orders.')
@@ -62,10 +66,37 @@ export function RiderPoolPage() {
     const controller = new AbortController()
     queueMicrotask(() => {
       setLoading(true)
-      void loadOffers(controller.signal).finally(() => { if (!controller.signal.aborted) setLoading(false) })
+      void (async () => {
+        const location = await getBrowserLocation()
+        if (location && !controller.signal.aborted) await refreshRiderLocation(location)
+        if (!controller.signal.aborted) await loadOffers(controller.signal)
+      })().catch((requestError: unknown) => {
+        if (!controller.signal.aborted) setError(isApiError(requestError) ? requestError.message : 'Unable to refresh your location.')
+      }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
     })
     return () => controller.abort()
   }, [loadOffers, profile.availability_status])
+
+  async function refreshLocationAndOffers() {
+    setLocationBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const location = await getBrowserLocation()
+      if (!location) {
+        setError('Location access was unavailable. Allow location permission in your browser and try again.')
+        return
+      }
+      await refreshRiderLocation(location)
+      await refreshProfile()
+      await loadOffers()
+      setNotice('Location refreshed. Nearby offers are up to date.')
+    } catch (requestError) {
+      setError(isApiError(requestError) ? requestError.message : 'Unable to refresh your location.')
+    } finally {
+      setLocationBusy(false)
+    }
+  }
 
   useEffect(() => {
     sourceRef.current?.close()
@@ -153,7 +184,7 @@ export function RiderPoolPage() {
     <div>
       <header className="flex items-end justify-between gap-3">
         <div><p className="text-xs font-black uppercase tracking-[0.18em] text-neon-green">Nearby deliveries</p><h1 className="mt-1 text-3xl font-black text-white">Order pool</h1><p className="mt-2 text-sm leading-5 text-white/40">Accept one delivery at a time. First rider to confirm gets it.</p></div>
-        {profile.availability_status === 'available' && <span className={`mb-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase ${connection === 'live' ? 'border-neon-green/25 text-neon-green' : 'border-amber-300/20 text-amber-200'}`}><span className="h-1.5 w-1.5 rounded-full bg-current"/>{connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : 'Reconnecting'}</span>}
+        {profile.availability_status === 'available' && <div className="flex shrink-0 flex-col items-end gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase ${connection === 'live' ? 'border-neon-green/25 text-neon-green' : 'border-amber-300/20 text-amber-200'}`}><span className="h-1.5 w-1.5 rounded-full bg-current"/>{connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : 'Reconnecting'}</span><button type="button" onClick={() => void refreshLocationAndOffers()} disabled={locationBusy} className="min-h-9 rounded-lg border border-white/10 px-3 text-[10px] font-black uppercase text-white/55 disabled:opacity-40">{locationBusy ? 'Locating…' : 'Refresh location'}</button></div>}
       </header>
 
       {notice && <div role="status" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-neon-green/25 bg-neon-green/[0.07] px-4 py-3 text-sm font-semibold text-neon-green"><span>{notice}</span><button type="button" onClick={() => setNotice('')} className="min-h-9 px-2 text-xs">Dismiss</button></div>}
@@ -162,9 +193,10 @@ export function RiderPoolPage() {
       {loading ? <PoolSkeleton /> : profile.availability_status !== 'available' || reason ? (
         <section className="mt-6 rounded-3xl border border-dashed border-white/10 bg-brand-surface px-6 py-14 text-center">
           <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-2xl ${profile.availability_status === 'busy' ? 'bg-amber-300/10 text-amber-200' : 'bg-white/[0.05] text-white/35'}`}>{profile.availability_status === 'busy' ? '↗' : '○'}</span>
-          <h2 className="mt-5 text-xl font-black text-white">{profile.availability_status === 'busy' ? 'Delivery in progress' : profile.availability_status === 'offline' ? 'You’re offline' : 'Location needed'}</h2>
+          <h2 className="mt-5 text-xl font-black text-white">{profile.availability_status === 'busy' ? 'Delivery in progress' : profile.availability_status === 'offline' ? 'You’re offline' : reasonCode === 'outside_radius' ? 'No offers in range' : reasonCode === 'cash_limit' ? 'Cash limit reached' : 'Location needed'}</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-white/40">{reason || 'Use the center button below to go online and receive nearby offers.'}</p>
           {profile.availability_status === 'busy' && <Link to="/rider/active" className="mt-5 inline-flex min-h-12 items-center rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black">View active delivery</Link>}
+          {profile.availability_status === 'available' && <button type="button" onClick={() => void refreshLocationAndOffers()} disabled={locationBusy} className="mt-5 min-h-12 rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black disabled:opacity-50">{locationBusy ? 'Refreshing…' : 'Refresh current location'}</button>}
         </section>
       ) : offers.length === 0 ? (
         <section className="mt-6 rounded-3xl border border-dashed border-white/10 bg-brand-surface px-6 py-14 text-center"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neon-green/[0.07] text-2xl text-neon-green">✓</span><h2 className="mt-5 text-xl font-black text-white">No offers right now</h2><p className="mt-2 text-sm leading-6 text-white/40">You’re online. New nearby deliveries will appear here automatically.</p><button type="button" onClick={() => { setLoading(true); void loadOffers().finally(() => setLoading(false)) }} className="mt-5 min-h-11 rounded-xl border border-neon-green/30 px-4 text-sm font-bold text-neon-green">Refresh</button></section>

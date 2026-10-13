@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { apiAssetUrl, getRiderProfile, isApiError, toggleRiderAvailability } from '../lib/api'
 import type { RiderAvailabilityStatus, RiderProfile } from '../lib/api'
+import { getBrowserLocation } from '../lib/geolocation'
 
 export interface RiderOutletContext {
   profile: RiderProfile
@@ -15,17 +16,6 @@ const navigation = [
   { label: 'Earnings', to: '/rider/earnings', icon: EarningsIcon },
   { label: 'Account', to: '/rider/account', icon: AccountIcon },
 ]
-
-function currentLocation(): Promise<{ latitude: number; longitude: number } | undefined> {
-  if (!navigator.geolocation) return Promise.resolve(undefined)
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-      () => resolve(undefined),
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
-    )
-  })
-}
 
 export function RiderLayout() {
   const [profile, setProfile] = useState<RiderProfile | null>(null)
@@ -61,9 +51,15 @@ export function RiderLayout() {
     setToggleBusy(true)
     setNotice(profile.availability_status === 'offline' ? 'Getting your location…' : '')
     try {
-      const location = profile.availability_status === 'offline' ? await currentLocation() : undefined
+      const location = profile.availability_status === 'offline' ? await getBrowserLocation() : undefined
       const response = await toggleRiderAvailability(location)
-      setProfile((current) => current ? { ...current, availability_status: response.availability_status } : current)
+      setProfile((current) => current ? {
+        ...current,
+        availability_status: response.availability_status,
+        current_latitude: response.latitude ?? current.current_latitude,
+        current_longitude: response.longitude ?? current.current_longitude,
+        last_location_at: response.last_location_at ?? current.last_location_at,
+      } : current)
       setNotice(response.availability_status === 'available'
         ? location ? 'You’re online and ready for offers.' : 'You’re online. The last saved location will be used.'
         : 'You’re offline. New offers are paused.')

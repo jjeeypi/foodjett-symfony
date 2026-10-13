@@ -108,6 +108,57 @@ final readonly class RiderPoolService
         return $this->moneyToCents($rider->getCashOnHand()) >= $this->moneyToCents($rider->getCashRemitLimit());
     }
 
+    /** @return array{code: string, message: string}|null */
+    public function emptyPoolReason(Rider $rider): ?array
+    {
+        /** @var list<Order> $orders */
+        $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
+            ->innerJoin('orders.riderPoolOffer', 'offer')->addSelect('offer')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::FINDING_RIDER)
+            ->andWhere('orders.rider IS NULL')
+            ->getQuery()->getResult();
+
+        $nearest = null;
+        $radius = null;
+        $codBlocked = false;
+        foreach ($orders as $order) {
+            $offer = $order->getRiderPoolOffer();
+            if (!$offer instanceof RiderPoolOffer || $this->wasSkipped($order, $rider)) {
+                continue;
+            }
+            if (PaymentMethod::COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
+                $codBlocked = true;
+                continue;
+            }
+            $distance = DeliveryZoneService::distanceKm(
+                (float) $rider->getCurrentLatitude(),
+                (float) $rider->getCurrentLongitude(),
+                (float) $order->getRestaurant()->getLatitude(),
+                (float) $order->getRestaurant()->getLongitude(),
+            );
+            if (null === $nearest || $distance < $nearest) {
+                $nearest = $distance;
+                $radius = (float) $offer->getSearchRadiusKm();
+            }
+        }
+        if (null !== $nearest && null !== $radius && $nearest > $radius) {
+            return [
+                'code' => 'outside_radius',
+                'message' => sprintf(
+                    'The nearest available pickup is %.2f km away, outside its current %.2f km search radius. Refresh your location and check that the restaurant map pin is correct.',
+                    $nearest,
+                    $radius,
+                ),
+            ];
+        }
+        if ($codBlocked) {
+            return ['code' => 'cash_limit', 'message' => 'Your cash-on-hand limit is reached. Submit a remittance before accepting another COD order.'];
+        }
+
+        return null;
+    }
+
     public function accept(Order $order, Rider $rider, bool $adminOverride = false): Order
     {
         if (null === $rider->getId()) {
