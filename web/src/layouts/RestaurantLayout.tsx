@@ -122,8 +122,7 @@ export function RestaurantLayout() {
   const logo = apiAssetUrl(restaurant.logo_path)
 
   return (
-    <div className="min-h-svh text-white lg:grid lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <a href="#restaurant-content" className="app-skip-link">Skip to content</a>
+    <div className="min-h-svh bg-brand-black text-white lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside className="restaurant-safe-top hidden h-svh flex-col border-r border-white/10 bg-brand-surface lg:sticky lg:top-0 lg:flex">
         <div className="border-b border-white/10 px-5 pb-5 pt-6">
           <Logo className="!w-36" />
@@ -179,10 +178,8 @@ export function RestaurantLayout() {
 
         {statusMessage && <div role="status" className="border-b border-neon-green/15 bg-neon-green/[0.06] px-4 py-2 text-center text-xs font-semibold text-neon-green sm:px-6 lg:px-8">{statusMessage}</div>}
 
-        <main id="restaurant-content" tabIndex={-1} className="app-main mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-          <div className="page-enter">
-            <Outlet context={{ restaurant, updateRestaurant: setRestaurant } satisfies RestaurantOutletContext} />
-          </div>
+        <main className="mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <Outlet context={{ restaurant, updateRestaurant: setRestaurant } satisfies RestaurantOutletContext} />
         </main>
       </div>
     </div>

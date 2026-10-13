@@ -76,9 +76,8 @@ export function RiderLayout() {
   const avatar = apiAssetUrl(profile.avatar_path)
 
   return (
-    <div className="min-h-svh text-white">
-      <a href="#rider-content" className="app-skip-link">Skip to content</a>
-      <div className="mx-auto min-h-svh w-full max-w-[36rem] border-x border-white/[0.06] bg-brand-black/90 shadow-[0_0_80px_rgba(0,0,0,0.65)] backdrop-blur-sm">
+    <div className="min-h-svh bg-brand-black text-white">
+      <div className="mx-auto min-h-svh w-full max-w-[34rem] border-x border-white/[0.05] bg-brand-black shadow-2xl">
         <header className="rider-safe-top sticky top-0 z-30 border-b border-white/10 bg-brand-black/95 px-4 pb-3 pt-3 backdrop-blur-xl">
           <div className="flex min-h-12 items-center gap-3">
             <Logo className="!w-28" />
@@ -92,11 +91,11 @@ export function RiderLayout() {
 
         {notice && <div role="status" className="sticky top-[calc(4.6rem+env(safe-area-inset-top))] z-20 flex items-center justify-between gap-3 border-b border-neon-green/15 bg-[#10220d] px-4 py-2.5 text-xs font-semibold text-neon-green"><span>{notice}</span><button type="button" onClick={() => setNotice('')} className="min-h-8 px-2">Dismiss</button></div>}
 
-        <main id="rider-content" tabIndex={-1} className="app-main px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-5 sm:pt-6">
-          <div className="page-enter"><Outlet context={{ profile, refreshProfile } satisfies RiderOutletContext} /></div>
+        <main className="px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-5 sm:pt-6">
+          <Outlet context={{ profile, refreshProfile } satisfies RiderOutletContext} />
         </main>
 
-        <nav aria-label="Rider navigation" className="rider-safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[36rem] border-t border-white/10 bg-brand-surface/95 px-2 pt-2 shadow-[0_-16px_45px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+        <nav aria-label="Rider navigation" className="rider-safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[34rem] border-t border-white/10 bg-brand-surface/95 px-2 pt-2 shadow-[0_-16px_45px_rgba(0,0,0,0.42)] backdrop-blur-xl">
           <div className="grid grid-cols-5 items-end">
             <NavItem {...navigation[0]} />
             <NavItem {...navigation[1]} />

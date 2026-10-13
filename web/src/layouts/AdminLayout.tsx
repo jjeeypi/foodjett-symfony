@@ -84,8 +84,7 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-svh text-white lg:grid lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <a href="#admin-content" className="app-skip-link">Skip to content</a>
+    <div className="min-h-svh bg-brand-black text-white lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside className="hidden h-svh flex-col border-r border-white/10 bg-brand-surface lg:sticky lg:top-0 lg:flex">
         <div className="border-b border-white/10 px-5 pb-5 pt-6">
           <Logo className="!w-36" />
@@ -142,8 +141,8 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main id="admin-content" tabIndex={-1} className="app-main mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-          <div key={location.pathname} className="page-enter"><Outlet /></div>
+        <main className="mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <Outlet />
         </main>
       </div>
     </div>

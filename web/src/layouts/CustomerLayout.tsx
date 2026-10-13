@@ -31,13 +31,10 @@ export function CustomerLayout() {
   }, [location.pathname, location.search, navigate, searchQuery])
 
   return (
-    <div className="min-h-svh text-white">
-      <a href="#main-content" className="app-skip-link">Skip to content</a>
+    <div className="min-h-svh bg-brand-black text-white">
       <TopNav searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
-      <main id="main-content" tabIndex={-1} className="app-main mx-auto w-full max-w-[90rem] px-4 py-7 sm:px-6 sm:py-9 lg:px-8 lg:py-12">
-        <div key={location.pathname} className="page-enter">
-          <Outlet context={{ searchQuery, setSearchQuery } satisfies CustomerOutletContext} />
-        </div>
+      <main className="mx-auto w-full max-w-[90rem] px-4 py-7 sm:px-6 sm:py-9 lg:px-8 lg:py-12">
+        <Outlet context={{ searchQuery, setSearchQuery } satisfies CustomerOutletContext} />
       </main>
       <CartDrawer />
     </div>
