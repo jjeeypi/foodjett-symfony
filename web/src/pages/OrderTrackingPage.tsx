@@ -26,7 +26,14 @@ interface OrderRealtimePayload {
   order_id?: string
   status?: OrderStatus
   estimated_ready_at?: string | null
-  rider?: CustomerOrderDetail['rider']
+  rider?: null | {
+    id: string
+    name: string
+    vehicle_type: string
+    current_latitude?: string | null
+    current_longitude?: string | null
+    last_location_at?: string | null
+  }
   latitude?: string
   longitude?: string
   timestamp?: string
@@ -186,7 +193,16 @@ export default function OrderTrackingPage() {
             ...current,
             status: payload.status ?? current.status,
             estimated_ready_at: payload.estimated_ready_at === undefined ? current.estimated_ready_at : payload.estimated_ready_at,
-            rider: payload.rider === undefined ? current.rider : payload.rider,
+            rider: payload.rider === undefined
+              ? current.rider
+              : payload.rider === null
+                ? null
+                : {
+                    ...payload.rider,
+                    current_latitude: payload.rider.current_latitude ?? (current.rider?.id === payload.rider.id ? current.rider.current_latitude : null),
+                    current_longitude: payload.rider.current_longitude ?? (current.rider?.id === payload.rider.id ? current.rider.current_longitude : null),
+                    last_location_at: payload.rider.last_location_at ?? (current.rider?.id === payload.rider.id ? current.rider.last_location_at : null),
+                  },
           } : current)
           void loadOrder(true)
         } catch {
