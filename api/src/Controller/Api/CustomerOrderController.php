@@ -277,6 +277,14 @@ final class CustomerOrderController extends AbstractCustomerController
         $history = $order->getStatusHistory()->toArray();
         usort($history, static fn (OrderStatusHistory $left, OrderStatusHistory $right): int => ($left->getCreatedAt() <=> $right->getCreatedAt()) ?: ((int) $left->getId() <=> (int) $right->getId()));
         $address = $order->getCustomerAddress();
+        $rider = $order->getRider();
+        $locationVisible = null !== $rider && in_array($order->getStatus(), [
+            OrderStatus::RIDER_ASSIGNED,
+            OrderStatus::AT_RESTAURANT,
+            OrderStatus::PICKED_UP,
+            OrderStatus::ON_THE_WAY,
+            OrderStatus::ARRIVED,
+        ], true);
 
         return $this->summary($order) + [
             'subtotal' => $order->getSubtotal(), 'delivery_fee' => $order->getDeliveryFee(), 'service_fee' => $order->getServiceFee(),
@@ -285,7 +293,14 @@ final class CustomerOrderController extends AbstractCustomerController
             'can_cancel' => $order->canBeCancelledByCustomer(),
             'cancellation_reason' => $order->getCancellationReason(),
             'cancelled_by' => $order->getCancelledBy()?->value,
-            'rider' => null === $order->getRider() ? null : ['id' => $order->getRider()?->getId(), 'name' => $order->getRider()?->getUser()->getName(), 'vehicle_type' => $order->getRider()?->getVehicleType()->value],
+            'rider' => null === $rider ? null : [
+                'id' => $rider->getId(),
+                'name' => $rider->getUser()->getName(),
+                'vehicle_type' => $rider->getVehicleType()->value,
+                'current_latitude' => $locationVisible ? $rider->getCurrentLatitude() : null,
+                'current_longitude' => $locationVisible ? $rider->getCurrentLongitude() : null,
+                'last_location_at' => $locationVisible ? $rider->getLastLocationAt()?->format(\DateTimeInterface::ATOM) : null,
+            ],
             'delivery_address' => [
                 'id' => $address->getId(), 'label' => $address->getLabel(), 'address_line' => $address->getAddressLine(),
                 'landmark' => $address->getLandmark(), 'delivery_instructions' => $address->getDeliveryInstructions(),

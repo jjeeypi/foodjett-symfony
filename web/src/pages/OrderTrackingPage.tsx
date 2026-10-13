@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { OrderStatusTimeline } from '../components/customer/OrderStatusTimeline'
+import { LiveRiderMap } from '../components/customer/LiveRiderMap'
 import {
   apiAssetUrl,
   authorizeMercure,
@@ -26,7 +27,12 @@ interface OrderRealtimePayload {
   status?: OrderStatus
   estimated_ready_at?: string | null
   rider?: CustomerOrderDetail['rider']
+  latitude?: string
+  longitude?: string
+  timestamp?: string
 }
+
+const LIVE_RIDER_MAP_STATUSES: OrderStatus[] = ['rider_assigned', 'at_restaurant', 'picked_up', 'on_the_way', 'arrived']
 
 function displayDate(value: string | null): string {
   return value ? dateTime.format(new Date(value)) : '—'
@@ -163,6 +169,19 @@ export default function OrderTrackingPage() {
         try {
           const payload = JSON.parse(event.data) as OrderRealtimePayload
           if (payload.order_id !== orderId) return
+          if (payload.event === 'rider.location_updated') {
+            if (payload.latitude === undefined || payload.longitude === undefined) return
+            setOrder((current) => current?.rider ? {
+              ...current,
+              rider: {
+                ...current.rider,
+                current_latitude: payload.latitude ?? current.rider.current_latitude,
+                current_longitude: payload.longitude ?? current.rider.current_longitude,
+                last_location_at: payload.timestamp ?? current.rider.last_location_at,
+              },
+            } : current)
+            return
+          }
           setOrder((current) => current ? {
             ...current,
             status: payload.status ?? current.status,
@@ -252,6 +271,7 @@ export default function OrderTrackingPage() {
 
   const logoUrl = apiAssetUrl(order.restaurant.logo_path)
   const cancelled = order.status.startsWith('cancelled_') || order.status === 'rejected_by_restaurant' || order.status === 'failed_delivery'
+  const showLiveRiderMap = order.rider !== null && LIVE_RIDER_MAP_STATUSES.includes(order.status)
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -309,6 +329,16 @@ export default function OrderTrackingPage() {
               </div>
               {chatError && <p role="alert" className="mt-3 text-sm text-red-200">{chatError}</p>}
             </section>
+          )}
+
+          {showLiveRiderMap && order.rider && (
+            <LiveRiderMap
+              riderLatitude={order.rider.current_latitude}
+              riderLongitude={order.rider.current_longitude}
+              destinationLatitude={order.delivery_address.latitude}
+              destinationLongitude={order.delivery_address.longitude}
+              lastLocationAt={order.rider.last_location_at}
+            />
           )}
 
           <section className="rounded-3xl border border-white/10 bg-brand-surface p-5 sm:p-7">

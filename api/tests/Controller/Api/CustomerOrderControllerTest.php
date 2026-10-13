@@ -54,6 +54,10 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
     public function testShowExposesAssignedRiderAndDisablesCancellationAfterAcceptance(): void
     {
         $rider = $this->createRider();
+        $locationAt = new \DateTimeImmutable('-10 seconds');
+        $rider->setCurrentLatitude('14.6012345')
+            ->setCurrentLongitude('120.9876543')
+            ->setLastLocationAt($locationAt);
         $order = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::RIDER_ASSIGNED)
             ->setRider($rider)
             ->setAcceptedAt(new \DateTimeImmutable('-20 minutes'))
@@ -68,7 +72,36 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
         self::assertSame($rider->getId(), $shown['rider']['id']);
         self::assertSame($rider->getUser()->getName(), $shown['rider']['name']);
         self::assertSame('motorcycle', $shown['rider']['vehicle_type']);
+        self::assertSame('14.6012345', $shown['rider']['current_latitude']);
+        self::assertSame('120.9876543', $shown['rider']['current_longitude']);
+        self::assertSame($locationAt->format(\DateTimeInterface::ATOM), $shown['rider']['last_location_at']);
         self::assertNotNull($shown['timestamps']['rider_assigned_at']);
+    }
+
+    public function testShowHidesRiderLocationAfterDelivery(): void
+    {
+        $rider = $this->createRider()
+            ->setCurrentLatitude('14.6012345')
+            ->setCurrentLongitude('120.9876543')
+            ->setLastLocationAt(new \DateTimeImmutable('-10 seconds'));
+        $order = $this->createOrder(
+            $this->customer,
+            $this->restaurant,
+            $this->address,
+            OrderStatus::DELIVERED,
+            new \DateTimeImmutable('-1 hour'),
+            new \DateTimeImmutable('-1 minute'),
+        )->setRider($rider);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/api/customer/orders/'.$order->getId(), server: $this->auth());
+
+        self::assertResponseIsSuccessful();
+        $shown = $this->payload()['order'];
+        self::assertSame($rider->getId(), $shown['rider']['id']);
+        self::assertNull($shown['rider']['current_latitude']);
+        self::assertNull($shown['rider']['current_longitude']);
+        self::assertNull($shown['rider']['last_location_at']);
     }
 
     public function testReorderUsesCurrentPricesAndRejectsUnavailableItems(): void
