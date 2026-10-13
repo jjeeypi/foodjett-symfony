@@ -112,7 +112,7 @@ export default function HomePage() {
 
       {!loading && !error && filteredRestaurants.length === 0 && (
         <div className="rounded-2xl border border-white/10 bg-brand-surface px-6 py-14 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-neon-green/20 bg-neon-green/[0.06] text-2xl">🍽</div>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-neon-green/20 bg-neon-green/[0.06] text-neon-green" aria-hidden="true"><svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3v18M17 3c2 2 3 4.5 3 7h-3"/></svg></div>
           <h2 className="text-lg font-bold text-white">{query || selectedCuisine ? 'No matching restaurants' : 'No restaurants open right now'}</h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/50">{query || selectedCuisine ? 'Try another restaurant name or cuisine.' : 'Check back soon—more kitchens may open later today.'}</p>
           {(query || selectedCuisine) && <button type="button" onClick={clearFilters} className="mt-5 min-h-11 rounded-xl border border-neon-green px-5 text-sm font-semibold text-neon-green transition hover:bg-neon-green hover:text-brand-black">Clear filters</button>}
