@@ -37,8 +37,8 @@ function ViewportController({ rider, destination }: { rider: LatLngExpression; d
   return null
 }
 
-function coordinate(value: string | null): number | null {
-  if (value === null || value.trim() === '') return null
+function coordinate(value: string | null | undefined): number | null {
+  if (value === null || value === undefined || value.trim() === '') return null
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
 }
