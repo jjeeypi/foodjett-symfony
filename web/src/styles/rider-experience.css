@@ -76,6 +76,88 @@
 .fj-rider-shell-state { display: flex; min-height: 100svh; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: var(--rider-bg, #f5f7f1); padding: 24px; color: var(--rider-muted, #899183); text-align: center; }
 .fj-rider-shell-state button { min-height: 42px; border: 0; border-radius: 9px; background: #273826; padding: 0 18px; color: #fff; font-weight: 700; }
 
+.fj-rider-page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.fj-rider-page-heading > div:first-child { min-width: 0; }
+.fj-rider-eyebrow { display: flex; align-items: center; gap: 7px; margin: 0; color: #77905f; font-size: 8px; font-weight: 800; letter-spacing: 1.5px; }
+.fj-rider-eyebrow span { width: 5px; height: 5px; border-radius: 50%; background: #86aa64; }
+.fj-rider-page-heading h1 { margin: 8px 0 0; font-family: Manrope, sans-serif; font-size: clamp(30px, 4vw, 42px); font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; }
+.fj-rider-page-heading > div:first-child > p:last-child { max-width: 540px; margin: 9px 0 0; color: var(--rider-muted); font-size: 12px; line-height: 1.6; }
+.fj-rider-heading-actions { display: flex; align-items: center; gap: 9px; }
+.fj-rider-live-pill { display: inline-flex; min-height: 36px; align-items: center; gap: 7px; border: 1px solid #e0e6da; border-radius: 999px; background: #fff; padding: 0 12px; color: #91998b; font-size: 9px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+.fj-rider-live-pill i { width: 6px; height: 6px; border-radius: 50%; background: #c29b55; }
+.fj-rider-live-pill--live { border-color: #d4e3c5; background: #f5f9ef; color: #648249; }
+.fj-rider-live-pill--live i { background: #77a950; box-shadow: 0 0 0 4px rgb(119 169 80 / 12%); }
+.fj-rider-primary-button,
+.fj-rider-secondary-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border-radius: 8px; padding: 0 16px; font-size: 11px; font-weight: 750; text-decoration: none; transition: transform .18s ease, opacity .18s ease, background .18s ease; }
+.fj-rider-primary-button { border: 1px solid var(--rider-ink); background: var(--rider-ink); color: #fff; }
+.fj-rider-secondary-button { border: 1px solid #dfe5da; background: #fff; color: #64705e; }
+.fj-rider-primary-button:hover,
+.fj-rider-secondary-button:hover { transform: translateY(-1px); }
+.fj-rider-primary-button:disabled,
+.fj-rider-secondary-button:disabled { opacity: .48; transform: none; }
+.fj-rider-pool-banner { position: relative; display: grid; min-height: 215px; grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr); align-items: center; gap: 32px; overflow: hidden; margin-top: 28px; border-radius: 17px; background: var(--rider-soft); padding: 28px 32px; }
+.fj-rider-pool-banner::after { position: absolute; right: -90px; bottom: -150px; width: 360px; height: 360px; border: 45px solid rgb(123 157 91 / 9%); border-radius: 50%; content: ""; }
+.fj-rider-pool-banner > div,
+.fj-rider-pool-banner dl { position: relative; z-index: 1; }
+.fj-rider-pool-banner > div > span { color: #76905e; font-size: 8px; font-weight: 800; letter-spacing: 1.4px; }
+.fj-rider-pool-banner h2 { margin: 11px 0 0; color: #334629; font-family: Manrope, sans-serif; font-size: clamp(25px, 3vw, 34px); font-weight: 800; letter-spacing: -1px; line-height: 1.14; }
+.fj-rider-pool-banner p { max-width: 500px; margin: 12px 0 0; color: #7d896f; font-size: 11px; line-height: 1.7; }
+.fj-rider-pool-banner dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid rgb(126 151 103 / 18%); border-radius: 12px; background: rgb(255 255 255 / 64%); }
+.fj-rider-pool-banner dl div { min-width: 0; padding: 18px 14px; text-align: center; }
+.fj-rider-pool-banner dl div + div { border-left: 1px solid rgb(126 151 103 / 18%); }
+.fj-rider-pool-banner dt { color: #8b9681; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+.fj-rider-pool-banner dd { overflow: hidden; margin: 7px 0 0; color: #385130; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.fj-rider-alert { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; border: 1px solid; border-radius: 10px; padding: 11px 14px; font-size: 11px; }
+.fj-rider-alert button { min-height: 32px; border: 0; background: transparent; color: inherit; font-size: 9px; font-weight: 800; }
+.fj-rider-alert--success { border-color: #d4e5c4; background: #f0f7e8; color: #60804a; }
+.fj-rider-alert--error { border-color: #eccfca; background: #fff3f1; color: #a55f54; }
+.fj-rider-empty-state { display: flex; min-height: 300px; align-items: center; justify-content: center; flex-direction: column; margin-top: 22px; border: 1px dashed #d8dfd3; border-radius: 17px; background: #fff; padding: 42px 24px; text-align: center; }
+.fj-rider-empty-icon { display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%; background: #f1f4ed; color: #96a08f; font-size: 23px; }
+.fj-rider-empty-icon.is-ready { background: #edf6e2; color: #70944e; }
+.fj-rider-empty-icon.is-busy { background: #fbf2df; color: #b18137; }
+.fj-rider-empty-state h2 { margin: 17px 0 0; font-family: Manrope, sans-serif; font-size: 20px; font-weight: 800; }
+.fj-rider-empty-state p { max-width: 430px; margin: 8px 0 18px; color: var(--rider-muted); font-size: 12px; line-height: 1.7; }
+.fj-rider-offer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+.fj-rider-offer-card { overflow: hidden; border: 1px solid var(--rider-line); border-radius: 15px; background: #fff; box-shadow: 0 8px 28px rgb(39 56 38 / 4%); }
+.fj-rider-offer-card > header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid #edf0e9; padding: 18px 19px 15px; }
+.fj-rider-offer-card > header > div:first-child { min-width: 0; }
+.fj-rider-offer-card > header p { margin: 0; color: #a0a79a; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
+.fj-rider-offer-card > header h2 { overflow: hidden; margin: 6px 0 0; font-family: Manrope, sans-serif; font-size: 17px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.fj-rider-offer-pay { flex: 0 0 auto; text-align: right; }
+.fj-rider-offer-pay strong,
+.fj-rider-offer-pay span { display: block; }
+.fj-rider-offer-pay strong { color: #5e7e45; font-family: Manrope, sans-serif; font-size: 19px; font-weight: 800; }
+.fj-rider-offer-pay span { margin-top: 3px; color: #a0a79a; font-size: 7px; letter-spacing: .7px; text-transform: uppercase; }
+.fj-rider-route-preview { position: relative; display: grid; gap: 13px; background: #fafbf8; padding: 18px 19px; }
+.fj-rider-route-preview > div { position: relative; z-index: 1; display: flex; min-width: 0; align-items: center; gap: 11px; }
+.fj-rider-route-preview i { width: 10px; height: 10px; flex: 0 0 10px; border: 2px solid #87aa67; border-radius: 50%; background: #fff; }
+.fj-rider-route-preview i.dropoff { border-radius: 2px 50% 50%; background: #87aa67; transform: rotate(45deg); }
+.fj-rider-route-preview small,
+.fj-rider-route-preview strong { display: block; }
+.fj-rider-route-preview small { color: #a1a99b; font-size: 7px; font-weight: 800; letter-spacing: .9px; }
+.fj-rider-route-preview strong { overflow: hidden; margin-top: 3px; color: #596354; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.fj-rider-route-line { position: absolute; top: 30px; bottom: 31px; left: 23px; width: 1px; border-left: 1px dashed #b7c9a8; }
+.fj-rider-route-preview > a { position: absolute; right: 18px; bottom: 18px; z-index: 2; color: #67834e; font-size: 9px; font-weight: 750; text-decoration: none; }
+.fj-rider-offer-metrics { display: grid; grid-template-columns: 1fr 1fr; border-block: 1px solid #edf0e9; }
+.fj-rider-offer-metrics > div { padding: 12px 19px; }
+.fj-rider-offer-metrics > div + div { border-left: 1px solid #edf0e9; }
+.fj-rider-offer-metrics span,
+.fj-rider-offer-metrics strong { display: block; }
+.fj-rider-offer-metrics span { color: #9da597; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+.fj-rider-offer-metrics strong { margin-top: 4px; color: #4c5a46; font-size: 13px; }
+.fj-rider-offer-body { padding: 16px 19px 19px; }
+.fj-rider-offer-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.fj-rider-offer-tags span { border-radius: 999px; background: #f1f3ee; padding: 5px 8px; color: #788173; font-size: 8px; font-weight: 750; text-transform: uppercase; }
+.fj-rider-offer-tags span.accent { background: #edf6e1; color: #66834d; }
+.fj-rider-offer-tags span.warning { background: #fbf0dc; color: #a57631; }
+.fj-rider-offer-body > p { margin: 11px 0 0; color: #939b8d; font-size: 9px; line-height: 1.6; }
+.fj-rider-offer-actions { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8px; margin-top: 15px; }
+.fj-rider-offer-actions > * { width: 100%; }
+.fj-rider-skeleton-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+.fj-rider-skeleton-grid > div { min-height: 360px; border: 1px solid var(--rider-line); border-radius: 15px; background: linear-gradient(90deg, #fff 20%, #f0f3ec 50%, #fff 80%); background-size: 200% 100%; animation: fj-rider-shimmer 1.3s linear infinite; }
+
+@keyframes fj-rider-shimmer { to { background-position: -200% 0; } }
+
 @keyframes fj-rider-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 980px) {
@@ -84,6 +166,9 @@
   .fj-rider-content { padding-inline: 26px; }
   .fj-rider-topbar { padding-inline: 26px; }
   .fj-rider-notice { padding-inline: 26px; }
+  .fj-rider-pool-banner { grid-template-columns: 1fr; }
+  .fj-rider-offer-grid,
+  .fj-rider-skeleton-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 720px) {
@@ -109,6 +194,18 @@
   .fj-rider-mobile-power svg { width: 22px; height: 22px; }
   .fj-rider--available .fj-rider-mobile-power { background: var(--rider-accent); color: #2a4123; }
   .fj-rider--busy .fj-rider-mobile-power { background: #f2d59c; color: #6f5427; }
+  .fj-rider-page-heading { align-items: flex-start; flex-direction: column; }
+  .fj-rider-page-heading h1 { font-size: 32px; }
+  .fj-rider-page-heading > div:first-child > p:last-child { font-size: 13px; }
+  .fj-rider-heading-actions { width: 100%; justify-content: space-between; }
+  .fj-rider-pool-banner { min-height: 0; margin-top: 23px; padding: 25px 22px; }
+  .fj-rider-pool-banner dl { margin-top: 2px; }
+  .fj-rider-pool-banner dl div { padding: 14px 8px; }
+  .fj-rider-pool-banner dd { font-size: 13px; }
+  .fj-rider-offer-card > header { padding: 17px; }
+  .fj-rider-route-preview,
+  .fj-rider-offer-body { padding-inline: 17px; }
+  .fj-rider-route-line { left: 21px; }
 }
 
 @media (max-width: 390px) {
