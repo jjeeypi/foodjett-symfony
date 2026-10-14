@@ -27,8 +27,8 @@ export function RestaurantEarningsPage() {
     return () => controller.abort()
   }, [page, retry])
 
-  return <div>
-    <header><p className="text-xs font-black uppercase tracking-[0.2em] text-neon-green">Finance</p><h1 className="mt-2 text-3xl font-black text-white sm:text-4xl">Earnings & payouts</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Monitor delivered-order revenue and admin-processed payouts. Payout records are read-only here.</p></header>
+  return <div className="fj-restaurant-earnings-page">
+    <header className="fj-restaurant-page-heading"><p>FINANCE</p><h1>Earnings & payouts</h1><span>Monitor delivered-order revenue and admin-processed payouts. Payout records are read-only here.</span></header>
     {loading ? <Loading /> : error ? <ErrorState message={error} onRetry={() => setRetry((value) => value + 1)} /> : <>
       {summary && <section className="mt-6 grid gap-4 md:grid-cols-3"><SummaryCard label="Today" period={summary.today} /><SummaryCard label="This week" period={summary.week} /><SummaryCard label="This month" period={summary.month} /></section>}
       <section className="mt-7"><h2 className="text-xl font-black text-white">Payout history</h2><p className="mt-1 text-sm text-white/40">Generated and marked paid by a platform administrator.</p>
@@ -38,9 +38,9 @@ export function RestaurantEarningsPage() {
   </div>
 }
 
-function SummaryCard({ label, period }: { label: string; period: RestaurantEarningsPeriod }) { return <article className="rounded-2xl border border-white/10 bg-brand-surface p-5"><p className="text-xs font-black uppercase tracking-[0.14em] text-white/35">{label}</p><p className="mt-3 text-3xl font-black text-white">{money(period.net_revenue)}</p><p className="mt-2 text-sm text-white/40">{period.order_count} delivered order{period.order_count === 1 ? '' : 's'}</p><div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4 text-xs"><p className="text-white/35">Gross <strong className="mt-1 block text-white/70">{money(period.gross_revenue)}</strong></p><p className="text-white/35">Commission <strong className="mt-1 block text-white/70">{money(period.commission)}</strong></p></div></article> }
-function Status({ value }: { value: string }) { const paid = value === 'paid'; return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${paid ? 'border-neon-green/25 bg-neon-green/[0.08] text-neon-green' : 'border-amber-300/25 bg-amber-300/[0.08] text-amber-200'}`}>{value}</span> }
+function SummaryCard({ label, period }: { label: string; period: RestaurantEarningsPeriod }) { return <article className="fj-earnings-card"><p>{label}</p><strong>{money(period.net_revenue)}</strong><span>{period.order_count} delivered order{period.order_count === 1 ? '' : 's'}</span><div><p>Gross <strong>{money(period.gross_revenue)}</strong></p><p>Commission <strong>{money(period.commission)}</strong></p></div></article> }
+function Status({ value }: { value: string }) { const paid = value === 'paid'; return <span className={`fj-payout-status ${paid ? 'is-paid' : 'is-pending'}`}>{value}</span> }
 function money(value: string) { return peso.format(Number(value)) }
 function formatDate(value: string) { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? 'Not recorded' : date.format(parsed) }
-function Loading() { return <div className="mt-6 grid gap-4 md:grid-cols-3" aria-busy="true">{[0, 1, 2].map((row) => <div key={row} className="h-48 animate-pulse rounded-2xl bg-brand-surface" />)}</div> }
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) { return <section role="alert" className="mt-6 rounded-2xl border border-red-400/20 bg-red-400/[0.06] px-5 py-14 text-center"><p className="text-sm text-red-100/75">{message}</p><button type="button" onClick={onRetry} className="mt-5 min-h-11 rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black">Try again</button></section> }
+function Loading() { return <div className="fj-earnings-loading" aria-busy="true">{[0, 1, 2].map((row) => <div key={row} />)}</div> }
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) { return <section role="alert" className="fj-restaurant-error-state"><p>{message}</p><button type="button" onClick={onRetry}>Try again</button></section> }

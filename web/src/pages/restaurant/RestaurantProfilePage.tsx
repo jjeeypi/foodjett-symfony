@@ -102,7 +102,7 @@ export function RestaurantProfilePage() {
   if (loading) return <PageSkeleton />
   if (error && documents.length === 0) return <ErrorState message={error} onRetry={() => setRetry((value) => value + 1)} />
 
-  return <div>
+  return <div className="fj-restaurant-profile-page">
     <PageHeading title="Store profile" description="Keep your public business details, weekly schedule, and approval documents current." />
     {notice && <p role="status" className="mt-5 rounded-xl border border-neon-green/20 bg-neon-green/[0.06] px-4 py-3 text-sm font-semibold text-neon-green">{notice}</p>}
     {error && <p role="alert" className="mt-5 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200">{error}</p>}
@@ -139,8 +139,8 @@ function blankHours(): HourDraft[] { return dayNames.map((_, day) => ({ day_of_w
 function mergeHours(saved: RestaurantOperatingHour[]): HourDraft[] { const byDay = new Map(saved.map((hour) => [hour.day_of_week, hour])); return blankHours().map((row) => ({ ...row, ...(byDay.get(row.day_of_week) ?? {}), enabled: byDay.has(row.day_of_week) })) }
 function documentLabel(value: string) { return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) }
 function apiMessage(error: unknown, fallback: string) { return isApiError(error) ? error.message : fallback }
-function PageHeading({ title, description }: { title: string; description: string }) { return <header><p className="text-xs font-black uppercase tracking-[0.2em] text-neon-green">Store settings</p><h1 className="mt-2 text-3xl font-black text-white sm:text-4xl">{title}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">{description}</p></header> }
-function SectionHeading({ title, description }: { title: string; description: string }) { return <div><h2 className="text-lg font-black text-white">{title}</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-white/40">{description}</p></div> }
+function PageHeading({ title, description }: { title: string; description: string }) { return <header className="fj-restaurant-page-heading"><p>STORE SETTINGS</p><h1>{title}</h1><span>{description}</span></header> }
+function SectionHeading({ title, description }: { title: string; description: string }) { return <div className="fj-profile-section-heading"><h2>{title}</h2><p>{description}</p></div> }
 function TimeField({ label, value, disabled, onChange }: { label: string; value: string; disabled: boolean; onChange: (value: string) => void }) { return <label><span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-white/35">{label}</span><input type="time" value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-brand-black px-3 text-sm text-white outline-none focus:border-neon-green disabled:opacity-30" /></label> }
 function PageSkeleton() { return <div className="space-y-5" aria-busy="true"><div className="h-24 animate-pulse rounded-2xl bg-brand-surface" /><div className="h-96 animate-pulse rounded-2xl bg-brand-surface" /><div className="h-72 animate-pulse rounded-2xl bg-brand-surface" /></div> }
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) { return <section role="alert" className="rounded-2xl border border-red-400/20 bg-red-400/[0.06] px-5 py-14 text-center"><p className="text-sm text-red-100/75">{message}</p><button type="button" onClick={onRetry} className="mt-5 min-h-11 rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black">Try again</button></section> }
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) { return <section role="alert" className="fj-restaurant-error-state"><p>{message}</p><button type="button" onClick={onRetry}>Try again</button></section> }
