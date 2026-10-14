@@ -134,6 +134,7 @@
 .fj-restaurant-status.is-open .fj-restaurant-status__switch > span { transform: translateX(16px); }
 .fj-restaurant-status__copy strong { display: block; color: #4c5e4c; font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
 .fj-restaurant-status.is-open .fj-restaurant-status__copy strong { color: #4e7837; }
+.fj-restaurant-status__short { display: none; }
 .fj-restaurant-status__copy small { display: none; margin-top: 1px; color: #899486; font-size: 9px; }
 .fj-restaurant-mobile-signout { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border: 1px solid var(--restaurant-line); border-radius: 11px; color: #849080; background: #fff; }
 .fj-restaurant-mobile-signout svg { width: 18px; height: 18px; }
@@ -490,7 +491,8 @@
   .fj-restaurant-topbar__identity small { display: none; }
   .fj-restaurant-status { gap: 7px; min-height: 42px; padding: 6px 8px; }
   .fj-restaurant-status__copy small { display: none; }
-  .fj-restaurant-status__copy strong { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fj-restaurant-status__full { display: none; }
+  .fj-restaurant-status__short { display: inline; }
   .fj-restaurant-mobile-signout { width: 38px; height: 38px; }
   .fj-restaurant-main { padding-inline: 11px; }
   .fj-restaurant-page-heading--split { align-items: flex-start; flex-direction: column; gap: 13px; }

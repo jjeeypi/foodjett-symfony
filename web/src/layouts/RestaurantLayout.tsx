@@ -44,7 +44,7 @@ function StoreStatusControl({ status, busy, onToggle }: { status: RestaurantOper
         <span />
       </span>
       <span className="fj-restaurant-status__copy">
-        <strong>{busy ? 'Updating…' : statusLabel(status)}</strong>
+        <strong><span className="fj-restaurant-status__full">{busy ? 'Updating…' : statusLabel(status)}</span><span className="fj-restaurant-status__short">{busy ? 'Wait…' : open ? 'Open' : 'Closed'}</span></strong>
         <small>Tap to {open ? 'close' : 'open'} store</small>
       </span>
     </button>
