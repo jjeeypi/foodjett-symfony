@@ -115,15 +115,15 @@
 .fj-welcome-row p { margin-top: 8px; color: #8b9083; font-size: 12px; }
 .fj-local-note { display: flex; align-items: center; gap: 6px; color: #959d8a; font-size: 9px; }
 
-.fj-hero { position: relative; display: grid; min-height: 294px; grid-template-columns: minmax(0, 53%) minmax(0, 47%); overflow: hidden; border-radius: 16px; background: #eaf2dd; }
+.fj-hero { position: relative; display: grid; height: 294px; min-height: 294px; grid-template-columns: minmax(0, 53%) minmax(0, 47%); overflow: hidden; border-radius: 16px; background: #eaf2dd; }
 .fj-hero-copy { position: relative; z-index: 2; padding: 28px 34px; }
 .fj-hero-badge { display: inline-flex; align-items: center; gap: 5px; color: #657b49; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
 .fj-hero h2 { margin: 13px 0 10px; color: #334629; font-size: clamp(2.15rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -1.2px; line-height: 1.08; }
 .fj-hero p { color: #7c876e; font-size: 11px; line-height: 1.8; }
 .fj-hero-cta { display: inline-flex; min-height: 43px; align-items: center; gap: 22px; margin-top: 15px; border-radius: 8px; background: #2f4128; padding: 0 16px; color: #fff; font-size: 10px; font-weight: 700; }
 .fj-hero small { display: block; margin-top: 10px; color: #8b957d; font-size: 8px; }
-.fj-hero-media { position: relative; min-height: 294px; overflow: hidden; }
-.fj-hero-media img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.fj-hero-media { position: relative; height: 100%; min-height: 0; overflow: hidden; }
+.fj-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .fj-hero-media::after { position: absolute; inset: 0; background: linear-gradient(90deg, #eaf2dd 0%, rgb(234 242 221 / 55%) 12%, transparent 42%); content: ""; }
 .fj-hero-sticker { position: absolute; right: 22px; bottom: 26px; z-index: 3; display: flex; width: 120px; height: 120px; align-items: center; justify-content: center; flex-direction: column; border-radius: 50%; background: #faf9e9; box-shadow: 0 6px 20px rgb(39 56 38 / 18%); color: #687950; text-align: center; transform: rotate(7deg); }
 .fj-hero-sticker strong { margin-top: 4px; font-size: 12px; line-height: 1.25; }
@@ -218,10 +218,10 @@
   .fj-welcome-row { align-items: flex-start; }
   .fj-welcome-row h1 { font-size: clamp(1.9rem, 9vw, 2.5rem); }
   .fj-welcome-row p { font-size: 13px; line-height: 1.65; }
-  .fj-hero { grid-template-columns: 1fr; }
+  .fj-hero { height: auto; min-height: 0; grid-template-columns: 1fr; }
   .fj-hero-copy { padding: 25px 24px; }
   .fj-hero p { font-size: 13px; }
-  .fj-hero-media { min-height: 190px; }
+  .fj-hero-media { height: 190px; min-height: 190px; }
   .fj-hero-media::after { background: linear-gradient(180deg, #eaf2dd 0%, transparent 34%); }
   .fj-hero-sticker { display: none; }
   .fj-section-heading { align-items: flex-start; flex-direction: column; }
