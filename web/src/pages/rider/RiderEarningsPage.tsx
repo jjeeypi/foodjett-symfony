@@ -11,7 +11,18 @@ export function RiderEarningsPage() {
     queueMicrotask(() => void getRiderEarningsSummary(controller.signal).then((response) => setSummary(response.summary)).catch((requestError) => { if (!controller.signal.aborted) setError(isApiError(requestError) ? requestError.message : 'Unable to load earnings.') }))
     return () => controller.abort()
   }, [])
-  return <div><p className="text-xs font-black uppercase tracking-[0.18em] text-neon-green">Your pay</p><h1 className="mt-1 text-3xl font-black text-white">Earnings</h1><p className="mt-2 text-sm text-white/40">A lightweight summary for now; detailed payouts arrive in a later rider UI phase.</p>{error ? <p role="alert" className="mt-5 rounded-xl border border-red-400/20 bg-red-400/[0.07] p-4 text-sm text-red-200">{error}</p> : <div className="mt-6 grid gap-3"><EarningCard label="Today" value={summary?.today}/><EarningCard label="This week" value={summary?.week}/><EarningCard label="This month" value={summary?.month}/></div>}</div>
+  return <div className="fj-rider-page fj-rider-earnings-page">
+    <header className="fj-rider-page-heading"><div><p className="fj-rider-eyebrow"><span /> YOUR PAY</p><h1>Earnings</h1><p>A simple view of what you’ve earned across today, this week, and this month.</p></div></header>
+    {error ? <div role="alert" className="fj-rider-alert fj-rider-alert--error">{error}</div> : <>
+      <section className="fj-rider-earnings-hero">
+        <div><p>TODAY’S EARNINGS</p><strong>{summary ? peso.format(Number(summary.today)) : '—'}</strong><span>Completed delivery pay recorded today</span></div>
+        <div className="fj-rider-earnings-chart" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></div>
+        <p><span>KEEP IT MOVING</span><strong>Every completed run adds up.</strong><small>Your totals refresh automatically as deliveries are completed.</small></p>
+      </section>
+      <div className="fj-rider-earning-grid"><EarningCard label="This week" value={summary?.week} caption="Your rolling weekly total"/><EarningCard label="This month" value={summary?.month} caption="Your earnings this calendar month"/></div>
+      <section className="fj-rider-payout-note"><span>₱</span><div><p>PAYOUTS</p><h2>Detailed payout history is on the way.</h2><small>Your confirmed delivery totals are already tracked above; remittance and payout details will appear here in a future update.</small></div></section>
+    </>}
+  </div>
 }
 
-function EarningCard({ label, value }: { label: string; value?: string }) { return <div className="rounded-2xl border border-white/10 bg-brand-surface p-5"><p className="text-xs font-bold uppercase tracking-[0.14em] text-white/35">{label}</p><p className="mt-2 text-3xl font-black text-white">{value === undefined ? '—' : peso.format(Number(value))}</p></div> }
+function EarningCard({ label, value, caption }: { label: string; value?: string; caption: string }) { return <article className="fj-rider-earning-card"><p>{label}</p><strong>{value === undefined ? '—' : peso.format(Number(value))}</strong><span>{caption}</span></article> }

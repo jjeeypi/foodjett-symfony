@@ -181,27 +181,36 @@ export function RiderPoolPage() {
   }
 
   return (
-    <div>
-      <header className="flex items-end justify-between gap-3">
-        <div><p className="text-xs font-black uppercase tracking-[0.18em] text-neon-green">Nearby deliveries</p><h1 className="mt-1 text-3xl font-black text-white">Order pool</h1><p className="mt-2 text-sm leading-5 text-white/40">Accept one delivery at a time. First rider to confirm gets it.</p></div>
-        {profile.availability_status === 'available' && <div className="flex shrink-0 flex-col items-end gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase ${connection === 'live' ? 'border-neon-green/25 text-neon-green' : 'border-amber-300/20 text-amber-200'}`}><span className="h-1.5 w-1.5 rounded-full bg-current"/>{connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : 'Reconnecting'}</span><button type="button" onClick={() => void refreshLocationAndOffers()} disabled={locationBusy} className="min-h-9 rounded-lg border border-white/10 px-3 text-[10px] font-black uppercase text-white/55 disabled:opacity-40">{locationBusy ? 'Locating…' : 'Refresh location'}</button></div>}
+    <div className="fj-rider-page fj-rider-pool-page">
+      <header className="fj-rider-page-heading">
+        <div><p className="fj-rider-eyebrow"><span /> NEARBY DELIVERIES</p><h1>Order pool</h1><p>Pick a run that works for you. The first rider to confirm gets it.</p></div>
+        {profile.availability_status === 'available' && <div className="fj-rider-heading-actions"><span className={`fj-rider-live-pill fj-rider-live-pill--${connection}`}><i />{connection === 'live' ? 'Live offers' : connection === 'connecting' ? 'Connecting' : 'Reconnecting'}</span><button type="button" onClick={() => void refreshLocationAndOffers()} disabled={locationBusy} className="fj-rider-secondary-button">{locationBusy ? 'Locating…' : 'Refresh location'}</button></div>}
       </header>
 
-      {notice && <div role="status" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-neon-green/25 bg-neon-green/[0.07] px-4 py-3 text-sm font-semibold text-neon-green"><span>{notice}</span><button type="button" onClick={() => setNotice('')} className="min-h-9 px-2 text-xs">Dismiss</button></div>}
-      {error && <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/[0.07] px-4 py-3 text-sm text-red-200"><span>{error}</span><button type="button" onClick={() => { setLoading(true); void loadOffers().finally(() => setLoading(false)) }} className="min-h-9 shrink-0 rounded-lg border border-red-300/20 px-3 text-xs font-bold">Retry</button></div>}
+      <section className="fj-rider-pool-banner">
+        <div><span>GOOD ROUTES. GOOD DAYS.</span><h2>Your next delivery<br />could be right here.</h2><p>Offers are matched to your location and update live while you’re online.</p></div>
+        <dl>
+          <div><dt>Available now</dt><dd>{profile.availability_status === 'available' ? offers.length : '—'}</dd></div>
+          <div><dt>Search radius</dt><dd>{offers[0] ? `${offers[0].search_radius_km} km` : 'Nearby'}</dd></div>
+          <div><dt>Your status</dt><dd>{profile.availability_status === 'available' ? 'Online' : profile.availability_status === 'busy' ? 'Busy' : 'Offline'}</dd></div>
+        </dl>
+      </section>
+
+      {notice && <div role="status" className="fj-rider-alert fj-rider-alert--success"><span>{notice}</span><button type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
+      {error && <div role="alert" className="fj-rider-alert fj-rider-alert--error"><span>{error}</span><button type="button" onClick={() => { setLoading(true); void loadOffers().finally(() => setLoading(false)) }}>Retry</button></div>}
 
       {loading ? <PoolSkeleton /> : profile.availability_status !== 'available' || reason ? (
-        <section className="mt-6 rounded-3xl border border-dashed border-white/10 bg-brand-surface px-6 py-14 text-center">
-          <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-2xl ${profile.availability_status === 'busy' ? 'bg-amber-300/10 text-amber-200' : 'bg-white/[0.05] text-white/35'}`}>{profile.availability_status === 'busy' ? '↗' : '○'}</span>
-          <h2 className="mt-5 text-xl font-black text-white">{profile.availability_status === 'busy' ? 'Delivery in progress' : profile.availability_status === 'offline' ? 'You’re offline' : reasonCode === 'outside_radius' ? 'No offers in range' : reasonCode === 'cash_limit' ? 'Cash limit reached' : 'Location needed'}</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-white/40">{reason || 'Use the center button below to go online and receive nearby offers.'}</p>
-          {profile.availability_status === 'busy' && <Link to="/rider/active" className="mt-5 inline-flex min-h-12 items-center rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black">View active delivery</Link>}
-          {profile.availability_status === 'available' && <button type="button" onClick={() => void refreshLocationAndOffers()} disabled={locationBusy} className="mt-5 min-h-12 rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black disabled:opacity-50">{locationBusy ? 'Refreshing…' : 'Refresh current location'}</button>}
+        <section className="fj-rider-empty-state">
+          <span className={`fj-rider-empty-icon${profile.availability_status === 'busy' ? ' is-busy' : ''}`}>{profile.availability_status === 'busy' ? '↗' : '○'}</span>
+          <h2>{profile.availability_status === 'busy' ? 'Delivery in progress' : profile.availability_status === 'offline' ? 'You’re offline' : reasonCode === 'outside_radius' ? 'No offers in range' : reasonCode === 'cash_limit' ? 'Cash limit reached' : 'Location needed'}</h2>
+          <p>{reason || 'Use the availability control to go online and receive nearby offers.'}</p>
+          {profile.availability_status === 'busy' && <Link to="/rider/active" className="fj-rider-primary-button">View active delivery</Link>}
+          {profile.availability_status === 'available' && <button type="button" onClick={() => void refreshLocationAndOffers()} disabled={locationBusy} className="fj-rider-primary-button">{locationBusy ? 'Refreshing…' : 'Refresh current location'}</button>}
         </section>
       ) : offers.length === 0 ? (
-        <section className="mt-6 rounded-3xl border border-dashed border-white/10 bg-brand-surface px-6 py-14 text-center"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neon-green/[0.07] text-2xl text-neon-green">✓</span><h2 className="mt-5 text-xl font-black text-white">No offers right now</h2><p className="mt-2 text-sm leading-6 text-white/40">You’re online. New nearby deliveries will appear here automatically.</p><button type="button" onClick={() => { setLoading(true); void loadOffers().finally(() => setLoading(false)) }} className="mt-5 min-h-11 rounded-xl border border-neon-green/30 px-4 text-sm font-bold text-neon-green">Refresh</button></section>
+        <section className="fj-rider-empty-state"><span className="fj-rider-empty-icon is-ready">✓</span><h2>You’re all caught up</h2><p>Stay online—new nearby deliveries will appear here automatically.</p><button type="button" onClick={() => { setLoading(true); void loadOffers().finally(() => setLoading(false)) }} className="fj-rider-secondary-button">Refresh offers</button></section>
       ) : (
-        <div className="mt-5 space-y-4">
+        <div className="fj-rider-offer-grid">
           {offers.map((offer) => <OfferCard key={offer.order_id} offer={offer} busy={busyId === offer.order_id} onAccept={() => void accept(offer)} onDecline={() => void decline(offer)} />)}
         </div>
       )}
@@ -212,19 +221,22 @@ export function RiderPoolPage() {
 function OfferCard({ offer, busy, onAccept, onDecline }: { offer: RiderPoolOffer; busy: boolean; onAccept: () => void; onDecline: () => void }) {
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${offer.restaurant.latitude},${offer.restaurant.longitude}`)}`
   const escalated = offer.escalation_stage !== 'initial'
-  return <article className="overflow-hidden rounded-3xl border border-white/10 bg-brand-surface shadow-lg">
-    <div className="flex items-start justify-between gap-3 border-b border-white/[0.07] p-4">
-      <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/30">Order {offer.order_number}</p><h2 className="mt-1 truncate text-lg font-black text-white">{offer.restaurant.name}</h2><a href={directions} target="_blank" rel="noreferrer" className="mt-1 inline-flex min-h-9 items-center text-xs font-semibold text-neon-green">Pickup directions ↗</a></div>
-      <div className="text-right"><p className="text-2xl font-black text-neon-green">{peso.format(Number(offer.estimated_pay))}</p><p className="mt-0.5 text-[10px] uppercase tracking-wider text-white/30">estimated pay</p></div>
+  return <article className="fj-rider-offer-card">
+    <header><div><p>ORDER {offer.order_number}</p><h2>{offer.restaurant.name}</h2></div><div className="fj-rider-offer-pay"><strong>{peso.format(Number(offer.estimated_pay))}</strong><span>estimated pay</span></div></header>
+    <div className="fj-rider-route-preview">
+      <span className="fj-rider-route-line" />
+      <div><i className="pickup" /><span><small>PICK UP</small><strong>{offer.restaurant.name}</strong></span></div>
+      <div><i className="dropoff" /><span><small>DROP OFF</small><strong>Address shown after acceptance</strong></span></div>
+      <a href={directions} target="_blank" rel="noreferrer">Directions ↗</a>
     </div>
-    <div className="grid grid-cols-2 gap-px bg-white/[0.07]"><Metric label="To pickup" value={`${offer.pickup_distance_km} km`} /><Metric label="Delivery route" value={`${offer.delivery_distance_km} km`} /></div>
-    <div className="p-4">
-      <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wide"><span className="rounded-full bg-white/[0.05] px-2.5 py-1 text-white/50">{offer.payment_method === 'cod' ? 'Cash on delivery' : 'Prepaid'}</span>{escalated && <span className="rounded-full bg-amber-300/10 px-2.5 py-1 text-amber-200">{offer.escalation_stage.replaceAll('_', ' ')}</span>}{Number(offer.pay_breakdown.incentive_pay) > 0 && <span className="rounded-full bg-neon-green/10 px-2.5 py-1 text-neon-green">+{peso.format(Number(offer.pay_breakdown.incentive_pay))} incentive</span>}</div>
-      <p className="mt-3 text-xs leading-5 text-white/35">Customer’s exact delivery address is revealed after acceptance. Search radius: {offer.search_radius_km} km.{offer.estimated_ready_at ? ` Food ETA ${new Date(offer.estimated_ready_at).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}.` : ''}</p>
-      <div className="mt-4 grid grid-cols-[0.8fr_1.2fr] gap-2"><button type="button" disabled={busy} onClick={onDecline} className="min-h-12 rounded-xl border border-white/10 text-sm font-bold text-white/50 disabled:opacity-40">Decline</button><button type="button" disabled={busy} onClick={onAccept} className="min-h-12 rounded-xl bg-neon-green text-sm font-black text-brand-black disabled:opacity-40">{busy ? 'Confirming…' : 'Accept delivery'}</button></div>
+    <div className="fj-rider-offer-metrics"><Metric label="To pickup" value={`${offer.pickup_distance_km} km`} /><Metric label="Delivery route" value={`${offer.delivery_distance_km} km`} /></div>
+    <div className="fj-rider-offer-body">
+      <div className="fj-rider-offer-tags"><span>{offer.payment_method === 'cod' ? 'Cash on delivery' : 'Prepaid'}</span>{escalated && <span className="warning">{offer.escalation_stage.replaceAll('_', ' ')}</span>}{Number(offer.pay_breakdown.incentive_pay) > 0 && <span className="accent">+{peso.format(Number(offer.pay_breakdown.incentive_pay))} incentive</span>}</div>
+      <p>Customer details unlock after acceptance.{offer.estimated_ready_at ? ` Food ready around ${new Date(offer.estimated_ready_at).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}.` : ''}</p>
+      <div className="fj-rider-offer-actions"><button type="button" disabled={busy} onClick={onDecline} className="fj-rider-secondary-button">Decline</button><button type="button" disabled={busy} onClick={onAccept} className="fj-rider-primary-button">{busy ? 'Confirming…' : 'Accept delivery'}</button></div>
     </div>
   </article>
 }
 
-function Metric({ label, value }: { label: string; value: string }) { return <div className="bg-brand-surface px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-wider text-white/30">{label}</p><p className="mt-1 text-sm font-black text-white/75">{value}</p></div> }
-function PoolSkeleton() { return <div className="mt-5 space-y-4" aria-label="Loading available orders">{[0, 1, 2].map((item) => <div key={item} className="h-72 animate-pulse rounded-3xl border border-white/[0.06] bg-brand-surface" />)}</div> }
+function Metric({ label, value }: { label: string; value: string }) { return <div><span>{label}</span><strong>{value}</strong></div> }
+function PoolSkeleton() { return <div className="fj-rider-skeleton-grid" aria-label="Loading available orders">{[0, 1, 2].map((item) => <div key={item} />)}</div> }

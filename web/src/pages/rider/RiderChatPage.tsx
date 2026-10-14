@@ -106,7 +106,11 @@ export function RiderChatPage() {
     }
   }
 
-  if (!conversation && !loading) return <section className="rounded-3xl border border-red-400/20 bg-brand-surface px-5 py-12 text-center"><p className="text-sm text-red-200">{error || 'Conversation unavailable.'}</p><button type="button" onClick={() => navigate('/rider/active')} className="mt-5 min-h-11 rounded-xl bg-neon-green px-4 text-sm font-black text-brand-black">Back to delivery</button></section>
+  if (!conversation && !loading) return <section className="fj-rider-chat-unavailable"><span>!</span><p>{error || 'Conversation unavailable.'}</p><button type="button" onClick={() => navigate('/rider/active')}>Back to delivery</button></section>
 
-  return <div><button type="button" onClick={() => navigate('/rider/active')} className="mb-4 min-h-11 text-sm font-bold text-neon-green">← Active delivery</button>{conversation ? <ChatThread conversation={sharedConversation(conversation)} messages={messages} currentUserId={user?.id ?? ''} loading={loading} sending={sending} connection={connection} error={error} onBack={() => navigate('/rider/active')} onRetry={() => { setLoading(true); void load() }} onSend={send} /> : <div className="h-[65svh] animate-pulse rounded-3xl bg-brand-surface"/>}{sendError && <p role="alert" className="mt-3 rounded-xl border border-red-400/20 bg-red-400/[0.07] px-4 py-3 text-sm text-red-200">{sendError}</p>}</div>
+  return <div className="fj-rider-page fj-rider-chat-page">
+    <header className="fj-rider-page-heading"><div><p className="fj-rider-eyebrow"><span /> DELIVERY CHAT</p><h1>Customer messages</h1><p>Keep the customer updated while you complete their delivery.</p></div><button type="button" onClick={() => navigate('/rider/active')} className="fj-rider-chat-back">← Active delivery</button></header>
+    <div className="fj-rider-chat-shell">{conversation ? <ChatThread variant="rider" conversation={sharedConversation(conversation)} messages={messages} currentUserId={user?.id ?? ''} loading={loading} sending={sending} connection={connection} error={error} onBack={() => navigate('/rider/active')} onRetry={() => { setLoading(true); void load() }} onSend={send} /> : <div className="fj-rider-chat-skeleton"/>}</div>
+    {sendError && <p role="alert" className="fj-rider-alert fj-rider-alert--error">{sendError}</p>}
+  </div>
 }
