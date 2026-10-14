@@ -25,8 +25,8 @@ export function RestaurantReviewsPage() {
 
   function saved(review: RestaurantReview) { setReviews((current) => current.map((item) => item.id === review.id ? review : item)); setReplying(null) }
 
-  return <div>
-    <header><p className="text-xs font-black uppercase tracking-[0.2em] text-neon-green">Customer feedback</p><h1 className="mt-2 text-3xl font-black text-white sm:text-4xl">Reviews</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Read verified order feedback and publish a response when context is useful.</p></header>
+  return <div className="fj-restaurant-reviews-page">
+    <header className="fj-restaurant-page-heading"><p>CUSTOMER FEEDBACK</p><h1>Reviews</h1><span>Read verified order feedback and publish a response when context is useful.</span></header>
     {loading ? <Loading /> : error ? <ErrorState message={error} onRetry={() => setRetry((value) => value + 1)} /> : reviews.length === 0 ? <Empty /> : <><div className="mt-6 grid gap-4 lg:grid-cols-2">{reviews.map((review) => <ReviewCard key={review.id} review={review} onReply={() => setReplying(review)} />)}</div><AdminPagination meta={meta} onPage={setPage} /></>}
     {replying && <ReplyDialog review={replying} onClose={() => setReplying(null)} onSaved={saved} />}
   </div>
@@ -34,7 +34,7 @@ export function RestaurantReviewsPage() {
 
 function ReviewCard({ review, onReply }: { review: RestaurantReview; onReply: () => void }) {
   const photo = apiAssetUrl(review.photo_path)
-  return <article className="rounded-2xl border border-white/10 bg-brand-surface p-5"><div className="flex items-start justify-between gap-4"><div><p className="font-black text-white">{review.customer.name}</p><p className="mt-1 text-xs text-white/35">Order #{review.order_number} · {formatDate(review.created_at)}</p></div><span aria-label={`${review.rating} out of 5 stars`} className="shrink-0 text-sm font-black text-amber-300">★ {review.rating}/5</span></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-white/65">{review.comment || 'No written comment.'}</p>{photo && <a href={photo} target="_blank" rel="noreferrer"><img src={photo} alt="Customer review" className="mt-4 max-h-56 w-full rounded-xl border border-white/10 object-cover" /></a>}{review.restaurant_reply ? <div className="mt-4 rounded-xl border border-neon-green/15 bg-neon-green/[0.04] p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-neon-green">Your reply</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/65">{review.restaurant_reply}</p><button type="button" onClick={onReply} className="mt-3 min-h-10 text-xs font-black text-neon-green">Edit reply</button></div> : <button type="button" onClick={onReply} className="mt-4 min-h-11 rounded-xl border border-neon-green/30 px-4 text-sm font-black text-neon-green hover:bg-neon-green/10">Reply to review</button>}</article>
+  return <article className="fj-review-card"><div className="fj-review-card__header"><div><strong>{review.customer.name}</strong><small>Order #{review.order_number} · {formatDate(review.created_at)}</small></div><span aria-label={`${review.rating} out of 5 stars`}>★ {review.rating}/5</span></div><p className="fj-review-card__comment">{review.comment || 'No written comment.'}</p>{photo && <a href={photo} target="_blank" rel="noreferrer"><img src={photo} alt="Customer review" /></a>}{review.restaurant_reply ? <div className="fj-review-card__reply"><strong>Your reply</strong><p>{review.restaurant_reply}</p><button type="button" onClick={onReply}>Edit reply</button></div> : <button type="button" onClick={onReply} className="fj-review-card__action">Reply to review</button>}</article>
 }
 
 function ReplyDialog({ review, onClose, onSaved }: { review: RestaurantReview; onClose: () => void; onSaved: (review: RestaurantReview) => void }) {
@@ -47,5 +47,5 @@ function ReplyDialog({ review, onClose, onSaved }: { review: RestaurantReview; o
 
 function formatDate(value: string | null) { if (!value) return 'Date unavailable'; const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? 'Date unavailable' : date.format(parsed) }
 function Loading() { return <div className="mt-6 grid gap-4 lg:grid-cols-2" aria-busy="true">{[0, 1, 2, 3].map((row) => <div key={row} className="h-64 animate-pulse rounded-2xl bg-brand-surface" />)}</div> }
-function Empty() { return <section className="mt-6 rounded-2xl border border-dashed border-white/10 bg-brand-surface/50 px-5 py-14 text-center"><h2 className="font-black text-white">No reviews yet</h2><p className="mt-2 text-sm text-white/40">Customer feedback from delivered orders will appear here.</p></section> }
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) { return <section role="alert" className="mt-6 rounded-2xl border border-red-400/20 bg-red-400/[0.06] px-5 py-14 text-center"><p className="text-sm text-red-100/75">{message}</p><button type="button" onClick={onRetry} className="mt-5 min-h-11 rounded-xl bg-neon-green px-5 text-sm font-black text-brand-black">Try again</button></section> }
+function Empty() { return <section className="fj-restaurant-empty"><span>★</span><h2>No reviews yet</h2><p>Customer feedback from delivered orders will appear here.</p></section> }
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) { return <section role="alert" className="fj-restaurant-error-state"><p>{message}</p><button type="button" onClick={onRetry}>Try again</button></section> }
