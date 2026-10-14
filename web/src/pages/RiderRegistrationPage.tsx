@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { DocumentUploadField } from '../components/DocumentUploadField'
 import { FormAlert } from '../components/FormAlert'
-import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter'
 import { RegistrationStepIndicator } from '../components/RegistrationStepIndicator'
@@ -120,18 +119,18 @@ export default function RiderRegistrationPage() {
   }
 
   return (
-    <AuthLayout showStandaloneLogo={false}>
-      <section className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] sm:p-8">
-        <header className="mb-6 text-center">
-          <div className="flex justify-center"><Logo /></div>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-neon-green">Rider application</p>
-          <h1 className="mt-2 text-2xl font-black text-white">Deliver with Foodjett</h1>
+    <AuthLayout>
+      <section className="fj-auth-card">
+        <header className="fj-auth-card-header">
+          <p>Rider application</p>
+          <h1>Deliver with Foodjett</h1>
+          <p>Create your rider profile, add your vehicle, and submit the required documents.</p>
         </header>
         <RegistrationStepIndicator steps={steps} currentStep={step} />
         <FormAlert message={globalError} />
 
         <form onSubmit={submit} noValidate>
-          {step === 0 && <div className="space-y-5">
+          {step === 0 && <div className="fj-auth-form-stack">
             <NeonInput id="rider-name" name="name" label="Full name" autoComplete="name" value={fields.name} onChange={updateField} error={errors.name} disabled={loading} />
             <NeonInput id="rider-email" name="email" label="Email address" type="email" inputMode="email" autoComplete="email" value={fields.email} onChange={updateField} error={errors.email} disabled={loading} />
             <NeonInput id="rider-phone" name="phone" label="Phone number" type="tel" inputMode="tel" autoComplete="tel" value={fields.phone} onChange={updateField} error={errors.phone} disabled={loading} />
@@ -139,35 +138,35 @@ export default function RiderRegistrationPage() {
             <NeonInput id="rider-password-confirmation" name="password_confirmation" label="Confirm password" type="password" autoComplete="new-password" value={fields.password_confirmation} onChange={updateField} error={errors.password_confirmation} disabled={loading} showPasswordToggle />
           </div>}
 
-          {step === 1 && <div className="space-y-5">
-            <div><label htmlFor="rider-vehicle-type" className="mb-1.5 block text-sm font-medium text-white/85">Vehicle type</label><select id="rider-vehicle-type" name="vehicle_type" value={fields.vehicle_type} onChange={updateField} disabled={loading} className="min-h-12 w-full rounded-xl border-2 border-neon-green/80 bg-brand-surface-2 px-4 py-3 text-base text-white outline-none focus:border-neon-green focus:ring-2 focus:ring-neon-green/25"><option value="motorcycle">Motorcycle</option><option value="bicycle">Bicycle</option><option value="car">Car</option></select>{errors.vehicle_type ? <p className="mt-1.5 text-sm text-red-400">{errors.vehicle_type}</p> : null}</div>
+          {step === 1 && <div className="fj-auth-form-stack">
+            <div><label htmlFor="rider-vehicle-type" className="fj-auth-select-label">Vehicle type</label><select id="rider-vehicle-type" name="vehicle_type" value={fields.vehicle_type} onChange={updateField} disabled={loading} className="fj-auth-select"><option value="motorcycle">Motorcycle</option><option value="bicycle">Bicycle</option><option value="car">Car</option></select>{errors.vehicle_type ? <p className="fj-auth-field-error"><span aria-hidden="true">!</span>{errors.vehicle_type}</p> : null}</div>
             <NeonInput id="rider-plate-number" name="plate_number" label={`Plate number${fields.vehicle_type === 'bicycle' ? ' (optional)' : ''}`} autoCapitalize="characters" placeholder="ABC-1234" value={fields.plate_number} onChange={updateField} error={errors.plate_number} disabled={loading} />
-            <p className="rounded-xl bg-white/[0.04] px-4 py-3 text-xs leading-5 text-white/50">Plate number is optional only for bicycles, matching the API validation rule.</p>
+            <p className="fj-auth-note">Plate number is optional only for bicycles, matching the API validation rule.</p>
           </div>}
 
-          {step === 2 && <div className="space-y-5">
-            <p className="text-sm leading-6 text-white/60">The current approval checklist requires all four document types. Upload PDF, JPG, PNG, WebP, HEIC, or HEIF files up to 10 MB.</p>
+          {step === 2 && <div className="fj-auth-form-stack">
+            <p className="fj-auth-copy">The current approval checklist requires all four document types. Upload PDF, JPG, PNG, WebP, HEIC, or HEIF files up to 10 MB.</p>
             {(Object.keys(documentLabels) as DocumentField[]).map((name) => <DocumentUploadField key={name} id={`rider-${name}`} name={name} label={documentLabels[name]} file={documents[name]} error={errors[name]} disabled={loading} onChange={(event) => updateDocument(name, event)} />)}
           </div>}
 
-          {step === 3 && <div className="space-y-5">
+          {step === 3 && <div className="fj-auth-form-stack">
             <ReviewSection title="Account" rows={[["Name", fields.name], ["Email", fields.email], ["Phone", fields.phone]]} onEdit={() => setStep(0)} />
             <ReviewSection title="Vehicle" rows={[["Type", fields.vehicle_type], ["Plate", fields.plate_number || 'Not applicable']]} onEdit={() => setStep(1)} />
             <ReviewSection title="Documents" rows={(Object.keys(documentLabels) as DocumentField[]).map((name) => [documentLabels[name], documents[name]?.name ?? 'Missing'])} onEdit={() => setStep(2)} />
-            <p className="rounded-xl border border-amber-300/25 bg-amber-300/[0.07] px-4 py-3 text-sm leading-6 text-amber-100">Your rider account will remain offline and pending until an admin reviews the application and documents.</p>
+            <p className="fj-auth-note fj-auth-note--warning">Your rider account will remain offline and pending until an admin reviews the application and documents.</p>
           </div>}
 
-          <div className="mt-7 flex gap-3">
-            {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} disabled={loading} className="min-h-12 flex-1 rounded-xl border border-white/15 px-4 font-bold text-white hover:bg-white/5 disabled:opacity-50">Back</button> : <Link to="/register" className="flex min-h-12 flex-1 items-center justify-center rounded-xl border border-white/15 px-4 font-bold text-white hover:bg-white/5">Back</Link>}
-            {step < steps.length - 1 ? <button type="button" onClick={nextStep} className="min-h-12 flex-1 rounded-xl bg-neon-green px-4 font-bold text-brand-black hover:bg-[#55ff35]">Next</button> : <SubmitButton loading={loading} loadingLabel="Submitting…" className="flex-1">Submit application</SubmitButton>}
+          <div className="fj-auth-actions">
+            {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} disabled={loading} className="fj-auth-secondary-action">Back</button> : <Link to="/register" className="fj-auth-secondary-action">Back</Link>}
+            {step < steps.length - 1 ? <button type="button" onClick={nextStep} className="fj-auth-primary-action">Next</button> : <SubmitButton loading={loading} loadingLabel="Submitting…">Submit application</SubmitButton>}
           </div>
         </form>
-        <p className="mt-6 text-center text-sm text-white/50">Already approved? <Link to="/login" className="font-semibold text-neon-green">Log in</Link></p>
+        <p className="fj-auth-card-footer">Already approved? <Link to="/login" className="fj-auth-text-link">Log in</Link></p>
       </section>
     </AuthLayout>
   )
 }
 
 function ReviewSection({ title, rows, onEdit }: { title: string; rows: string[][]; onEdit: () => void }) {
-  return <section className="rounded-xl border border-white/10 bg-white/[0.025] p-4"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold text-white">{title}</h2><button type="button" onClick={onEdit} className="min-h-11 px-2 text-sm font-bold text-neon-green">Edit</button></div><dl className="space-y-2">{rows.map(([label, value]) => <div key={label} className="flex gap-3 text-sm"><dt className="w-28 shrink-0 text-white/45">{label}</dt><dd className="min-w-0 break-words capitalize text-white/80">{value}</dd></div>)}</dl></section>
+  return <section className="fj-auth-review"><div><h2>{title}</h2><button type="button" onClick={onEdit}>Edit</button></div><dl>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd className="capitalize">{value}</dd></div>)}</dl></section>
 }

@@ -17,7 +17,7 @@ export function AuthLayout({ children, showStandaloneLogo = true }: { children: 
   return <main className="fj-auth">
     <div className="fj-auth-decoration" aria-hidden="true"><i /><i /></div>
     <section className="fj-auth-story" aria-labelledby="auth-value-heading">
-      {showStandaloneLogo && <Logo className="fj-auth-brand-logo" />}
+      {showStandaloneLogo && <Logo tone="light-surface" className="fj-auth-brand-logo" />}
       <div className="fj-auth-story-copy">
         <p className="fj-auth-eyebrow"><span /> ONE FOODJETT ACCOUNT</p>
         <h2 id="auth-value-heading">Good food moves everyone forward.</h2>
@@ -27,7 +27,7 @@ export function AuthLayout({ children, showStandaloneLogo = true }: { children: 
       <p className="fj-auth-story-foot">Local food. Reliable delivery. Better days.</p>
     </section>
     <section className="fj-auth-stage">
-      {showStandaloneLogo && <header className="fj-auth-mobile-brand"><Logo /><p>Your daily good food</p></header>}
+      {showStandaloneLogo && <header className="fj-auth-mobile-brand"><Logo tone="light-surface" /><p>Your daily good food</p></header>}
       <div className="fj-auth-form-shell">{children}</div>
       <p className="fj-auth-security">Secure sign-in · Protected account data</p>
     </section>
