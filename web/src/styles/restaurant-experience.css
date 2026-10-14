@@ -1,0 +1,261 @@
+.fj-restaurant {
+  --restaurant-ink: #193428;
+  --restaurant-forest: #2e522c;
+  --restaurant-sage: #6f9658;
+  --restaurant-leaf: #b9e87f;
+  --restaurant-canvas: #f5f7f1;
+  --restaurant-paper: #ffffff;
+  --restaurant-soft: #eef3e8;
+  --restaurant-line: #dfe7d9;
+  --restaurant-muted: #7d897b;
+  min-height: 100svh;
+  color: var(--restaurant-ink);
+  background: var(--restaurant-canvas);
+  color-scheme: light;
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.fj-restaurant button,
+.fj-restaurant input,
+.fj-restaurant textarea,
+.fj-restaurant select { font: inherit; }
+.fj-restaurant button { cursor: pointer; }
+.fj-restaurant button:disabled { cursor: not-allowed; }
+
+.fj-restaurant-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  display: none;
+  width: 248px;
+  flex-direction: column;
+  border-right: 1px solid var(--restaurant-line);
+  background: rgb(255 255 255 / 97%);
+  padding: max(28px, env(safe-area-inset-top)) 18px 18px;
+  backdrop-filter: blur(18px);
+}
+
+.fj-restaurant-sidebar__brand { padding: 0 10px 24px; }
+.fj-restaurant-wordmark { font-size: 28px !important; }
+.fj-restaurant-sidebar__brand > p { margin: 8px 0 0 2px; color: #98a291; font-size: 8px; font-weight: 800; letter-spacing: 1.65px; }
+
+.fj-restaurant-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--restaurant-line);
+  border-radius: 14px;
+  background: #f8faf5;
+  padding: 10px;
+}
+.fj-restaurant-identity > img,
+.fj-restaurant-identity > span,
+.fj-restaurant-topbar__identity > img,
+.fj-restaurant-topbar__identity > span {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #d8e2d2;
+  border-radius: 11px;
+  color: var(--restaurant-forest);
+  background: #e5f1d7;
+  object-fit: cover;
+  font-family: Manrope, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+}
+.fj-restaurant-identity > div,
+.fj-restaurant-topbar__identity > div,
+.fj-restaurant-user > div { min-width: 0; }
+.fj-restaurant-identity strong,
+.fj-restaurant-topbar__identity strong,
+.fj-restaurant-user strong { display: block; overflow: hidden; color: var(--restaurant-ink); font-size: 13px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.fj-restaurant-identity small,
+.fj-restaurant-topbar__identity small,
+.fj-restaurant-user small { display: block; margin-top: 2px; overflow: hidden; color: #929d8f; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
+.fj-restaurant-sidebar__nav { display: grid; gap: 5px; margin-top: 24px; }
+.fj-restaurant-nav-link {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  border-radius: 11px;
+  padding: 0 13px;
+  color: #748071;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.fj-restaurant-nav-link:hover { color: var(--restaurant-forest); background: #f1f5ec; transform: translateX(2px); }
+.fj-restaurant-nav-link.is-active { color: #274926; background: #e2efd5; }
+.fj-restaurant-nav-link__icon { width: 20px; height: 20px; flex: 0 0 auto; }
+
+.fj-restaurant-sidebar__footer { display: grid; gap: 12px; margin-top: auto; border-top: 1px solid var(--restaurant-line); padding: 17px 4px 0; }
+.fj-restaurant-user { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 0 6px; }
+.fj-restaurant-user > span { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #526b49; background: #edf2e7; font-size: 11px; font-weight: 800; }
+.fj-restaurant-signout { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 10px; color: #8b9589; background: transparent; font-size: 12px; font-weight: 650; }
+.fj-restaurant-signout:hover { color: #8a493f; background: #fbf1ef; }
+.fj-restaurant-signout svg { width: 16px; height: 16px; }
+
+.fj-restaurant-workspace { min-width: 0; min-height: 100svh; }
+.fj-restaurant-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--restaurant-line);
+  background: rgb(255 255 255 / 94%);
+  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  backdrop-filter: blur(18px);
+}
+.fj-restaurant-topbar__identity { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
+.fj-restaurant-topbar__identity > img,
+.fj-restaurant-topbar__identity > span { width: 40px; height: 40px; }
+.fj-restaurant-topbar__copy { display: none; min-width: 0; flex: 1; }
+.fj-restaurant-topbar__copy p { margin: 0; color: var(--restaurant-sage); font-size: 9px; font-weight: 800; letter-spacing: 1.55px; }
+.fj-restaurant-topbar__copy span { display: block; margin-top: 3px; color: #7c8878; font-size: 12px; }
+
+.fj-restaurant-status { display: inline-flex; min-height: 46px; flex: 0 0 auto; align-items: center; gap: 10px; border: 1px solid var(--restaurant-line); border-radius: 12px; background: #f7f9f4; padding: 7px 10px; text-align: left; transition: border-color .18s ease, background .18s ease; }
+.fj-restaurant-status:hover { border-color: #c5d4ba; }
+.fj-restaurant-status.is-open { border-color: #c3dda8; background: #eff8e5; }
+.fj-restaurant-status__switch { position: relative; display: block; width: 38px; height: 22px; flex: 0 0 auto; border-radius: 99px; background: #cdd5c9; transition: background .2s ease; }
+.fj-restaurant-status.is-open .fj-restaurant-status__switch { background: #79a952; }
+.fj-restaurant-status__switch > span { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgb(25 52 40 / 18%); transition: transform .2s ease; }
+.fj-restaurant-status.is-open .fj-restaurant-status__switch > span { transform: translateX(16px); }
+.fj-restaurant-status__copy strong { display: block; color: #4c5e4c; font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.fj-restaurant-status.is-open .fj-restaurant-status__copy strong { color: #4e7837; }
+.fj-restaurant-status__copy small { display: none; margin-top: 1px; color: #899486; font-size: 9px; }
+.fj-restaurant-mobile-signout { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border: 1px solid var(--restaurant-line); border-radius: 11px; color: #849080; background: #fff; }
+.fj-restaurant-mobile-signout svg { width: 18px; height: 18px; }
+
+.fj-restaurant-status-message { border-bottom: 1px solid #d4e7c1; color: #52753f; background: #edf7e3; padding: 9px 16px; text-align: center; font-size: 11px; font-weight: 700; }
+.fj-restaurant-main { width: 100%; max-width: 1600px; margin-inline: auto; padding: 24px 15px calc(96px + env(safe-area-inset-bottom)); }
+
+.fj-restaurant-bottom-nav {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--restaurant-line);
+  background: rgb(255 255 255 / 96%);
+  padding: 6px 7px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgb(36 55 42 / 6%);
+  backdrop-filter: blur(18px);
+}
+.fj-restaurant-bottom-link { display: flex; min-width: 0; min-height: 56px; align-items: center; justify-content: center; flex-direction: column; gap: 4px; border-radius: 11px; color: #879283; font-size: 9px; font-weight: 650; text-decoration: none; }
+.fj-restaurant-bottom-link svg { width: 19px; height: 19px; }
+.fj-restaurant-bottom-link.is-active { color: #385e31; background: #e7f2dc; }
+
+.fj-restaurant-state { display: grid; min-height: 100svh; place-items: center; color: var(--restaurant-ink); background: var(--restaurant-canvas); padding: 22px; color-scheme: light; }
+.fj-restaurant-spinner { width: 32px; height: 32px; border: 3px solid #dfe7d9; border-top-color: #6f9658; border-radius: 50%; animation: fj-restaurant-spin .8s linear infinite; }
+@keyframes fj-restaurant-spin { to { transform: rotate(360deg); } }
+.fj-restaurant-state__card { width: 100%; max-width: 430px; border: 1px solid var(--restaurant-line); border-radius: 20px; background: #fff; padding: 30px; box-shadow: 0 20px 60px rgb(31 53 38 / 8%); text-align: center; }
+.fj-restaurant-state__icon { display: grid; width: 46px; height: 46px; margin: 0 auto 16px; place-items: center; border-radius: 50%; color: #9b5147; background: #fbebe8; font-weight: 800; }
+.fj-restaurant-state__card h1 { margin: 0; font-family: Manrope, sans-serif; font-size: 23px; }
+.fj-restaurant-state__card p { margin: 9px 0 0; color: #798478; font-size: 13px; line-height: 1.7; }
+.fj-restaurant-state__actions { display: flex; justify-content: center; gap: 10px; margin-top: 22px; }
+.fj-restaurant-button { min-height: 45px; border-radius: 11px; padding: 0 18px; font-size: 12px; font-weight: 750; }
+.fj-restaurant-button--primary { border: 1px solid var(--restaurant-forest); color: #fff; background: var(--restaurant-forest); }
+.fj-restaurant-button--secondary { border: 1px solid var(--restaurant-line); color: #647063; background: #fff; }
+
+/* Light partner-console treatment for the existing route content. */
+.fj-restaurant h1,
+.fj-restaurant h2,
+.fj-restaurant h3 { color: var(--restaurant-ink) !important; font-family: Manrope, "DM Sans", sans-serif; letter-spacing: -.025em; }
+.fj-restaurant [class~="text-white"] { color: var(--restaurant-ink) !important; }
+.fj-restaurant [class~="text-white/90"],
+.fj-restaurant [class~="text-white/70"],
+.fj-restaurant [class~="text-white/65"],
+.fj-restaurant [class~="text-white/60"] { color: #526256 !important; }
+.fj-restaurant [class~="text-white/55"],
+.fj-restaurant [class~="text-white/50"],
+.fj-restaurant [class~="text-white/45"],
+.fj-restaurant [class~="text-white/40"],
+.fj-restaurant [class~="text-white/35"],
+.fj-restaurant [class~="text-white/30"] { color: var(--restaurant-muted) !important; }
+.fj-restaurant [class~="text-neon-green"],
+.fj-restaurant [class~="text-neon-green/75"],
+.fj-restaurant [class~="text-neon-green/70"] { color: #51773d !important; }
+.fj-restaurant [class~="bg-brand-surface"],
+.fj-restaurant [class~="bg-brand-surface/50"],
+.fj-restaurant [class~="bg-brand-surface/60"],
+.fj-restaurant [class~="bg-brand-surface/95"] { background-color: var(--restaurant-paper) !important; }
+.fj-restaurant [class~="bg-brand-black"] { background-color: #f7f9f4 !important; }
+.fj-restaurant [class~="border-white/10"],
+.fj-restaurant [class~="border-white/15"],
+.fj-restaurant [class~="border-white/20"],
+.fj-restaurant [class~="border-white/[0.07]"],
+.fj-restaurant [class~="border-white/[0.06]"] { border-color: var(--restaurant-line) !important; }
+.fj-restaurant [class~="divide-white/[0.07]"] > :not(:last-child) { border-color: var(--restaurant-line) !important; }
+.fj-restaurant [class~="bg-white/[0.06]"],
+.fj-restaurant [class~="bg-white/[0.05]"],
+.fj-restaurant [class~="bg-white/[0.04]"],
+.fj-restaurant [class~="bg-white/[0.03]"] { background-color: #eef2ea !important; }
+.fj-restaurant [class~="bg-neon-green"] { background-color: var(--restaurant-forest) !important; }
+.fj-restaurant [class~="text-brand-black"] { color: #fff !important; }
+.fj-restaurant [class~="bg-neon-green/10"],
+.fj-restaurant [class~="bg-neon-green/[0.10]"],
+.fj-restaurant [class~="bg-neon-green/[0.08]"],
+.fj-restaurant [class~="bg-neon-green/[0.07]"],
+.fj-restaurant [class~="bg-neon-green/[0.06]"],
+.fj-restaurant [class~="bg-neon-green/[0.04]"] { background-color: #edf6e4 !important; }
+.fj-restaurant input:not([type="checkbox"]):not([type="radio"]),
+.fj-restaurant textarea,
+.fj-restaurant select { color: var(--restaurant-ink) !important; border-color: #d9e2d3 !important; background: #fbfcf9 !important; }
+.fj-restaurant input::placeholder,
+.fj-restaurant textarea::placeholder { color: #a1aa9d !important; }
+.fj-restaurant input:focus,
+.fj-restaurant textarea:focus,
+.fj-restaurant select:focus { border-color: #88aa70 !important; box-shadow: 0 0 0 3px rgb(111 150 88 / 12%) !important; }
+.fj-restaurant table thead { color: #748070 !important; background: #f5f8f2; }
+.fj-restaurant table tbody tr { transition: background .16s ease; }
+.fj-restaurant table tbody tr:hover { background: #f7f9f4; }
+.fj-restaurant [role="dialog"],
+.fj-restaurant [role="alertdialog"] { color: var(--restaurant-ink); background-color: #fff !important; border-color: var(--restaurant-line) !important; }
+.fj-restaurant [role="dialog"] textarea,
+.fj-restaurant [role="alertdialog"] textarea { background: #f7f9f4 !important; }
+
+@media (min-width: 640px) {
+  .fj-restaurant-main { padding: 32px 26px calc(104px + env(safe-area-inset-bottom)); }
+  .fj-restaurant-status__copy small { display: block; }
+}
+
+@media (min-width: 1024px) {
+  .fj-restaurant { padding-left: 248px; }
+  .fj-restaurant-sidebar { display: flex; }
+  .fj-restaurant-topbar { min-height: 78px; padding: 14px 34px; }
+  .fj-restaurant-topbar__identity,
+  .fj-restaurant-mobile-signout { display: none; }
+  .fj-restaurant-topbar__copy { display: block; }
+  .fj-restaurant-main { padding: 38px 34px 54px; }
+  .fj-restaurant-bottom-nav { display: none; }
+}
+
+@media (max-width: 520px) {
+  .fj-restaurant-topbar { gap: 9px; padding-inline: 11px; }
+  .fj-restaurant-topbar__identity > img,
+  .fj-restaurant-topbar__identity > span { width: 36px; height: 36px; }
+  .fj-restaurant-topbar__identity small { display: none; }
+  .fj-restaurant-status { gap: 7px; min-height: 42px; padding: 6px 8px; }
+  .fj-restaurant-status__copy small { display: none; }
+  .fj-restaurant-status__copy strong { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fj-restaurant-mobile-signout { width: 38px; height: 38px; }
+  .fj-restaurant-main { padding-inline: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fj-restaurant *,
+  .fj-restaurant *::before,
+  .fj-restaurant *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

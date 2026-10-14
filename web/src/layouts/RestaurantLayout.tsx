@@ -9,6 +9,7 @@ import {
   updateRestaurantOperatingStatus,
 } from '../lib/api'
 import type { RestaurantOperatingStatus, RestaurantProfile } from '../lib/api'
+import '../styles/restaurant-experience.css'
 
 export interface RestaurantOutletContext {
   restaurant: RestaurantProfile
@@ -37,14 +38,14 @@ function StoreStatusControl({ status, busy, onToggle }: { status: RestaurantOper
       onClick={onToggle}
       disabled={busy}
       aria-pressed={open}
-      className={`group flex min-h-12 items-center gap-3 rounded-xl border px-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green disabled:cursor-wait disabled:opacity-60 ${open ? 'border-neon-green/40 bg-neon-green/10' : 'border-white/10 bg-white/[0.04] hover:border-white/20'}`}
+      className={`fj-restaurant-status ${open ? 'is-open' : 'is-closed'}`}
     >
-      <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${open ? 'bg-neon-green' : 'bg-white/15'}`} aria-hidden="true">
-        <span className={`absolute top-1 h-5 w-5 rounded-full bg-brand-black shadow transition-transform ${open ? 'translate-x-6' : 'translate-x-1'}`} />
+      <span className="fj-restaurant-status__switch" aria-hidden="true">
+        <span />
       </span>
-      <span>
-        <span className={`block text-xs font-black uppercase tracking-[0.14em] ${open ? 'text-neon-green' : 'text-white/65'}`}>{busy ? 'Updating…' : statusLabel(status)}</span>
-        <span className="mt-0.5 block text-[11px] text-white/40">Tap to {open ? 'close' : 'open'} store</span>
+      <span className="fj-restaurant-status__copy">
+        <strong>{busy ? 'Updating…' : statusLabel(status)}</strong>
+        <small>Tap to {open ? 'close' : 'open'} store</small>
       </span>
     </button>
   )
@@ -99,20 +100,22 @@ export function RestaurantLayout() {
 
   if (loading) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-brand-black text-white">
-        <span className="h-7 w-7 animate-spin rounded-full border-2 border-white/15 border-t-neon-green" aria-label="Loading restaurant dashboard" />
+      <div className="fj-restaurant-state">
+        <span className="fj-restaurant-spinner" aria-label="Loading restaurant dashboard" />
       </div>
     )
   }
 
   if (!restaurant) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-brand-black px-5 text-white">
-        <section className="w-full max-w-lg rounded-2xl border border-red-400/20 bg-brand-surface p-6 text-center">
-          <p className="text-sm leading-6 text-red-200">{error || 'Your restaurant profile is unavailable.'}</p>
-          <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <button type="button" onClick={() => { setLoading(true); setError(''); void loadProfile().finally(() => setLoading(false)) }} className="min-h-11 rounded-xl bg-neon-green px-5 text-sm font-bold text-brand-black">Try again</button>
-            <button type="button" onClick={signOut} className="min-h-11 rounded-xl border border-white/15 px-5 text-sm font-semibold text-white">Sign out</button>
+      <div className="fj-restaurant-state">
+        <section className="fj-restaurant-state__card">
+          <span className="fj-restaurant-state__icon" aria-hidden="true">!</span>
+          <h1>Restaurant unavailable</h1>
+          <p>{error || 'Your restaurant profile is unavailable.'}</p>
+          <div className="fj-restaurant-state__actions">
+            <button type="button" onClick={() => { setLoading(true); setError(''); void loadProfile().finally(() => setLoading(false)) }} className="fj-restaurant-button fj-restaurant-button--primary">Try again</button>
+            <button type="button" onClick={signOut} className="fj-restaurant-button fj-restaurant-button--secondary">Sign out</button>
           </div>
         </section>
       </div>
@@ -122,65 +125,70 @@ export function RestaurantLayout() {
   const logo = apiAssetUrl(restaurant.logo_path)
 
   return (
-    <div className="min-h-svh bg-brand-black text-white lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <aside className="restaurant-safe-top hidden h-svh flex-col border-r border-white/10 bg-brand-surface lg:sticky lg:top-0 lg:flex">
-        <div className="border-b border-white/10 px-5 pb-5 pt-6">
-          <Logo className="!w-36" />
-          <div className="mt-6 flex items-center gap-3">
-            {logo ? <img src={logo} alt="" className="h-11 w-11 rounded-xl border border-white/10 object-cover" /> : <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-neon-green/10 text-lg font-black text-neon-green">{restaurant.name.charAt(0).toUpperCase()}</span>}
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{restaurant.name}</p>
-              <p className="mt-0.5 text-xs text-white/40">Restaurant workspace</p>
-            </div>
+    <div className="fj-restaurant">
+      <aside className="fj-restaurant-sidebar">
+        <div className="fj-restaurant-sidebar__brand">
+          <Logo tone="light-surface" className="fj-restaurant-wordmark" />
+          <p>RESTAURANT PARTNER</p>
+        </div>
+
+        <div className="fj-restaurant-identity">
+          {logo ? <img src={logo} alt="" /> : <span>{restaurant.name.charAt(0).toUpperCase()}</span>}
+          <div>
+            <strong>{restaurant.name}</strong>
+            <small>{restaurant.cuisine_type || 'Restaurant workspace'}</small>
           </div>
         </div>
 
-        <nav aria-label="Restaurant navigation" className="flex-1 space-y-1 px-3 py-5">
+        <nav aria-label="Restaurant navigation" className="fj-restaurant-sidebar__nav">
           {navigation.map(({ label, to, icon: Icon }) => (
-            <NavLink key={to} to={to} className={({ isActive }) => `flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${isActive ? 'bg-neon-green text-brand-black shadow-[0_0_22px_rgba(57,255,20,0.14)]' : 'text-white/55 hover:bg-white/[0.05] hover:text-white'}`}>
-              <Icon className="h-5 w-5" />
-              {label}
+            <NavLink key={to} to={to} className={({ isActive }) => `fj-restaurant-nav-link ${isActive ? 'is-active' : ''}`}>
+              <Icon className="fj-restaurant-nav-link__icon" />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="space-y-3 border-t border-white/10 p-4">
-          <button type="button" onClick={signOut} className="flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-white/45 transition hover:bg-white/[0.04] hover:text-white">Sign out</button>
+        <div className="fj-restaurant-sidebar__footer">
+          <div className="fj-restaurant-user">
+            <span>{user?.name?.charAt(0).toUpperCase() || 'R'}</span>
+            <div><strong>{user?.name}</strong><small>Store owner</small></div>
+          </div>
+          <button type="button" onClick={signOut} className="fj-restaurant-signout"><LogoutIcon />Sign out</button>
         </div>
       </aside>
 
-      <div className="min-w-0">
-        <header className="restaurant-safe-top sticky top-0 z-30 border-b border-white/10 bg-brand-black/95 backdrop-blur-xl">
-          <div className="flex min-h-16 items-center gap-3 px-4 sm:px-6 lg:min-h-20 lg:px-8">
-            <div className="flex min-w-0 flex-1 items-center gap-3 lg:hidden">
-              {logo ? <img src={logo} alt="" className="h-10 w-10 rounded-xl border border-white/10 object-cover" /> : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neon-green/10 font-black text-neon-green">{restaurant.name.charAt(0).toUpperCase()}</span>}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{restaurant.name}</p>
-                <p className="text-[11px] text-white/40">Signed in as {user?.name}</p>
-              </div>
+      <div className="fj-restaurant-workspace">
+        <header className="fj-restaurant-topbar">
+          <div className="fj-restaurant-topbar__identity">
+            {logo ? <img src={logo} alt="" /> : <span>{restaurant.name.charAt(0).toUpperCase()}</span>}
+            <div>
+              <strong>{restaurant.name}</strong>
+              <small>Kitchen command centre</small>
             </div>
-            <div className="hidden min-w-0 flex-1 lg:block">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-neon-green">Restaurant operations</p>
-              <p className="mt-1 text-sm text-white/45">Keep orders moving from kitchen to pickup.</p>
-            </div>
-            <StoreStatusControl status={restaurant.operating_status} busy={statusBusy} onToggle={() => void toggleStore()} />
           </div>
-          <nav aria-label="Restaurant navigation" className="flex gap-1 overflow-x-auto border-t border-white/[0.06] px-3 py-2 lg:hidden">
-            {navigation.map(({ label, to, icon: Icon }) => (
-              <NavLink key={to} to={to} className={({ isActive }) => `flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-xs font-bold transition ${isActive ? 'bg-neon-green text-brand-black' : 'text-white/50 hover:bg-white/[0.05] hover:text-white'}`}>
-                <Icon className="h-4 w-4" />
-                {label}
-              </NavLink>
-            ))}
-            <button type="button" onClick={signOut} className="min-h-11 shrink-0 rounded-xl px-3 text-xs font-bold text-red-300">Sign out</button>
-          </nav>
+          <div className="fj-restaurant-topbar__copy">
+            <p>RESTAURANT OPERATIONS</p>
+            <span>Keep every order moving from kitchen to doorstep.</span>
+          </div>
+          <StoreStatusControl status={restaurant.operating_status} busy={statusBusy} onToggle={() => void toggleStore()} />
+          <button type="button" onClick={signOut} className="fj-restaurant-mobile-signout" aria-label="Sign out"><LogoutIcon /></button>
         </header>
 
-        {statusMessage && <div role="status" className="border-b border-neon-green/15 bg-neon-green/[0.06] px-4 py-2 text-center text-xs font-semibold text-neon-green sm:px-6 lg:px-8">{statusMessage}</div>}
+        {statusMessage && <div role="status" className="fj-restaurant-status-message">{statusMessage}</div>}
 
-        <main className="mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <main className="fj-restaurant-main">
           <Outlet context={{ restaurant, updateRestaurant: setRestaurant } satisfies RestaurantOutletContext} />
         </main>
+
+        <nav aria-label="Restaurant navigation" className="fj-restaurant-bottom-nav">
+          {navigation.map(({ label, to, icon: Icon }) => (
+            <NavLink key={to} to={to} className={({ isActive }) => `fj-restaurant-bottom-link ${isActive ? 'is-active' : ''}`}>
+              <Icon />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
       </div>
     </div>
   )
@@ -193,3 +201,4 @@ function MenuIcon({ className }: IconProps) { return <svg className={className} 
 function EarningsIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/><path d="m4 7 6-4 6 7 4-3"/></svg> }
 function ProfileIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> }
 function ReviewsIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg> }
+function LogoutIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M13 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg> }
