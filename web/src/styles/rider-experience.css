@@ -294,6 +294,37 @@
 .fj-rider-account-actions span { display: block; margin-top: 5px; color: #999f96; font-size: 9px; }
 .fj-rider-account-actions button { min-height: 42px; flex: 0 0 auto; border: 1px solid #e5c9c4; border-radius: 8px; background: #fff8f7; padding: 0 17px; color: #a65f54; font-size: 10px; font-weight: 750; }
 
+.fj-rider-chat-back { min-height: 40px; border: 1px solid #dce4d5; border-radius: 8px; background: #fff; padding: 0 14px; color: #607b4b; font-size: 10px; font-weight: 800; }
+.fj-rider-chat-shell { margin-top: 24px; }
+.fj-rider-chat-shell .fj-chat-thread--rider { min-height: 600px; border: 1px solid var(--rider-line); border-radius: 15px; background: #fff; box-shadow: 0 12px 40px rgb(52 74 43 / 5%); }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__header { min-height: 76px; border-color: #e7ece2; background: #fbfcfa; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__avatar { border-color: #dce6d3; border-radius: 50%; background: #edf3e6; color: #607e49; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__back { border-color: #dce4d5; color: #617b4e; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__title { color: #3d4e37; font-family: Manrope, sans-serif; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__subtitle { color: #8c9787; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__messages { background: linear-gradient(180deg, #fff, #fcfdfb); }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__skeleton > div { background: #f0f4eb; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__skeleton > div:nth-child(2) { background: #dcefc0; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__empty h3 { color: #42513c; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__empty p { color: #8d9788; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__bubble--own { background: #c7eb91; color: #2f4628; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__bubble--received { border-color: #e3e9dd; background: #f3f6ef; color: #4d5949; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__bubble--received > p:first-child { color: #829078; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__bubble--received > p:last-child { color: #9aa294; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__connection { border-color: #eddcb8; background: #fff9ed; color: #8a6b38; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__closed { border-color: #e7ece2; color: #8c9588; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__form { border-color: #e7ece2; background: #f7f9f4; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__textarea { border-color: #ccd9c1; background: #fff; color: #3d4939; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__textarea::placeholder { color: #a2aaa0; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__textarea:focus { border-color: #8eb569; box-shadow: 0 0 0 3px rgb(142 181 105 / 13%); }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__send { border-radius: 11px; background: #334d2b; color: #fff; }
+.fj-rider .fj-chat-thread--rider .fj-chat-thread__send:hover { background: #263f21; }
+.fj-rider-chat-skeleton { min-height: 600px; border: 1px solid var(--rider-line); border-radius: 15px; background: linear-gradient(90deg, #fff 20%, #f0f3ec 50%, #fff 80%); background-size: 200% 100%; animation: fj-rider-shimmer 1.3s linear infinite; }
+.fj-rider-chat-unavailable { display: grid; min-height: 360px; place-items: center; align-content: center; gap: 12px; border: 1px solid #ead8d3; border-radius: 15px; background: #fff; padding: 30px; text-align: center; }
+.fj-rider-chat-unavailable > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 50%; background: #fff0ed; color: #b36256; font-family: Manrope, sans-serif; font-size: 20px; font-weight: 800; }
+.fj-rider-chat-unavailable p { margin: 0; color: #9a6b64; font-size: 12px; }
+.fj-rider-chat-unavailable button { min-height: 42px; border: 0; border-radius: 9px; background: #334d2b; padding: 0 17px; color: #fff; font-size: 10px; font-weight: 800; }
+
 @keyframes fj-rider-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 980px) {
@@ -361,6 +392,10 @@
   .fj-rider-account-details > header { align-items: flex-start; flex-direction: column; }
   .fj-rider-account-actions { align-items: stretch; flex-direction: column; }
   .fj-rider-account-actions button { width: 100%; }
+  .fj-rider-chat-back { width: 100%; }
+  .fj-rider-chat-shell { margin-top: 18px; }
+  .fj-rider-chat-shell .fj-chat-thread--rider,
+  .fj-rider-chat-skeleton { min-height: calc(100svh - 250px); border-radius: 13px; }
 }
 
 @media (max-width: 440px) {
