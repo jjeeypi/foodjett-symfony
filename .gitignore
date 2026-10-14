@@ -1,6 +1,9 @@
 # Local migration documentation
 /docs/
 
+# Local Figma Make export (implemented in web/)
+/foodjett-redesign/
+
 # Root-level OS and editor files
 /.DS_Store
 /Thumbs.db
