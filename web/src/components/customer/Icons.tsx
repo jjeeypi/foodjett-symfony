@@ -57,3 +57,27 @@ export function ChevronIcon(props: IconProps) {
 export function EmptyCartIcon(props: IconProps) {
   return <IconBase {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M4 5h2l2 10h9l2-7H7m3 11h.01M17 19h.01" /><path strokeLinecap="round" d="m9 8 6 6m0-6-6 6" /></IconBase>
 }
+
+export function BoltIcon(props: IconProps) {
+  return <IconBase {...props}><path strokeLinecap="round" strokeLinejoin="round" d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z" /></IconBase>
+}
+
+export function PinIcon(props: IconProps) {
+  return <IconBase {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></IconBase>
+}
+
+export function BikeIcon(props: IconProps) {
+  return <IconBase {...props}><circle cx="5" cy="17" r="4" /><circle cx="19" cy="17" r="4" /><path strokeLinecap="round" strokeLinejoin="round" d="m5 17 5-10 5 10H5m5-10h5l4 10M8 4h4" /></IconBase>
+}
+
+export function ArrowIcon(props: IconProps) {
+  return <IconBase {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16m-6-6 6 6-6 6" /></IconBase>
+}
+
+export function ClockIcon(props: IconProps) {
+  return <IconBase {...props}><circle cx="12" cy="12" r="9" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 2" /></IconBase>
+}
+
+export function StarIcon(props: IconProps) {
+  return <IconBase {...props}><path strokeLinecap="round" strokeLinejoin="round" d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z" /></IconBase>
+}

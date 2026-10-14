@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { CartDrawer } from '../components/customer/CartDrawer'
 import { TopNav } from '../components/customer/TopNav'
+import '../styles/customer-experience.css'
 
 export interface CustomerOutletContext {
   searchQuery: string
@@ -31,11 +32,17 @@ export function CustomerLayout() {
   }, [location.pathname, location.search, navigate, searchQuery])
 
   return (
-    <div className="min-h-svh bg-brand-black text-white">
-      <TopNav searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
-      <main className="mx-auto w-full max-w-[90rem] px-4 py-7 sm:px-6 sm:py-9 lg:px-8 lg:py-12">
-        <Outlet context={{ searchQuery, setSearchQuery } satisfies CustomerOutletContext} />
-      </main>
+    <div className="fj-customer">
+      <TopNav />
+      <div className="fj-main-shell">
+        <main className="fj-content">
+          <Outlet context={{ searchQuery, setSearchQuery } satisfies CustomerOutletContext} />
+          <footer className="fj-page-footer">
+            <strong>A little local love in every order.</strong>
+            <span>Good food, powered by Foodjett.</span>
+          </footer>
+        </main>
+      </div>
       <CartDrawer />
     </div>
   )
