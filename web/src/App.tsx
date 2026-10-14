@@ -33,6 +33,7 @@ import { RiderChatPage } from './pages/rider/RiderChatPage'
 import { RiderEarningsPage } from './pages/rider/RiderEarningsPage'
 import { RiderPoolPage } from './pages/rider/RiderPoolPage'
 import { AdminApprovalsPage } from './pages/admin/AdminApprovalsPage'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminRestaurantsPage } from './pages/admin/AdminRestaurantsPage'
 import { AdminRidersPage } from './pages/admin/AdminRidersPage'
@@ -134,7 +135,7 @@ export default function App() {
 
             <Route path="/admin" element={<ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminApprovalsPage />} />
+              <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="approvals" element={<AdminApprovalsPage />} />
               <Route path="approvals/:kind/:id" element={<AdminApprovalsPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />

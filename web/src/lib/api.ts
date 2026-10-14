@@ -1260,6 +1260,48 @@ export interface AdminCustomerDetail extends AdminCustomerOverview {
   }>
 }
 
+export interface AdminDashboardKpis {
+  generated_at: string
+  operations: {
+    today_orders: number
+    today_revenue: string
+    orders_in_progress: number
+    completed_today: number
+    cancelled_today: number
+  }
+  platform_health: {
+    restaurants_open: number
+    riders_online: number
+    pending_approvals: number
+    pending_restaurants: number
+    pending_riders: number
+    open_support_tickets: number
+  }
+  financial: {
+    period: 'month'
+    period_start: string
+    total_revenue: string
+    pending_remittances_amount: string
+    active_vouchers: number
+    voucher_redemptions: number
+  }
+  growth: {
+    total_customers: number
+    approved_restaurants: number
+    approved_riders: number
+    new_signups_this_week: {
+      total: number
+      customers: number
+      restaurants: number
+      riders: number
+    }
+  }
+}
+
+export function getAdminDashboard(signal?: AbortSignal): Promise<AdminDashboardKpis> {
+  return request<AdminDashboardKpis>('/api/admin/dashboard', { signal })
+}
+
 export function getAdminCustomers(page: number, search?: string, signal?: AbortSignal): Promise<PaginatedResponse<AdminCustomerOverview>> {
   return request<PaginatedResponse<AdminCustomerOverview>>(`/api/admin/customers?${adminPageQuery(page, { search })}`, { signal })
 }
