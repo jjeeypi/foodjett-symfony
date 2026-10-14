@@ -4,6 +4,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import { homeForRole } from './auth/auth-routing'
 import { useAuth } from './auth/useAuth'
 import { CartProvider } from './cart/CartProvider'
+import { FavoritesProvider } from './favorites/FavoritesProvider'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { RestaurantLayout } from './layouts/RestaurantLayout'
 import { RiderLayout } from './layouts/RiderLayout'
@@ -85,8 +86,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <Routes>
+        <FavoritesProvider>
+          <CartProvider>
+            <Routes>
             <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
             <Route path="/register/restaurant" element={<GuestRoute><RestaurantRegistrationPage /></GuestRoute>} />
@@ -153,8 +155,9 @@ export default function App() {
 
             <Route path="/unsupported-role" element={<ProtectedRoute><ComingSoonPage title="Dashboard unavailable" message="This role's web dashboard has not been connected yet." /></ProtectedRoute>} />
             <Route path="*" element={<RoleHomeRedirect />} />
-          </Routes>
-        </CartProvider>
+            </Routes>
+          </CartProvider>
+        </FavoritesProvider>
       </AuthProvider>
     </BrowserRouter>
   )
