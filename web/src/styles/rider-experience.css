@@ -158,6 +158,87 @@
 
 @keyframes fj-rider-shimmer { to { background-position: -200% 0; } }
 
+.fj-rider-status-progress { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 28px; margin-top: 25px; border: 1px solid var(--rider-line); border-radius: 14px; background: #fff; padding: 19px 22px; }
+.fj-rider-status-progress > div { display: flex; min-width: 0; align-items: center; }
+.fj-rider-status-progress > div > div { display: flex; min-width: 0; flex: 1; align-items: center; }
+.fj-rider-status-progress > div > div:last-child { flex: 0 0 auto; }
+.fj-rider-status-progress > div span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 50%; background: #eef1eb; color: #a0a79a; font-size: 9px; font-weight: 800; }
+.fj-rider-status-progress > div i { width: 100%; height: 2px; background: #edf0e9; }
+.fj-rider-status-progress > div .is-complete span,
+.fj-rider-status-progress > div .is-complete i { background: #bde582; color: #31472b; }
+.fj-rider-status-progress > p { min-width: 140px; margin: 0; border-left: 1px solid var(--rider-line); padding-left: 21px; }
+.fj-rider-status-progress > p span,
+.fj-rider-status-progress > p strong { display: block; }
+.fj-rider-status-progress > p span { color: #9ca598; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+.fj-rider-status-progress > p strong { margin-top: 5px; color: #46573f; font-size: 12px; }
+.fj-rider-cash-banner { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 17px; border: 1px solid #ead7b5; border-radius: 12px; background: #fcf5e7; padding: 15px 18px; }
+.fj-rider-cash-banner p { margin: 0; color: #a67731; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.fj-rider-cash-banner strong { display: block; margin-top: 4px; color: #78592c; font-family: Manrope, sans-serif; font-size: 19px; }
+.fj-rider-cash-banner > span { max-width: 330px; color: #9b825d; font-size: 10px; line-height: 1.5; text-align: right; }
+.fj-rider-active-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, .75fr); gap: 18px; margin-top: 18px; }
+.fj-rider-active-main,
+.fj-rider-active-side { display: grid; align-content: start; gap: 18px; }
+.fj-rider-task-card,
+.fj-rider-items-card,
+.fj-rider-customer-card,
+.fj-rider-action-card { border: 1px solid var(--rider-line); border-radius: 15px; background: #fff; }
+.fj-rider-task-card { overflow: hidden; }
+.fj-rider-task-card > header,
+.fj-rider-items-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid #edf0e9; padding: 18px 20px; }
+.fj-rider-task-card > header p,
+.fj-rider-items-card > header p,
+.fj-rider-customer-card > p,
+.fj-rider-action-card > p { margin: 0; color: #9ba497; font-size: 8px; font-weight: 800; letter-spacing: 1.1px; }
+.fj-rider-task-card > header h2,
+.fj-rider-items-card > header h2 { margin: 5px 0 0; font-family: Manrope, sans-serif; font-size: 18px; font-weight: 800; }
+.fj-rider-task-card > header > span { border-radius: 999px; background: #edf5e4; padding: 6px 9px; color: #66814e; font-size: 8px; font-weight: 750; white-space: nowrap; }
+.fj-rider-task-route { position: relative; display: grid; gap: 23px; padding: 23px 20px; }
+.fj-rider-task-route article { position: relative; z-index: 1; display: grid; grid-template-columns: 14px 1fr; gap: 13px; }
+.fj-rider-task-route article > i { width: 12px; height: 12px; margin-top: 2px; border: 2px solid #88aa68; border-radius: 50%; background: #fff; }
+.fj-rider-task-route article > i.dropoff { border-radius: 2px 50% 50%; background: #88aa68; transform: rotate(45deg); }
+.fj-rider-task-route small { display: block; color: #97a08f; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.fj-rider-task-route h3 { margin: 5px 0 0; color: #44543e; font-size: 13px; font-weight: 750; }
+.fj-rider-task-route p { margin: 4px 0 0; color: #939c8e; font-size: 10px; line-height: 1.5; }
+.fj-rider-task-line { position: absolute; top: 38px; bottom: 40px; left: 25px; border-left: 1px dashed #b4c6a6; }
+.fj-rider-instructions { margin: 0 20px 18px; border-radius: 9px; background: #f5f7f2; padding: 12px 14px; }
+.fj-rider-instructions strong { color: #63715c; font-size: 9px; }
+.fj-rider-instructions p { margin: 5px 0 0; color: #899383; font-size: 10px; line-height: 1.6; }
+.fj-rider-directions { display: flex; gap: 8px; border-top: 1px solid #edf0e9; padding: 15px 20px 19px; }
+.fj-rider-items-card { overflow: hidden; }
+.fj-rider-items-card > header > span { color: #8d9788; font-size: 10px; }
+.fj-rider-items-card > div { padding: 4px 20px; }
+.fj-rider-items-card article { display: flex; gap: 13px; border-bottom: 1px solid #edf0e9; padding: 14px 0; }
+.fj-rider-items-card article:last-child { border: 0; }
+.fj-rider-items-card article > span { color: #6e8d54; font-size: 12px; font-weight: 800; }
+.fj-rider-items-card article strong { color: #4f5d49; font-size: 11px; }
+.fj-rider-items-card article p { margin: 5px 0 0; color: #a07843; font-size: 9px; line-height: 1.5; }
+.fj-rider-customer-card,
+.fj-rider-action-card { padding: 19px; }
+.fj-rider-customer-card > div:nth-child(2) { display: flex; align-items: center; gap: 10px; margin-top: 13px; }
+.fj-rider-customer-card > div:nth-child(2) > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: #edf3e5; color: #64804e; font-size: 12px; font-weight: 800; }
+.fj-rider-customer-card h2 { margin: 0; font-family: Manrope, sans-serif; font-size: 16px; font-weight: 800; }
+.fj-rider-customer-actions { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; margin-top: 15px !important; }
+.fj-rider-customer-actions > * { width: 100%; padding-inline: 8px; }
+.fj-rider-customer-note { display: block !important; margin-top: 14px !important; border-radius: 9px; background: #f3f7ed; padding: 12px; }
+.fj-rider-customer-note strong { color: #627b4d; font-size: 9px; }
+.fj-rider-customer-note p { margin: 5px 0 0; color: #7f8c75; font-size: 10px; line-height: 1.6; }
+.fj-rider-action-card { position: sticky; top: 96px; }
+.fj-rider-action-card > p { margin-bottom: 13px; }
+.fj-rider-action-button { width: 100%; min-height: 50px; }
+.fj-rider-action-form > label:not(.fj-rider-proof-upload, .fj-rider-cash-check) { display: block; color: #6f7a69; font-size: 10px; font-weight: 700; }
+.fj-rider-action-form input[type="text"] { display: block; width: 100%; height: 48px; margin-top: 8px; border: 1px solid #dce3d6; border-radius: 9px; background: #fafbf8; color: var(--rider-ink); font-size: 18px; font-weight: 800; letter-spacing: .35em; outline: 0; text-align: center; }
+.fj-rider-action-form input[type="text"]:focus { border-color: #8eb569; box-shadow: 0 0 0 3px rgb(142 181 105 / 13%); }
+.fj-rider-action-form > p { margin: 8px 0 0; color: #959d90; font-size: 9px; }
+.fj-rider-action-form > .fj-rider-primary-button { width: 100%; margin-top: 12px; }
+.fj-rider-proof-upload { display: flex; min-height: 52px; align-items: center; justify-content: center; border: 1px dashed #aaca8e; border-radius: 9px; background: #f5f9ef; padding: 8px; color: #68854f; font-size: 10px; font-weight: 750; text-align: center; }
+.fj-rider-cash-check { display: flex; min-height: 48px; align-items: center; gap: 10px; margin-top: 10px; border-radius: 9px; background: #fcf5e7; padding: 9px 11px; color: #886b3f; font-size: 10px; font-weight: 700; }
+.fj-rider-cash-check input { width: 17px; height: 17px; accent-color: #85a85f; }
+.fj-rider-danger-button { width: 100%; min-height: 40px; margin-top: 7px; border: 0; background: transparent; color: #b4695d; font-size: 9px; font-weight: 750; }
+.fj-rider-action-waiting { margin: 0; color: #8e9789; font-size: 11px; line-height: 1.6; text-align: center; }
+.fj-rider-active-skeleton { display: grid; gap: 18px; margin-top: 24px; }
+.fj-rider-active-skeleton > div { height: 100px; border-radius: 14px; background: linear-gradient(90deg, #fff 20%, #f0f3ec 50%, #fff 80%); background-size: 200% 100%; animation: fj-rider-shimmer 1.3s linear infinite; }
+.fj-rider-active-skeleton > div:nth-child(2) { height: 330px; }
+
 @keyframes fj-rider-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 980px) {
@@ -169,6 +250,8 @@
   .fj-rider-pool-banner { grid-template-columns: 1fr; }
   .fj-rider-offer-grid,
   .fj-rider-skeleton-grid { grid-template-columns: 1fr; }
+  .fj-rider-active-grid { grid-template-columns: 1fr; }
+  .fj-rider-action-card { position: static; }
 }
 
 @media (max-width: 720px) {
@@ -206,6 +289,13 @@
   .fj-rider-route-preview,
   .fj-rider-offer-body { padding-inline: 17px; }
   .fj-rider-route-line { left: 21px; }
+  .fj-rider-status-progress { grid-template-columns: 1fr; gap: 14px; padding: 16px; }
+  .fj-rider-status-progress > p { border-top: 1px solid var(--rider-line); border-left: 0; padding: 12px 0 0; text-align: center; }
+  .fj-rider-status-progress > div span { width: 24px; height: 24px; flex-basis: 24px; }
+  .fj-rider-cash-banner { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .fj-rider-cash-banner > span { text-align: left; }
+  .fj-rider-directions { display: grid; grid-template-columns: 1fr; }
+  .fj-rider-customer-actions { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 390px) {
