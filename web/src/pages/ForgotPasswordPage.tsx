@@ -47,23 +47,24 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <section aria-labelledby="forgot-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
-        <header className="mb-7">
-          <h1 id="forgot-heading" className="text-2xl font-bold tracking-tight text-white">Reset your password</h1>
-          <p className="mt-1 text-sm text-white/55">Enter your email and we&apos;ll send reset instructions.</p>
+      <section aria-labelledby="forgot-heading" className="fj-auth-card fj-auth-card--compact">
+        <header className="fj-auth-card-header">
+          <p>Account recovery</p>
+          <h1 id="forgot-heading">Reset your password</h1>
+          <p>Enter your email and we&apos;ll send reset instructions.</p>
         </header>
 
         <FormAlert message={globalError} />
 
         {successMessage ? (
-          <div role="status" className="rounded-xl border border-neon-green/35 bg-neon-green/10 px-4 py-5 text-center text-sm text-neon-green">
-            <svg aria-hidden="true" className="mx-auto mb-3 h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <div role="status" className="fj-auth-success">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="m9 12 2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
-            <p className="font-medium">{successMessage}</p>
+            <p>{successMessage}</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="fj-auth-form-stack">
             <NeonInput
               id="forgot-email"
               name="email"
@@ -89,9 +90,9 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-white/50">
+        <p className="fj-auth-card-footer">
           Remember your password?{' '}
-          <Link to="/login" className="inline-flex min-h-11 items-center font-semibold text-neon-green transition-colors hover:text-[#55ff35] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60">
+          <Link to="/login" className="fj-auth-text-link">
             Back to login
           </Link>
         </p>

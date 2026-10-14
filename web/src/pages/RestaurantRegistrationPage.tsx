@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { DocumentUploadField } from '../components/DocumentUploadField'
 import { FormAlert } from '../components/FormAlert'
-import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter'
 import { RegistrationStepIndicator } from '../components/RegistrationStepIndicator'
@@ -150,18 +149,18 @@ export default function RestaurantRegistrationPage() {
   }
 
   return (
-    <AuthLayout showStandaloneLogo={false}>
-      <section className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] sm:p-8">
-        <header className="mb-6 text-center">
-          <div className="flex justify-center"><Logo /></div>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-neon-green">Restaurant application</p>
-          <h1 className="mt-2 text-2xl font-black text-white">Bring your kitchen to Foodjett</h1>
+    <AuthLayout>
+      <section className="fj-auth-card">
+        <header className="fj-auth-card-header">
+          <p>Restaurant application</p>
+          <h1>Bring your kitchen to Foodjett</h1>
+          <p>Set up your partner account, business location, and approval documents.</p>
         </header>
         <RegistrationStepIndicator steps={steps} currentStep={step} />
         <FormAlert message={globalError} />
 
         <form onSubmit={submit} noValidate>
-          {step === 0 && <div className="space-y-5">
+          {step === 0 && <div className="fj-auth-form-stack">
             <NeonInput id="restaurant-owner-name" name="owner_name" label="Owner / contact name" autoComplete="name" value={fields.owner_name} onChange={updateField} error={errors.owner_name} disabled={loading} />
             <NeonInput id="restaurant-email" name="email" label="Email address" type="email" inputMode="email" autoComplete="email" value={fields.email} onChange={updateField} error={errors.email} disabled={loading} />
             <NeonInput id="restaurant-phone" name="phone" label="Contact phone" type="tel" inputMode="tel" autoComplete="tel" value={fields.phone} onChange={updateField} error={errors.phone} disabled={loading} />
@@ -169,41 +168,41 @@ export default function RestaurantRegistrationPage() {
             <NeonInput id="restaurant-password-confirmation" name="password_confirmation" label="Confirm password" type="password" autoComplete="new-password" value={fields.password_confirmation} onChange={updateField} error={errors.password_confirmation} disabled={loading} showPasswordToggle />
           </div>}
 
-          {step === 1 && <div className="space-y-5">
+          {step === 1 && <div className="fj-auth-form-stack">
             <NeonInput id="restaurant-name" name="restaurant_name" label="Business name" autoComplete="organization" value={fields.restaurant_name} onChange={updateField} error={errors.restaurant_name} disabled={loading} />
             <NeonInput id="restaurant-cuisine" name="cuisine_type" label="Cuisine type" placeholder="e.g. Filipino, Fast Food, Desserts" value={fields.cuisine_type} onChange={updateField} error={errors.cuisine_type} disabled={loading} />
             <NeonInput id="restaurant-address" name="address" label="Business address" autoComplete="street-address" value={fields.address} onChange={updateField} error={errors.address} disabled={loading} />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="fj-auth-field-grid">
               <NeonInput id="restaurant-latitude" name="latitude" label="Latitude" inputMode="decimal" placeholder="14.5995" value={fields.latitude} onChange={updateField} error={errors.latitude} disabled={loading} />
               <NeonInput id="restaurant-longitude" name="longitude" label="Longitude" inputMode="decimal" placeholder="120.9842" value={fields.longitude} onChange={updateField} error={errors.longitude} disabled={loading} />
             </div>
-            <button type="button" onClick={useCurrentLocation} disabled={locating || loading} className="min-h-11 w-full rounded-xl border border-neon-green/40 px-4 py-2.5 text-sm font-bold text-neon-green hover:bg-neon-green/10 disabled:opacity-50">{locating ? 'Finding your location…' : 'Use my current location'}</button>
-            <p className="rounded-xl bg-white/[0.04] px-4 py-3 text-xs leading-5 text-white/50">Operating hours are configured from Store Profile after approval; the registration API does not accept them.</p>
+            <button type="button" onClick={useCurrentLocation} disabled={locating || loading} className="fj-auth-secondary-action">{locating ? 'Finding your location…' : 'Use my current location'}</button>
+            <p className="fj-auth-note">Operating hours are configured from Store Profile after approval; the registration API does not accept them.</p>
           </div>}
 
-          {step === 2 && <div className="space-y-5">
-            <p className="text-sm leading-6 text-white/60">Upload clear scans or photos. PDF, JPG, PNG, WebP, HEIC, or HEIF; maximum 10 MB each.</p>
+          {step === 2 && <div className="fj-auth-form-stack">
+            <p className="fj-auth-copy">Upload clear scans or photos. PDF, JPG, PNG, WebP, HEIC, or HEIF; maximum 10 MB each.</p>
             {(Object.keys(documentLabels) as DocumentField[]).map((name) => <DocumentUploadField key={name} id={`restaurant-${name}`} name={name} label={documentLabels[name]} file={documents[name]} error={errors[name]} disabled={loading} onChange={(event) => updateDocument(name, event)} />)}
           </div>}
 
-          {step === 3 && <div className="space-y-5">
+          {step === 3 && <div className="fj-auth-form-stack">
             <ReviewSection title="Account" rows={[["Owner", fields.owner_name], ["Email", fields.email], ["Phone", fields.phone]]} onEdit={() => setStep(0)} />
             <ReviewSection title="Restaurant" rows={[["Business", fields.restaurant_name], ["Cuisine", fields.cuisine_type], ["Address", fields.address], ["Coordinates", `${fields.latitude}, ${fields.longitude}`]]} onEdit={() => setStep(1)} />
             <ReviewSection title="Documents" rows={(Object.keys(documentLabels) as DocumentField[]).map((name) => [documentLabels[name], documents[name]?.name ?? 'Missing'])} onEdit={() => setStep(2)} />
-            <p className="rounded-xl border border-amber-300/25 bg-amber-300/[0.07] px-4 py-3 text-sm leading-6 text-amber-100">Your restaurant will stay closed and pending until an admin reviews the application and documents.</p>
+            <p className="fj-auth-note fj-auth-note--warning">Your restaurant will stay closed and pending until an admin reviews the application and documents.</p>
           </div>}
 
-          <div className="mt-7 flex gap-3">
-            {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} disabled={loading} className="min-h-12 flex-1 rounded-xl border border-white/15 px-4 font-bold text-white hover:bg-white/5 disabled:opacity-50">Back</button> : <Link to="/register" className="flex min-h-12 flex-1 items-center justify-center rounded-xl border border-white/15 px-4 font-bold text-white hover:bg-white/5">Back</Link>}
-            {step < steps.length - 1 ? <button type="button" onClick={nextStep} className="min-h-12 flex-1 rounded-xl bg-neon-green px-4 font-bold text-brand-black hover:bg-[#55ff35]">Next</button> : <SubmitButton loading={loading} loadingLabel="Submitting…" className="flex-1">Submit application</SubmitButton>}
+          <div className="fj-auth-actions">
+            {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} disabled={loading} className="fj-auth-secondary-action">Back</button> : <Link to="/register" className="fj-auth-secondary-action">Back</Link>}
+            {step < steps.length - 1 ? <button type="button" onClick={nextStep} className="fj-auth-primary-action">Next</button> : <SubmitButton loading={loading} loadingLabel="Submitting…">Submit application</SubmitButton>}
           </div>
         </form>
-        <p className="mt-6 text-center text-sm text-white/50">Already approved? <Link to="/login" className="font-semibold text-neon-green">Log in</Link></p>
+        <p className="fj-auth-card-footer">Already approved? <Link to="/login" className="fj-auth-text-link">Log in</Link></p>
       </section>
     </AuthLayout>
   )
 }
 
 function ReviewSection({ title, rows, onEdit }: { title: string; rows: string[][]; onEdit: () => void }) {
-  return <section className="rounded-xl border border-white/10 bg-white/[0.025] p-4"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold text-white">{title}</h2><button type="button" onClick={onEdit} className="min-h-11 px-2 text-sm font-bold text-neon-green">Edit</button></div><dl className="space-y-2">{rows.map(([label, value]) => <div key={label} className="flex gap-3 text-sm"><dt className="w-28 shrink-0 text-white/45">{label}</dt><dd className="min-w-0 break-words text-white/80">{value}</dd></div>)}</dl></section>
+  return <section className="fj-auth-review"><div><h2>{title}</h2><button type="button" onClick={onEdit}>Edit</button></div><dl>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>
 }

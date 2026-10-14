@@ -3,7 +3,6 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormAlert } from '../components/FormAlert'
-import { Logo } from '../components/Logo'
 import { NeonInput } from '../components/NeonInput'
 import { SubmitButton } from '../components/SubmitButton'
 import { homeForRole } from '../auth/auth-routing'
@@ -80,18 +79,17 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout showStandaloneLogo={false}>
-      <section aria-labelledby="login-heading" className="rounded-2xl border border-white/10 bg-brand-surface/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
-        <header className="mb-7 text-center">
-          <h1 id="login-heading" className="sr-only">Sign in to Foodjett</h1>
-          <div className="flex justify-center">
-            <Logo />
-          </div>
+    <AuthLayout>
+      <section aria-labelledby="login-heading" className="fj-auth-card fj-auth-card--compact">
+        <header className="fj-auth-card-header">
+          <p>Welcome back</p>
+          <h1 id="login-heading">Sign in to Foodjett</h1>
+          <p>Customer, restaurant, rider, or admin—use the same secure login.</p>
         </header>
 
         <FormAlert message={globalError} />
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <form onSubmit={handleSubmit} noValidate className="fj-auth-form-stack">
           <NeonInput
             id="login-email"
             name="email"
@@ -109,7 +107,7 @@ export default function LoginPage() {
             disabled={loading}
           />
 
-          <div>
+          <div className="fj-auth-password-group">
             <NeonInput
               id="login-password"
               name="password"
@@ -124,8 +122,8 @@ export default function LoginPage() {
               disabled={loading}
               showPasswordToggle
             />
-            <div className="mt-2 text-right">
-              <Link to="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-medium text-neon-green/80 transition-colors hover:text-neon-green focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60">
+            <div className="fj-auth-password-tools">
+              <Link to="/forgot-password" className="fj-auth-text-link">
                 Forgot password?
               </Link>
             </div>
@@ -134,9 +132,9 @@ export default function LoginPage() {
           <SubmitButton loading={loading} loadingLabel="Signing in...">Sign in</SubmitButton>
         </form>
 
-        <p className="mt-6 text-center text-sm text-white/50">
+        <p className="fj-auth-card-footer">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="inline-flex min-h-11 items-center font-semibold text-neon-green transition-colors hover:text-[#55ff35] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-green/60">
+          <Link to="/register" className="fj-auth-text-link">
             Sign up
           </Link>
         </p>
