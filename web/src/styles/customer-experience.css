@@ -180,6 +180,11 @@
 .fj-empty h2 { margin-top: 14px; color: #273826; font-size: 20px; }
 .fj-empty p { margin-top: 8px; font-size: 13px; }
 .fj-empty button { min-height: 42px; margin-top: 18px; border-radius: 8px; background: #2f4128; padding: 0 16px; color: #fff; font-size: 12px; font-weight: 700; }
+.fj-empty > svg { margin: 0 auto; }
+.fj-empty > a { display: inline-flex; min-height: 42px; align-items: center; margin-top: 18px; border-radius: 8px; background: #2f4128; padding: 0 16px; color: #fff; font-size: 12px; font-weight: 700; }
+.fj-favorites-welcome { margin-bottom: 8px; }
+.fj-favorites-grid { margin-top: 18px; }
+.fj-favorites-empty { margin-top: 18px; }
 
 .fj-skeleton { overflow: hidden; border: 1px solid #e7ebe2; border-radius: 12px; background: #fff; }
 .fj-skeleton-media { aspect-ratio: 16 / 9; animation: fj-pulse 1.6s ease-in-out infinite; background: #edf1e9; }

@@ -47,6 +47,7 @@ import { AdminCustomersPage } from './pages/admin/AdminCustomersPage'
 import CustomerProfilePage from './pages/CustomerProfilePage'
 import CustomerAddressesPage from './pages/CustomerAddressesPage'
 import FoodsPage from './pages/FoodsPage'
+import FavoritesPage from './pages/FavoritesPage'
 
 function LoadingSession() {
   return (
@@ -99,6 +100,7 @@ export default function App() {
             <Route element={<ProtectedRoute role="customer"><CustomerLayout /></ProtectedRoute>}>
               <Route index element={<HomePage />} />
               <Route path="/foods" element={<FoodsPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/messages/:conversationId" element={<MessagesPage />} />
               <Route path="/orders" element={<CustomerOrdersPage />} />
