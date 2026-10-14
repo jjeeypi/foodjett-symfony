@@ -1,62 +1,35 @@
 import type { ReactNode } from 'react'
 import { Logo } from './Logo'
+import '../styles/auth-experience.css'
 
 const benefits = [
-  'Discover local favorites in seconds',
-  'Track every order from kitchen to door',
-  'Enjoy fast, reliable delivery',
+  { title: 'Order with confidence', copy: 'Find local kitchens and follow every order to your door.' },
+  { title: 'Grow your restaurant', copy: 'Manage menus, orders, and earnings from one workspace.' },
+  { title: 'Deliver on your terms', copy: 'Go online, choose nearby runs, and track your pay.' },
 ]
 
 function CheckIcon() {
-  return (
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neon-green text-brand-black">
-      <svg aria-hidden="true" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
-      </svg>
-    </span>
-  )
+  return <span className="fj-auth-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path strokeLinecap="round" strokeLinejoin="round" d="m6 12 4 4 8-9" /></svg></span>
 }
 
-/** Shared mobile-first shell for the customer authentication screens. */
+/** Shared responsive shell for login and every public registration flow. */
 export function AuthLayout({ children, showStandaloneLogo = true }: { children: ReactNode; showStandaloneLogo?: boolean }) {
-  return (
-    <main className="auth-shell relative min-h-svh overflow-x-hidden bg-brand-black px-4 sm:px-6 lg:flex lg:items-center lg:px-10">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 top-1/3 h-[32rem] w-[32rem] rounded-full bg-neon-green/[0.07] blur-[130px]" />
-        <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-neon-green/[0.04] blur-[110px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(circle_at_center,black,transparent_82%)]" />
+  return <main className="fj-auth">
+    <div className="fj-auth-decoration" aria-hidden="true"><i /><i /></div>
+    <section className="fj-auth-story" aria-labelledby="auth-value-heading">
+      {showStandaloneLogo && <Logo className="fj-auth-brand-logo" />}
+      <div className="fj-auth-story-copy">
+        <p className="fj-auth-eyebrow"><span /> ONE FOODJETT ACCOUNT</p>
+        <h2 id="auth-value-heading">Good food moves everyone forward.</h2>
+        <p>Customers, restaurant partners, riders, and operators all sign in through one secure home.</p>
+        <ul aria-label="Ways to use Foodjett">{benefits.map((benefit) => <li key={benefit.title}><CheckIcon /><span><strong>{benefit.title}</strong><small>{benefit.copy}</small></span></li>)}</ul>
       </div>
-
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[1fr_28rem] lg:gap-16 xl:gap-24">
-        <section className="hidden lg:block" aria-labelledby="auth-value-heading">
-          {showStandaloneLogo && <Logo className="mb-12 w-52 sm:w-52" />}
-          <p className="mb-5 text-sm font-bold uppercase tracking-[0.22em] text-neon-green">Made for your cravings</p>
-          <h2 id="auth-value-heading" className="max-w-xl text-5xl font-black leading-[1.08] tracking-[-0.04em] text-white xl:text-6xl">
-            Great food, delivered at full speed.
-          </h2>
-          <p className="mt-6 max-w-lg text-lg leading-8 text-white/55">
-            Foodjett brings your favorite restaurants closer, with a smoother way to order and track every bite.
-          </p>
-          <ul className="mt-10 grid gap-4" aria-label="Foodjett benefits">
-            {benefits.map((benefit) => (
-              <li key={benefit} className="flex items-center gap-3 text-sm font-medium text-white/75">
-                <CheckIcon />
-                {benefit}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-16 text-xs text-white/30">Fast checkout. Secure account. Real-time updates.</p>
-        </section>
-
-        <div className="mx-auto w-full max-w-[28rem]">
-          {showStandaloneLogo && (
-            <div className="mb-7 flex justify-center lg:hidden">
-              <Logo />
-            </div>
-          )}
-          {children}
-        </div>
-      </div>
-    </main>
-  )
+      <p className="fj-auth-story-foot">Local food. Reliable delivery. Better days.</p>
+    </section>
+    <section className="fj-auth-stage">
+      {showStandaloneLogo && <header className="fj-auth-mobile-brand"><Logo /><p>Your daily good food</p></header>}
+      <div className="fj-auth-form-shell">{children}</div>
+      <p className="fj-auth-security">Secure sign-in · Protected account data</p>
+    </section>
+  </main>
 }
