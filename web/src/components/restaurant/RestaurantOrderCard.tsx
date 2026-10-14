@@ -36,62 +36,62 @@ export function RestaurantOrderCard({
   const showPickupCode = Boolean(order.pickup_code) && ['rider_assigned', 'at_restaurant'].includes(order.status)
 
   return (
-    <article className={`relative overflow-hidden rounded-2xl border bg-brand-surface p-4 transition duration-500 sm:p-5 ${highlighted ? 'border-neon-green shadow-[0_0_32px_rgba(57,255,20,0.2)]' : 'border-white/10 hover:border-white/20'}`}>
-      {highlighted && <span className="absolute right-0 top-0 rounded-bl-xl bg-neon-green px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-brand-black">New</span>}
-      <header className="flex items-start justify-between gap-3 pr-10">
+    <article className={`fj-order-card ${highlighted ? 'is-highlighted' : ''}`}>
+      {highlighted && <span className="fj-order-card__new">New</span>}
+      <header className="fj-order-card__header">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-neon-green">{order.order_number}</p>
-          <h3 className="mt-1 text-lg font-black text-white">{order.customer_name}</h3>
+          <p>{order.order_number}</p>
+          <h3>{order.customer_name}</h3>
         </div>
-        <div className="text-right">
-          <p className="text-base font-black text-white">{peso.format(Number(order.total_amount))}</p>
-          <p className="mt-1 text-xs text-white/40">{timeAgo(order.placed_at, now)}</p>
+        <div>
+          <strong>{peso.format(Number(order.total_amount))}</strong>
+          <small>{timeAgo(order.placed_at, now)}</small>
         </div>
       </header>
 
-      <div className="mt-4 space-y-2 border-y border-white/[0.07] py-4">
+      <div className="fj-order-card__items">
         {order.items.length > 0 ? order.items.map((item) => (
-          <div key={item.id} className="flex gap-3 text-sm">
-            <span className="font-black text-neon-green">{item.quantity}×</span>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-white/90">{item.name}{item.variant ? <span className="font-normal text-white/45"> · {item.variant.name}</span> : null}</p>
-              {item.addons.length > 0 && <p className="mt-0.5 text-xs text-white/40">Add: {item.addons.map((addon) => addon.name).join(', ')}</p>}
-              {item.special_instructions && <p className="mt-1 rounded-lg bg-amber-400/[0.08] px-2.5 py-1.5 text-xs text-amber-200">Item note: {item.special_instructions}</p>}
+          <div key={item.id} className="fj-order-card__item">
+            <span>{item.quantity}×</span>
+            <div>
+              <p>{item.name}{item.variant ? <em> · {item.variant.name}</em> : null}</p>
+              {item.addons.length > 0 && <small>Add: {item.addons.map((addon) => addon.name).join(', ')}</small>}
+              {item.special_instructions && <mark>Item note: {item.special_instructions}</mark>}
             </div>
           </div>
-        )) : <p className="text-sm text-white/40">No item details available.</p>}
+        )) : <p className="fj-order-card__muted">No item details available.</p>}
       </div>
 
       {order.customer_notes && (
-        <div className="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2.5">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-200/70">Customer note</p>
-          <p className="mt-1 text-sm leading-5 text-amber-100">{order.customer_notes}</p>
+        <div className="fj-order-card__note">
+          <strong>Customer note</strong>
+          <p>{order.customer_notes}</p>
         </div>
       )}
 
       {showPickupCode && (
-        <div className="mt-4 rounded-2xl border border-neon-green/30 bg-neon-green/[0.08] px-4 py-4 text-center" aria-label={`Pickup code ${order.pickup_code}`}>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-neon-green/75">Pickup code · give this to the rider</p>
-          <p className="mt-2 font-mono text-4xl font-black tracking-[0.28em] text-neon-green sm:text-5xl">{order.pickup_code}</p>
+        <div className="fj-order-card__pickup" aria-label={`Pickup code ${order.pickup_code}`}>
+          <p>Pickup code · give this to the rider</p>
+          <strong>{order.pickup_code}</strong>
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="rounded-full bg-white/[0.06] px-2.5 py-1 font-bold text-white/55">{statusLabel(order)}</span>
-        <span className="font-semibold uppercase tracking-wide text-white/35">{order.payment_method}</span>
+      <div className="fj-order-card__meta">
+        <span>{statusLabel(order)}</span>
+        <small>{order.payment_method}</small>
       </div>
 
       {order.status === 'placed' && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" disabled={busy} onClick={() => onAction('reject', order)} className="min-h-12 rounded-xl border border-red-400/25 bg-red-400/[0.06] text-sm font-bold text-red-200 transition hover:bg-red-400/10 disabled:opacity-50">Reject</button>
-          <button type="button" disabled={busy} onClick={() => onAction('accept', order)} className="min-h-12 rounded-xl bg-neon-green text-sm font-black text-brand-black transition hover:bg-[#55ff35] disabled:opacity-50">Accept order</button>
+        <div className="fj-order-card__actions">
+          <button type="button" disabled={busy} onClick={() => onAction('reject', order)} className="is-danger">Reject</button>
+          <button type="button" disabled={busy} onClick={() => onAction('accept', order)} className="is-primary">Accept order</button>
         </div>
       )}
 
       {(canExtend || canMarkReady) && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {canExtend && <button type="button" disabled={busy} onClick={() => onAction('extend', order)} className="min-h-12 rounded-xl border border-white/15 text-sm font-bold text-white/70 transition hover:border-white/30 hover:text-white disabled:opacity-50">Extend prep</button>}
-          {canMarkReady && <button type="button" disabled={busy} onClick={() => onAction('ready', order)} className="min-h-12 rounded-xl bg-neon-green text-sm font-black text-brand-black transition hover:bg-[#55ff35] disabled:opacity-50">Mark ready</button>}
+        <div className="fj-order-card__actions">
+          {canExtend && <button type="button" disabled={busy} onClick={() => onAction('extend', order)} className="is-secondary">Extend prep</button>}
+          {canMarkReady && <button type="button" disabled={busy} onClick={() => onAction('ready', order)} className="is-primary">Mark ready</button>}
         </div>
       )}
     </article>
