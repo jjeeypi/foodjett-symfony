@@ -8,7 +8,7 @@ import {
   BikeIcon,
   BoltIcon,
   CartIcon,
-  FoodIcon,
+  HeartIcon,
   HomeIcon,
   MessageIcon,
   OrdersIcon,
@@ -18,8 +18,8 @@ import {
 
 const navItems = [
   { to: '/', label: 'Explore', icon: HomeIcon, end: true },
-  { to: '/foods', label: 'Foods', icon: FoodIcon },
   { to: '/orders', label: 'My orders', icon: OrdersIcon },
+  { to: '/favorites', label: 'Favorites', icon: HeartIcon },
   { to: '/messages', label: 'Messages', icon: MessageIcon },
   { to: '/profile', label: 'My account', icon: UserIcon },
 ]

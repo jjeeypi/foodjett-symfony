@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useFavorites } from '../../favorites/FavoritesContext'
 import type { RestaurantSummary } from '../../lib/api'
 import { apiAssetUrl } from '../../lib/api'
-import { BikeIcon, ClockIcon, StarIcon } from './Icons'
+import { BikeIcon, ClockIcon, HeartIcon, StarIcon } from './Icons'
 
 function estimatedMinutes(distance: number | null) {
   if (distance === null) return '20–35 min'
@@ -11,16 +12,29 @@ function estimatedMinutes(distance: number | null) {
 
 export function RestaurantCard({ restaurant }: { restaurant: RestaurantSummary }) {
   const imageUrl = apiAssetUrl(restaurant.logo_path)
+  const { isFavorite, toggleFavorite } = useFavorites()
+  const saved = isFavorite(restaurant.id)
 
   return (
     <article className="fj-restaurant-card">
-      <Link to={`/restaurants/${restaurant.id}`} aria-label={`View ${restaurant.name}`}>
-        <div className="fj-card-photo">
+      <div className="fj-card-photo">
+        <Link to={`/restaurants/${restaurant.id}`} aria-label={`View ${restaurant.name}`} className="fj-card-photo-link">
           {imageUrl
             ? <img src={imageUrl} alt={`${restaurant.name} food and storefront`} loading="lazy" />
             : <span className="fj-card-fallback">{restaurant.name.charAt(0).toUpperCase()}</span>}
-          <span className="fj-open-tag"><i /> OPEN NOW</span>
-        </div>
+          <span className={`fj-open-tag${restaurant.is_open_now ? '' : ' closed'}`}><i /> {restaurant.is_open_now ? 'OPEN NOW' : 'CLOSED'}</span>
+        </Link>
+        <button
+          type="button"
+          className={`fj-favorite-button${saved ? ' saved' : ''}`}
+          aria-label={saved ? `Remove ${restaurant.name} from favorites` : `Save ${restaurant.name} to favorites`}
+          aria-pressed={saved}
+          onClick={() => toggleFavorite(restaurant.id)}
+        >
+          <HeartIcon width="17" height="17" />
+        </button>
+      </div>
+      <Link to={`/restaurants/${restaurant.id}`} aria-label={`View ${restaurant.name}`}>
         <div className="fj-card-body">
           <div className="fj-card-title">
             <h3>{restaurant.name}</h3>

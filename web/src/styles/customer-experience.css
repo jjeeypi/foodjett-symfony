@@ -154,12 +154,19 @@
 .fj-restaurant-card { overflow: hidden; border: 1px solid #e6e9e0; border-radius: 12px; background: #fff; transition: transform .2s ease, border .2s ease, box-shadow .2s ease; }
 .fj-restaurant-card:hover { border-color: #d4dfc8; box-shadow: 0 12px 34px rgb(39 56 38 / 9%); transform: translateY(-3px); }
 .fj-card-photo { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: linear-gradient(145deg, #edf2e7, #dce8d2); }
+.fj-card-photo-link { display: block; width: 100%; height: 100%; }
 .fj-card-photo::after { position: absolute; inset: 50% 0 0; background: linear-gradient(transparent, rgb(20 28 18 / 44%)); content: ""; }
 .fj-card-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
 .fj-restaurant-card:hover .fj-card-photo img { transform: scale(1.035); }
 .fj-card-fallback { display: grid; width: 100%; height: 100%; place-items: center; color: #557044; font-family: Manrope, sans-serif; font-size: 42px; font-weight: 800; }
 .fj-open-tag { position: absolute; bottom: 12px; left: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 5px; border-radius: 5px; background: rgb(255 255 255 / 94%); padding: 6px 8px; color: #5b6e4a; font-size: 8px; font-weight: 800; letter-spacing: .4px; }
 .fj-open-tag i { width: 5px; height: 5px; border-radius: 50%; background: #7eaa57; }
+.fj-open-tag.closed { color: #8e6d62; }
+.fj-open-tag.closed i { background: #c38470; }
+.fj-favorite-button { position: absolute; top: 12px; right: 12px; z-index: 3; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgb(255 255 255 / 66%); border-radius: 50%; background: rgb(255 255 255 / 92%); box-shadow: 0 5px 16px rgb(39 56 38 / 16%); color: #70796a; transition: color .2s ease, background .2s ease, transform .2s ease; }
+.fj-favorite-button:hover { color: #546b43; transform: translateY(-1px); }
+.fj-favorite-button.saved { background: #eef5e5; color: #5d7d45; }
+.fj-favorite-button.saved svg { fill: currentColor; }
 .fj-card-body { display: block; padding: 15px 14px 0; color: #273826; }
 .fj-card-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fj-card-title h3 { overflow: hidden; font-size: 14px; font-weight: 800; letter-spacing: -.2px; text-overflow: ellipsis; white-space: nowrap; }
@@ -173,6 +180,11 @@
 .fj-empty h2 { margin-top: 14px; color: #273826; font-size: 20px; }
 .fj-empty p { margin-top: 8px; font-size: 13px; }
 .fj-empty button { min-height: 42px; margin-top: 18px; border-radius: 8px; background: #2f4128; padding: 0 16px; color: #fff; font-size: 12px; font-weight: 700; }
+.fj-empty > svg { margin: 0 auto; }
+.fj-empty > a { display: inline-flex; min-height: 42px; align-items: center; margin-top: 18px; border-radius: 8px; background: #2f4128; padding: 0 16px; color: #fff; font-size: 12px; font-weight: 700; }
+.fj-favorites-welcome { margin-bottom: 8px; }
+.fj-favorites-grid { margin-top: 18px; }
+.fj-favorites-empty { margin-top: 18px; }
 
 .fj-skeleton { overflow: hidden; border: 1px solid #e7ebe2; border-radius: 12px; background: #fff; }
 .fj-skeleton-media { aspect-ratio: 16 / 9; animation: fj-pulse 1.6s ease-in-out infinite; background: #edf1e9; }
