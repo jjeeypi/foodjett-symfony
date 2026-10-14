@@ -118,6 +118,7 @@ export function RiderLayout() {
             <span><small>YOUR DELIVERY AREA</small><strong>{profile.last_location_at ? `Location updated ${relativeLocationTime(profile.last_location_at)}` : 'Location not shared yet'}</strong></span>
           </div>
           <div className="fj-rider-topbar-profile">
+            <span className="fj-rider-drive-mode"><CarIcon /> Car display</span>
             <span className="fj-rider-topbar-status"><i /> {availabilityLabel(profile.availability_status)}</span>
             <span className="fj-rider-greeting"><small>WELCOME BACK</small><strong>Hey, {firstName}</strong></span>
             <RiderAvatar name={profile.name} avatar={avatar} />
@@ -194,4 +195,5 @@ function AccountIcon({ className }: IconProps) { return <svg className={classNam
 function PowerIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2v10"/><path d="M6.3 5.7a9 9 0 1 0 11.4 0"/></svg> }
 function LockIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
 function PinIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg> }
+function CarIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 11 1.8-5h10.4l1.8 5"/><path d="M3 11h18v7H3z"/><path d="M6 18v2m12-2v2"/><circle cx="7" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> }
 function BoltIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-13h-7Z"/></svg> }
