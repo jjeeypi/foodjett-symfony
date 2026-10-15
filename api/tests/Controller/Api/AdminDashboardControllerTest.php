@@ -144,12 +144,15 @@ final class AdminDashboardControllerTest extends WebTestCase
         $pendingRiderUser = $this->user('Pending Dashboard Rider', self::PENDING_RIDER_EMAIL, '+639193000007', UserRole::RIDER, $now);
         $pendingRider = $this->rider($pendingRiderUser, ApprovalStatus::PENDING, RiderAvailabilityStatus::OFFLINE, $now);
 
-        $delivered = $this->order('DASHBOARD-DELIVERED', $customer, $address, $restaurant, OrderStatus::DELIVERED, '150.00', $now->modify('-2 hours'))
-            ->setDeliveredAt($now->modify('-1 hour'));
-        $preparing = $this->order('DASHBOARD-PREPARING', $customer, $address, $restaurant, OrderStatus::PREPARING, '90.00', $now->modify('-90 minutes'));
-        $cancelled = $this->order('DASHBOARD-CANCELLED', $customer, $address, $restaurant, OrderStatus::CANCELLED_BY_CUSTOMER, '75.00', $now->modify('-60 minutes'));
+        // Keep every "today" fixture at the current instant. Relative offsets
+        // crossed midnight when the suite ran shortly after 00:00 UTC, making
+        // this aggregate test depend on the time of day.
+        $delivered = $this->order('DASHBOARD-DELIVERED', $customer, $address, $restaurant, OrderStatus::DELIVERED, '150.00', $now)
+            ->setDeliveredAt($now);
+        $preparing = $this->order('DASHBOARD-PREPARING', $customer, $address, $restaurant, OrderStatus::PREPARING, '90.00', $now);
+        $cancelled = $this->order('DASHBOARD-CANCELLED', $customer, $address, $restaurant, OrderStatus::CANCELLED_BY_CUSTOMER, '75.00', $now);
         $cancelledHistory = (new OrderStatusHistory())->setOrder($cancelled)->setStatus(OrderStatus::CANCELLED_BY_CUSTOMER->value)
-            ->setChangedBy(OrderActor::CUSTOMER)->setNote('Dashboard test cancellation')->setCreatedAt($now->modify('-45 minutes'));
+            ->setChangedBy(OrderActor::CUSTOMER)->setNote('Dashboard test cancellation')->setCreatedAt($now);
 
         $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount('40.00')->setStatus(RemittanceStatus::PENDING)
             ->setCreatedAt($now)->setUpdatedAt($now);
