@@ -1,6 +1,9 @@
 # Local migration documentation
 /docs/
 
+# Local Docker Compose secrets and machine-specific overrides
+/.env
+
 # Root-level OS and editor files
 /.DS_Store
 /Thumbs.db

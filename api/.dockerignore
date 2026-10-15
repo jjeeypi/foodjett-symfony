@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env.local
+.env.local.php
+.env.*.local
+compose.yaml
+Dockerfile
+vendor
+var
+public/uploads/*
+!public/uploads/.gitkeep
+config/jwt/*.pem
+tests
+.phpunit.cache
