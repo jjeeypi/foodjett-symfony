@@ -9,9 +9,10 @@ type AdminNavItem = {
   icon: IconName
 }
 
-type IconName = 'approvals' | 'orders' | 'restaurants' | 'riders' | 'customers' | 'payments' | 'remittances' | 'vouchers' | 'reviews' | 'support' | 'audit' | 'settings'
+type IconName = 'dashboard' | 'approvals' | 'orders' | 'restaurants' | 'riders' | 'customers' | 'payments' | 'remittances' | 'vouchers' | 'reviews' | 'support' | 'audit' | 'settings'
 
 const navigation: AdminNavItem[] = [
+  { label: 'Dashboard', to: '/admin/dashboard', icon: 'dashboard' },
   { label: 'Approvals', to: '/admin/approvals', icon: 'approvals' },
   { label: 'Orders', to: '/admin/orders', icon: 'orders' },
   { label: 'Restaurants', to: '/admin/restaurants', icon: 'restaurants' },
@@ -27,10 +28,6 @@ const navigation: AdminNavItem[] = [
 ]
 
 function isActivePath(pathname: string, item: AdminNavItem): boolean {
-  if (item.icon === 'approvals') {
-    return pathname === '/admin/dashboard' || pathname.startsWith('/admin/approvals')
-  }
-
   return pathname === item.to || pathname.startsWith(`${item.to}/`)
 }
 
@@ -151,6 +148,7 @@ export function AdminLayout() {
 
 function AdminNavIcon({ name, className }: { name: IconName; className?: string }) {
   const common = { className, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, 'aria-hidden': true as const }
+  if (name === 'dashboard') return <svg {...common}><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
   if (name === 'approvals') return <svg {...common}><path d="M12 3 4.5 6v5.4c0 4.8 3.2 8.1 7.5 9.6 4.3-1.5 7.5-4.8 7.5-9.6V6L12 3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
   if (name === 'orders') return <svg {...common}><path d="M6 3h12a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2h2Z"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
   if (name === 'restaurants') return <svg {...common}><path d="M4 21V9l8-5 8 5v12M9 21v-7h6v7M2 21h20"/></svg>
