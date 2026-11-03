@@ -24,7 +24,8 @@ COPY docker/entrypoint.sh /usr/local/bin/foodjett-entrypoint
 COPY . .
 COPY --from=vendor /app/vendor ./vendor
 
-RUN chmod +x /usr/local/bin/foodjett-entrypoint \
+RUN a2enmod proxy proxy_http \
+    && chmod +x /usr/local/bin/foodjett-entrypoint \
     && mkdir -p var/cache var/log public/uploads config/jwt \
     && chown -R www-data:www-data var public/uploads config/jwt
 

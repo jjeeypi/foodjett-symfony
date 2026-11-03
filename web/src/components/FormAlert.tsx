@@ -1,1 +1,0 @@
-export function FormAlert({ message }: { message: string }) { return message ? <div role="alert" aria-live="assertive" className="fj-auth-alert"><span aria-hidden="true">!</span><p>{message}</p></div> : null }

@@ -1,3 +1,0 @@
-type Strength = 'weak' | 'medium' | 'strong'
-function passwordStrength(password: string): Strength { let score = 0; if (password.length >= 8) score += 1; if (password.length >= 12) score += 1; if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1; if (/\d/.test(password)) score += 1; if (/[^A-Za-z0-9]/.test(password)) score += 1; if (score <= 2) return 'weak'; if (score <= 3) return 'medium'; return 'strong' }
-export function PasswordStrengthMeter({ password }: { password: string }) { if (!password) return null; const strength = passwordStrength(password); return <div className={`fj-auth-strength is-${strength}`} aria-live="polite"><div aria-hidden="true"><i /></div><p>Password strength: <strong>{strength}</strong></p></div> }
