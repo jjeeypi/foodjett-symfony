@@ -38,7 +38,7 @@ services:
     networks: [foodjett]
 
   mercure:
-    image: dunglas/mercure
+    image: dunglas/mercure:v1.1.0
     restart: unless-stopped
     <<: *secrets
     environment:
