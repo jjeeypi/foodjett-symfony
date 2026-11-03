@@ -1,0 +1,30 @@
+# Version control, local tooling and private notes
+.git
+.githooks
+scripts
+docs
+.idea
+.vscode
+
+# Secrets and machine-specific environment overrides
+.env.local
+.env.local.php
+.env.*.local
+
+# Container orchestration files are not part of the image
+compose.yaml
+Dockerfile
+README.md
+
+# Dependencies and generated files are rebuilt inside the image
+vendor
+var
+public/bundles
+public/assets
+assets/vendor
+public/uploads
+config/jwt/*.pem
+
+# The test suite is not shipped in the image
+tests
+.phpunit.cache

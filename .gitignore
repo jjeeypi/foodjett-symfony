@@ -1,11 +1,33 @@
-# Local migration documentation
+# Private local documentation and planning notes
 /docs/
-
-# Local Docker Compose secrets and machine-specific overrides
-/.env
 
 # Root-level OS and editor files
 /.DS_Store
 /Thumbs.db
 /.vscode/
 /.idea/
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/public/uploads/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###

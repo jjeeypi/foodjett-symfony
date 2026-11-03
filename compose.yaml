@@ -1,30 +1,29 @@
 name: ${COMPOSE_PROJECT_NAME:-foodjett}
 
-x-api-environment: &api-environment
+# Secrets (database credentials, APP_SECRET, JWT_PASSPHRASE, Mercure keys) come
+# from the gitignored .env.docker.local; copy .env.docker.example to create it.
+x-secrets: &secrets
+  env_file:
+    - path: .env.docker.local
+      required: true
+
+x-app-environment: &app-environment
   APP_ENV: prod
   APP_DEBUG: "0"
-  APP_SECRET: ${APP_SECRET:?Set APP_SECRET in the root .env file}
-  DATABASE_URL: mysql://${MARIADB_USER:?Set MARIADB_USER in .env}:${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in .env}@mariadb:3306/${MARIADB_DATABASE:?Set MARIADB_DATABASE in .env}?serverVersion=mariadb-10.4.32&charset=utf8mb4
-  DEFAULT_URI: ${API_PUBLIC_URL:-http://localhost:8000}
+  DEFAULT_URI: ${PUBLIC_WEB_URL:-http://localhost:8080}
   JWT_SECRET_KEY: /var/www/html/config/jwt/private.pem
   JWT_PUBLIC_KEY: /var/www/html/config/jwt/public.pem
-  JWT_PASSPHRASE: ${JWT_PASSPHRASE:?Set JWT_PASSPHRASE in the root .env file}
   MAILER_DSN: null://null
   MESSENGER_TRANSPORT_DSN: doctrine://default?auto_setup=0
   MERCURE_URL: http://mercure/.well-known/mercure
   MERCURE_PUBLIC_URL: ${PUBLIC_WEB_URL:-http://localhost:8080}/.well-known/mercure
-  MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:?Set MERCURE_JWT_SECRET in the root .env file}
   CORS_ALLOW_ORIGIN: ^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
 
 services:
   mariadb:
     image: mariadb:10.4.32
     restart: unless-stopped
-    environment:
-      MARIADB_DATABASE: ${MARIADB_DATABASE:?Set MARIADB_DATABASE in the root .env file}
-      MARIADB_USER: ${MARIADB_USER:?Set MARIADB_USER in the root .env file}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in the root .env file}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in the root .env file}
+    <<: *secrets
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -39,13 +38,12 @@ services:
     networks: [foodjett]
 
   mercure:
-    image: dunglas/mercure
+    image: dunglas/mercure:v1.1.0
     restart: unless-stopped
+    <<: *secrets
     environment:
       SERVER_NAME: ":80"
       MERCURE_TRUSTED_ISSUERS: foodjett-api
-      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET:?Set MERCURE_JWT_SECRET in the root .env file}
-      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET:?Set MERCURE_JWT_SECRET in the root .env file}
       MERCURE_EXTRA_DIRECTIVES: |
         anonymous
         cookie_name mercure_access_token
@@ -64,13 +62,14 @@ services:
       start_period: 30s
     networks: [foodjett]
 
-  api:
-    image: foodjett-api:local
+  app:
+    image: foodjett-app:local
     build:
-      context: ./api
+      context: .
     restart: unless-stopped
+    <<: *secrets
     environment:
-      <<: *api-environment
+      <<: *app-environment
       RUN_MIGRATIONS: "1"
     depends_on:
       mariadb:
@@ -78,7 +77,7 @@ services:
       mercure:
         condition: service_healthy
     ports:
-      - "${API_PORT:-8000}:80"
+      - "${WEB_PORT:-8080}:80"
     volumes:
       - api_jwt_keys:/var/www/html/config/jwt
       - api_uploads:/var/www/html/public/uploads
@@ -91,39 +90,18 @@ services:
     networks: [foodjett]
 
   scheduler:
-    image: foodjett-api:local
+    image: foodjett-app:local
     restart: unless-stopped
+    <<: *secrets
     environment:
-      <<: *api-environment
+      <<: *app-environment
       RUN_MIGRATIONS: "0"
     command: ["php", "bin/console", "messenger:consume", "scheduler_default", "--no-interaction", "--memory-limit=128M"]
     depends_on:
-      api:
+      app:
         condition: service_healthy
     volumes:
       - api_jwt_keys:/var/www/html/config/jwt
-    networks: [foodjett]
-
-  web:
-    image: foodjett-web:local
-    build:
-      context: ./web
-      args:
-        VITE_API_URL: ""
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-      mercure:
-        condition: service_healthy
-    ports:
-      - "${WEB_PORT:-8080}:80"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 10s
     networks: [foodjett]
 
 volumes:

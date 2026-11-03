@@ -1,157 +1,121 @@
 # Foodjett
 
-Foodjett is a decoupled Symfony JSON API and React single-page application. The
-repository includes a complete Docker Compose stack for MariaDB, Mercure, the
-Symfony API, the scheduler worker, and the production-built frontend.
+Foodjett is a food-delivery platform built with Symfony 7.4. It has four roles:
+customers order from restaurants, restaurants manage menus and orders, riders
+accept and deliver orders, and administrators approve partners and run the
+platform. Order tracking, chat and the rider order pool update live through a
+Mercure hub.
 
-## Run the complete stack with Docker
+The Symfony application lives at the repository root. The user interface is
+moving from a separate React single-page application to Twig templates
+rendered by Symfony; during that transition the JSON endpoints under `/api`
+remain in place.
+
+## Run the stack with Docker
 
 ### Requirements
 
-- Docker Desktop with Docker Compose v2
-- Ports `8080`, `8000`, and `3000` available on the host (or change them in
-  the root `.env` file)
+- Docker Desktop with Docker Compose v2.24 or newer
+- Host ports `8080` and `3000` available
 
-### Fresh-clone setup
+### First-time setup
 
-1. Create the local Compose environment file:
+1. Create the local secrets file from the template:
 
    ```powershell
-   Copy-Item .env.example .env
+   Copy-Item .env.docker.example .env.docker.local
    ```
 
-   On macOS/Linux:
+   On macOS/Linux: `cp .env.docker.example .env.docker.local`
 
-   ```bash
-   cp .env.example .env
-   ```
+2. Replace every `change-me` value in `.env.docker.local` with a long random
+   value. Use URL-safe alphanumeric characters for `MARIADB_PASSWORD`, repeat it
+   inside `DATABASE_URL`, and give the three Mercure keys the same value.
+   `.env.docker.local` is gitignored and never copied into the image.
 
-2. Replace every `replace-with-...` value in `.env`. Use URL-safe
-   alphanumeric characters for `MARIADB_PASSWORD`, because it is embedded in
-   Symfony's `DATABASE_URL`. The root `.env` is ignored by Git.
-
-3. Build and start all five services:
+3. Build and start the four services:
 
    ```bash
    docker compose up -d --build
-   ```
-
-4. Confirm that every service is running and healthy:
-
-   ```bash
    docker compose ps
    ```
 
-5. Create the first administrator:
+4. Create the first administrator:
 
    ```bash
-   docker compose exec api php bin/console app:make-admin "Foodjett Admin" admin@example.test "ChangeThisPassword123!"
+   docker compose exec app php bin/console app:make-admin "Foodjett Admin" admin@example.test "<choose-a-password>"
    ```
 
-6. Open the application:
+5. Open the application at <http://localhost:8080>. The health check is
+   <http://localhost:8080/api/health>.
 
-   - Web application: <http://localhost:8080>
-   - Direct API access and health check: <http://localhost:8000/api/health>
-   - Mercure hub: <http://localhost:3000/.well-known/mercure>
-
-The API entrypoint generates the JWT signing key pair in a persistent volume
-when it is missing and runs all Doctrine migrations before Apache starts. No
-separate migration command or JWT setup is required for the normal startup.
+On startup the `app` container generates the JWT key pair in a persistent
+volume when it is missing and runs all Doctrine migrations before Apache
+starts.
 
 ### Services
 
 | Service | Purpose | Host exposure |
 | --- | --- | --- |
 | `mariadb` | MariaDB 10.4.32 application database | Internal only |
-| `mercure` | Server-Sent Events hub | `localhost:3000` |
-| `api` | Symfony API under Apache/PHP 8.3 | `localhost:8000` |
-| `scheduler` | Rider-pool escalation scheduler consumer | Internal only |
-| `web` | React production build served by nginx | `localhost:8080` |
+| `mercure` | Mercure 1.1.0 Server-Sent Events hub | `localhost:3000` |
+| `app` | Symfony under Apache with PHP 8.3 | `localhost:8080` |
+| `scheduler` | Messenger worker that runs the rider-pool escalation schedule | Internal only |
 
-The nginx frontend proxies `/api`, `/uploads`, and `/.well-known/mercure` over
-the Compose network. Browser requests therefore share one public origin, while
-Symfony publishes internally to `http://mercure/.well-known/mercure`. The API's
-`MERCURE_PUBLIC_URL` remains browser-reachable at
-`http://localhost:8080/.well-known/mercure`; using the internal service name in
-a browser would not work because Docker DNS is only available inside the
-Compose network.
+Apache reverse-proxies `/.well-known/mercure` to the hub, so the browser reaches
+the application and Mercure on the same origin
+(`http://localhost:8080/.well-known/mercure`). Symfony publishes to the hub
+internally at `http://mercure/.well-known/mercure`.
 
-MariaDB data, uploaded files, Mercure/Caddy data, and generated JWT keys use
-named volumes, so a normal stop/restart keeps demo data.
+MariaDB data, uploaded files, Mercure state and the JWT keys use named volumes,
+so stopping and restarting keeps data. To use other host ports, set
+`WEB_PORT` (and `PUBLIC_WEB_URL` to match) in your shell before
+`docker compose up`.
 
-## Common commands
-
-Follow logs for the whole stack:
+### Common commands
 
 ```bash
-docker compose logs -f
+docker compose logs -f app scheduler mercure          # follow the logs
+docker compose exec app php bin/console <command>     # run a console command
+docker compose exec app php bin/console debug:scheduler
+docker compose down                                   # stop, keep data
+docker compose down -v --remove-orphans               # stop and DELETE all data
 ```
-
-Follow the operational services only:
-
-```bash
-docker compose logs -f api scheduler mercure
-```
-
-Run migrations manually when diagnosing startup:
-
-```bash
-docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
-```
-
-Inspect the scheduler registered by Symfony:
-
-```bash
-docker compose exec api php bin/console debug:scheduler
-```
-
-Run an API console command:
-
-```bash
-docker compose exec api php bin/console <command>
-```
-
-Stop the stack without deleting data:
-
-```bash
-docker compose down
-```
-
-Rebuild the frontend after source changes (the Docker target is a static
-production build and intentionally has no hot reload):
-
-```bash
-docker compose up -d --build web
-```
-
-## Clean reset
-
-This permanently removes the Dockerized database, uploads, Mercure state, and
-JWT keys. It does not touch a native XAMPP/MariaDB database.
-
-```bash
-docker compose down -v --remove-orphans
-docker compose up -d --build
-```
-
-Migrations are applied automatically after MariaDB passes its health check.
-The project currently has no Doctrine fixtures loader; create demo accounts
-through registration, approve restaurant/rider applications through the admin
-UI, and use `app:make-admin` for the initial administrator.
-
-## Environment and secrets
-
-- Commit `.env.example`, never the root `.env`.
-- Do not place real secrets in `compose.yaml`, either Dockerfile, or the
-  subprojects' committed `.env` defaults.
-- `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD`, `APP_SECRET`,
-  `JWT_PASSPHRASE`, and `MERCURE_JWT_SECRET` must be changed for each clone.
-- If a public port changes, update its corresponding public URL in `.env`.
-- The API uses `mariadb` and `mercure` as internal hostnames; `localhost` is
-  reserved for URLs that a browser or host-side tool must reach.
 
 ## Native development
 
-The existing native workflows remain available (`symfony server:start` in
-`api/` and `npm run dev` in `web/`). The old standalone `api/compose.yaml` was
-removed: use the root `compose.yaml` when running containerized services.
+Native development uses PHP 8.2 or newer with the `bcmath`, `intl`,
+`pdo_mysql` and `zip` extensions, Composer, the Symfony CLI, and a local
+MariaDB (for example XAMPP).
+
+1. Install dependencies: `composer install`
+2. Create `.env.local` with your local `DATABASE_URL` (and `APP_SECRET`). It is
+   gitignored.
+3. Create the schema: `php bin/console doctrine:migrations:migrate`
+4. Start the Mercure hub only: `docker compose up -d mercure` (listens on
+   `http://localhost:3000/.well-known/mercure`).
+5. Start the web server: `symfony server:start --no-tls`
+6. Start the scheduler worker:
+   `php bin/console messenger:consume scheduler_default -vv`
+
+## Tests
+
+The suite uses a separate `_test` database (Doctrine appends the suffix to the
+database in `DATABASE_URL`). Put local test credentials in `.env.test.local`
+or `.env.local`, then run:
+
+```bash
+php bin/console doctrine:database:create --env=test --if-not-exists
+php bin/console doctrine:migrations:migrate --env=test --no-interaction
+php bin/phpunit
+```
+
+## Environment and secrets
+
+- Commit `.env` (safe defaults only) and `.env.docker.example`; never commit
+  `.env.local`, `.env.*.local` or the JWT keys.
+- Do not place real secrets in `compose.yaml`, the `Dockerfile` or any committed
+  `.env` file.
+- Inside Docker the application reaches the database and hub by their service
+  names (`mariadb`, `mercure`); `localhost` URLs are only for the browser and
+  host-side tools.
