@@ -14,7 +14,6 @@ use App\Event\OrderStatusChangedEvent;
 use App\Event\OrderUpdatedEvent;
 use App\Event\RiderPoolOfferCreatedEvent;
 use App\Event\RiderPoolOfferTakenEvent;
-use App\Exception\InvalidOrderTransitionException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -115,7 +114,7 @@ final class OrderTransitionService
             foreach ($statuses as $index => $status) {
                 $from = $locked->getStatus();
                 if (!$from->canTransitionTo($status)) {
-                    throw InvalidOrderTransitionException::between($from, $status);
+                    throw new \DomainException(sprintf('Order cannot transition from "%s" to "%s".', $from->value, $status->value));
                 }
 
                 $note = $notes[$index] ?? null;
@@ -263,7 +262,7 @@ final class OrderTransitionService
     {
         foreach ($statuses as $status) {
             if (!$from->canTransitionTo($status)) {
-                throw InvalidOrderTransitionException::between($from, $status);
+                throw new \DomainException(sprintf('Order cannot transition from "%s" to "%s".', $from->value, $status->value));
             }
             $from = $status;
         }

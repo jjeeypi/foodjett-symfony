@@ -14,10 +14,12 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\RiderPoolDeclineAction;
-use App\Exception\RiderPoolException;
 use App\Repository\OrderRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final readonly class RiderPoolService
 {
@@ -155,10 +157,10 @@ final readonly class RiderPoolService
             function (Order $lockedOrder, \DateTimeImmutable $now) use ($rider, $adminOverride): void {
                 $lockedRider = $this->entityManager->find(Rider::class, $rider->getId(), LockMode::PESSIMISTIC_WRITE);
                 if (!$lockedRider instanceof Rider) {
-                    throw new RiderPoolException('Rider profile not found.', 404);
+                    throw new NotFoundHttpException('Rider profile not found.');
                 }
                 if (OrderStatus::FINDING_RIDER !== $lockedOrder->getStatus() || null !== $lockedOrder->getRider()) {
-                    throw RiderPoolException::taken();
+                    throw new ConflictHttpException('This order was just taken by another rider.');
                 }
 
                 $pickupDistance = $this->assertEligible($lockedOrder, $lockedRider, $adminOverride);
@@ -187,10 +189,10 @@ final readonly class RiderPoolService
             $lockedOrder = $this->entityManager->find(Order::class, $order->getId(), LockMode::PESSIMISTIC_WRITE);
             $lockedRider = $this->entityManager->find(Rider::class, $rider->getId(), LockMode::PESSIMISTIC_WRITE);
             if (!$lockedOrder instanceof Order || !$lockedRider instanceof Rider) {
-                throw new RiderPoolException('Order or rider no longer exists.', 404);
+                throw new NotFoundHttpException('Order or rider no longer exists.');
             }
             if (OrderStatus::FINDING_RIDER !== $lockedOrder->getStatus() || null !== $lockedOrder->getRider()) {
-                throw RiderPoolException::taken();
+                throw new ConflictHttpException('This order was just taken by another rider.');
             }
             $this->assertEligible($lockedOrder, $lockedRider, false, checkActiveOrder: false, checkCodLimit: false);
 
@@ -222,14 +224,14 @@ final readonly class RiderPoolService
         bool $checkCodLimit = true,
     ): float {
         if (ApprovalStatus::APPROVED !== $rider->getApprovalStatus()) {
-            throw new RiderPoolException('Only approved riders can be assigned to orders.', 422);
+            throw new UnprocessableEntityHttpException('Only approved riders can be assigned to orders.');
         }
         if (null === $rider->getCurrentLatitude() || null === $rider->getCurrentLongitude()) {
-            throw new RiderPoolException('Current rider location is required.', 422);
+            throw new UnprocessableEntityHttpException('Current rider location is required.');
         }
         $offer = $order->getRiderPoolOffer();
         if (!$offer instanceof RiderPoolOffer) {
-            throw new RiderPoolException('This order has no active rider pool offer.');
+            throw new ConflictHttpException('This order has no active rider pool offer.');
         }
         $distance = DeliveryZoneService::distanceKm(
             (float) $rider->getCurrentLatitude(),
@@ -238,16 +240,16 @@ final readonly class RiderPoolService
             (float) $order->getRestaurant()->getLongitude(),
         );
         if ($distance > (float) $offer->getSearchRadiusKm()) {
-            throw new RiderPoolException('This order is outside the current search radius.');
+            throw new ConflictHttpException('This order is outside the current search radius.');
         }
         if ($checkActiveOrder && $this->orders->riderHasOtherActiveOrder($rider, $order->getId())) {
-            throw new RiderPoolException('Finish your current delivery before accepting another order.');
+            throw new ConflictHttpException('Finish your current delivery before accepting another order.');
         }
         if ($checkCodLimit && PaymentMethod::COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
-            throw new RiderPoolException('Remit cash before accepting another COD order.');
+            throw new ConflictHttpException('Remit cash before accepting another COD order.');
         }
         if (!$adminOverride && RiderAvailabilityStatus::AVAILABLE !== $rider->getAvailabilityStatus()) {
-            throw new RiderPoolException('Go online before accepting an order.');
+            throw new ConflictHttpException('Go online before accepting an order.');
         }
 
         return $distance;

@@ -7,15 +7,14 @@ namespace App\Controller\Api;
 use App\Entity\Order;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\RiderAvailabilityStatus;
 use App\Enum\OrderStatus;
-use App\Exception\InvalidOrderTransitionException;
-use App\Exception\RiderPoolException;
+use App\Enum\RiderAvailabilityStatus;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\OrderVoter;
 use App\Service\RiderPoolService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -70,9 +69,9 @@ final class RiderPoolController extends AbstractController
 
         try {
             $order = $this->pool->accept($order, $rider);
-        } catch (RiderPoolException $exception) {
+        } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
-        } catch (InvalidOrderTransitionException) {
+        } catch (\DomainException) {
             return $this->json(['message' => 'This order was just taken by another rider.'], 409);
         }
 
@@ -98,7 +97,7 @@ final class RiderPoolController extends AbstractController
 
         try {
             $decline = $this->pool->decline($order, $this->rider());
-        } catch (RiderPoolException $exception) {
+        } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         }
 

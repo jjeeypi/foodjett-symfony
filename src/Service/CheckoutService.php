@@ -28,11 +28,13 @@ use App\Enum\PaymentStatus;
 use App\Enum\RestaurantOperatingStatus;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
-use App\Exception\CheckoutValidationException;
 use App\Event\OrderStatusChangedEvent;
 use App\Repository\VoucherRedemptionRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final readonly class CheckoutService
@@ -56,13 +58,13 @@ final readonly class CheckoutService
     {
         $token = strtolower(trim(is_string($input['checkout_token'] ?? null) ? $input['checkout_token'] : ''));
         if (!$this->isUuid($token)) {
-            throw new CheckoutValidationException('checkout_token must be a valid UUID.');
+            throw new UnprocessableEntityHttpException('checkout_token must be a valid UUID.');
         }
 
         $existing = $this->entityManager->getRepository(Order::class)->findOneBy(['checkoutToken' => $token]);
         if ($existing instanceof Order) {
             if ($existing->getCustomer() !== $customer) {
-                throw new CheckoutValidationException('This checkout token is already in use.', 409);
+                throw new ConflictHttpException('This checkout token is already in use.');
             }
 
             return new CheckoutResult($existing, false);
@@ -77,12 +79,12 @@ final readonly class CheckoutService
             // The unique checkout_token index remains the database-level final guard.
             $lockedCustomer = $this->entityManager->find(Customer::class, $customer->getId(), LockMode::PESSIMISTIC_WRITE);
             if (!$lockedCustomer instanceof Customer) {
-                throw new CheckoutValidationException('Customer profile not found.', 404);
+                throw new NotFoundHttpException('Customer profile not found.');
             }
             $existing = $this->entityManager->getRepository(Order::class)->findOneBy(['checkoutToken' => $token]);
             if ($existing instanceof Order) {
                 if ($existing->getCustomer() !== $lockedCustomer) {
-                    throw new CheckoutValidationException('This checkout token is already in use.', 409);
+                    throw new ConflictHttpException('This checkout token is already in use.');
                 }
 
                 return new CheckoutResult($existing, false);
@@ -284,17 +286,17 @@ final readonly class CheckoutService
 
         $this->assertRestaurantCanAcceptOrders($restaurant, $now);
         if (!$this->deliveryZones->isCovered((float) $address->getLatitude(), (float) $address->getLongitude())) {
-            throw new CheckoutValidationException('The selected address is outside the active delivery zones.');
+            throw new UnprocessableEntityHttpException('The selected address is outside the active delivery zones.');
         }
 
         $selections = $input['items'] ?? null;
         if (!is_array($selections) || [] === $selections) {
-            throw new CheckoutValidationException('At least one cart item is required.');
+            throw new UnprocessableEntityHttpException('At least one cart item is required.');
         }
 
         [$itemRows, $subtotal] = $this->priceItems($selections, $restaurant, $now);
         if (-1 === bccomp($subtotal, $restaurant->getMinOrderAmount(), 2)) {
-            throw new CheckoutValidationException('The order subtotal does not meet the restaurant minimum.');
+            throw new UnprocessableEntityHttpException('The order subtotal does not meet the restaurant minimum.');
         }
 
         $distanceKm = DeliveryZoneService::distanceKm(
@@ -343,11 +345,11 @@ final readonly class CheckoutService
     private function restaurant(mixed $id): Restaurant
     {
         if ((!is_int($id) && !is_string($id)) || '' === (string) $id) {
-            throw new CheckoutValidationException('restaurant_id is required.');
+            throw new UnprocessableEntityHttpException('restaurant_id is required.');
         }
         $restaurant = $this->entityManager->find(Restaurant::class, (string) $id);
         if (!$restaurant instanceof Restaurant) {
-            throw new CheckoutValidationException('Restaurant not found.', 404);
+            throw new NotFoundHttpException('Restaurant not found.');
         }
 
         return $restaurant;
@@ -356,11 +358,11 @@ final readonly class CheckoutService
     private function address(mixed $id, Customer $customer): CustomerAddress
     {
         if ((!is_int($id) && !is_string($id)) || '' === (string) $id) {
-            throw new CheckoutValidationException('customer_address_id is required.');
+            throw new UnprocessableEntityHttpException('customer_address_id is required.');
         }
         $address = $this->entityManager->find(CustomerAddress::class, (string) $id);
         if (!$address instanceof CustomerAddress || $address->getCustomer() !== $customer) {
-            throw new CheckoutValidationException('Delivery address not found.', 404);
+            throw new NotFoundHttpException('Delivery address not found.');
         }
 
         return $address;
@@ -370,7 +372,7 @@ final readonly class CheckoutService
     {
         $method = is_string($value) ? PaymentMethod::tryFrom($value) : null;
         if (!$method instanceof PaymentMethod) {
-            throw new CheckoutValidationException('payment_method must be cod, gcash, or card.');
+            throw new UnprocessableEntityHttpException('payment_method must be cod, gcash, or card.');
         }
 
         return $method;
@@ -379,10 +381,10 @@ final readonly class CheckoutService
     private function assertRestaurantCanAcceptOrders(Restaurant $restaurant, \DateTimeImmutable $now): void
     {
         if (ApprovalStatus::APPROVED !== $restaurant->getApprovalStatus()) {
-            throw new CheckoutValidationException('This restaurant is not approved for orders.');
+            throw new UnprocessableEntityHttpException('This restaurant is not approved for orders.');
         }
         if (RestaurantOperatingStatus::OPEN !== $restaurant->getOperatingStatus()) {
-            throw new CheckoutValidationException('This restaurant is currently closed.');
+            throw new UnprocessableEntityHttpException('This restaurant is currently closed.');
         }
 
         // Operating hours are optional until the restaurant configures a
@@ -407,7 +409,7 @@ final readonly class CheckoutService
             }
         }
 
-        throw new CheckoutValidationException('This restaurant is outside its operating hours.');
+        throw new UnprocessableEntityHttpException('This restaurant is outside its operating hours.');
     }
 
     /**
@@ -417,50 +419,50 @@ final readonly class CheckoutService
     private function priceItems(array $selections, Restaurant $restaurant, \DateTimeImmutable $now): array
     {
         if (count($selections) > 100) {
-            throw new CheckoutValidationException('A checkout may contain at most 100 item rows.');
+            throw new UnprocessableEntityHttpException('A checkout may contain at most 100 item rows.');
         }
         $rows = [];
         $subtotal = '0.00';
         foreach ($selections as $selection) {
             if (!is_array($selection)) {
-                throw new CheckoutValidationException('Each cart item must be an object.');
+                throw new UnprocessableEntityHttpException('Each cart item must be an object.');
             }
             $item = $this->entityManager->find(MenuItem::class, (string) ($selection['menu_item_id'] ?? ''));
             if (!$item instanceof MenuItem || $item->getMenuCategory()->getRestaurant() !== $restaurant) {
-                throw new CheckoutValidationException('A selected menu item does not belong to this restaurant.');
+                throw new UnprocessableEntityHttpException('A selected menu item does not belong to this restaurant.');
             }
             if (!$item->isAvailable() || !$this->isWithinTimeWindow($item->getAvailableFrom(), $item->getAvailableUntil(), $now)) {
-                throw new CheckoutValidationException(sprintf('%s is not currently available.', $item->getName()));
+                throw new UnprocessableEntityHttpException(sprintf('%s is not currently available.', $item->getName()));
             }
             $quantity = filter_var($selection['quantity'] ?? null, FILTER_VALIDATE_INT);
             if (false === $quantity || $quantity < 1 || $quantity > 99) {
-                throw new CheckoutValidationException('Each item quantity must be between 1 and 99.');
+                throw new UnprocessableEntityHttpException('Each item quantity must be between 1 and 99.');
             }
 
             $variant = null;
             if (isset($selection['variant_id']) && null !== $selection['variant_id'] && '' !== $selection['variant_id']) {
                 $variant = $this->entityManager->find(MenuItemVariant::class, (string) $selection['variant_id']);
                 if (!$variant instanceof MenuItemVariant || $variant->getMenuItem() !== $item) {
-                    throw new CheckoutValidationException('A selected variant does not belong to its menu item.');
+                    throw new UnprocessableEntityHttpException('A selected variant does not belong to its menu item.');
                 }
             }
 
             $addons = [];
             $addonIds = $selection['addon_ids'] ?? [];
             if (!is_array($addonIds)) {
-                throw new CheckoutValidationException('addon_ids must be an array.');
+                throw new UnprocessableEntityHttpException('addon_ids must be an array.');
             }
             foreach (array_unique(array_map('strval', $addonIds)) as $addonId) {
                 $addon = $this->entityManager->find(MenuItemAddon::class, $addonId);
                 if (!$addon instanceof MenuItemAddon || $addon->getMenuItem() !== $item || !$addon->isAvailable()) {
-                    throw new CheckoutValidationException('A selected add-on is unavailable or does not belong to its menu item.');
+                    throw new UnprocessableEntityHttpException('A selected add-on is unavailable or does not belong to its menu item.');
                 }
                 $addons[] = $addon;
             }
 
             $unitPrice = bcadd($item->getBasePrice(), $variant instanceof MenuItemVariant ? $variant->getPriceDelta() : '0', 2);
             if (-1 === bccomp($unitPrice, '0', 2)) {
-                throw new CheckoutValidationException('A selected variant results in an invalid item price.');
+                throw new UnprocessableEntityHttpException('A selected variant results in an invalid item price.');
             }
             $unitTotal = $unitPrice;
             foreach ($addons as $addon) {
@@ -506,7 +508,7 @@ final readonly class CheckoutService
         }
         $voucher = $this->entityManager->getRepository(Voucher::class)->findOneBy(['code' => $code]);
         if (!$voucher instanceof Voucher) {
-            throw new CheckoutValidationException('Voucher code is invalid.');
+            throw new UnprocessableEntityHttpException('Voucher code is invalid.');
         }
         if ($lock) {
             $this->entityManager->lock($voucher, LockMode::PESSIMISTIC_WRITE);
@@ -524,22 +526,22 @@ final readonly class CheckoutService
         \DateTimeImmutable $now,
     ): string {
         if (!$voucher->isActive() || (null !== $voucher->getStartsAt() && $now < $voucher->getStartsAt()) || (null !== $voucher->getEndsAt() && $now > $voucher->getEndsAt())) {
-            throw new CheckoutValidationException('Voucher is not active.');
+            throw new UnprocessableEntityHttpException('Voucher is not active.');
         }
         if (-1 === bccomp($subtotal, $voucher->getMinOrderAmount(), 2)) {
-            throw new CheckoutValidationException('The order does not meet the voucher minimum.');
+            throw new UnprocessableEntityHttpException('The order does not meet the voucher minimum.');
         }
         if (VoucherScope::RESTAURANT === $voucher->getScope() && $voucher->getRestaurant() !== $restaurant) {
-            throw new CheckoutValidationException('Voucher does not apply to this restaurant.');
+            throw new UnprocessableEntityHttpException('Voucher does not apply to this restaurant.');
         }
 
         $totalUses = $this->voucherRedemptions->countForVoucher($voucher);
         if (null !== $voucher->getUsageLimitTotal() && $totalUses >= $voucher->getUsageLimitTotal()) {
-            throw new CheckoutValidationException('Voucher usage limit has been reached.');
+            throw new UnprocessableEntityHttpException('Voucher usage limit has been reached.');
         }
         $customerUses = $this->voucherRedemptions->countForVoucherAndCustomer($voucher, $customer);
         if ($customerUses >= $voucher->getUsageLimitPerCustomer()) {
-            throw new CheckoutValidationException('You have already reached this voucher usage limit.');
+            throw new UnprocessableEntityHttpException('You have already reached this voucher usage limit.');
         }
 
         $value = $voucher->getValue() ?? '0';
@@ -565,11 +567,11 @@ final readonly class CheckoutService
     private function nonNegativeMoney(mixed $value, string $field): string
     {
         if (!is_int($value) && !is_float($value) && !is_string($value)) {
-            throw new CheckoutValidationException(sprintf('%s must be a non-negative amount.', $field));
+            throw new UnprocessableEntityHttpException(sprintf('%s must be a non-negative amount.', $field));
         }
         $amount = trim((string) $value);
         if (!is_numeric($amount) || -1 === bccomp($amount, '0', 4)) {
-            throw new CheckoutValidationException(sprintf('%s must be a non-negative amount.', $field));
+            throw new UnprocessableEntityHttpException(sprintf('%s must be a non-negative amount.', $field));
         }
 
         return bcround($amount, 2);
@@ -581,7 +583,7 @@ final readonly class CheckoutService
             return null;
         }
         if (!is_string($value) || mb_strlen($value) > $maxLength) {
-            throw new CheckoutValidationException(sprintf('%s must be at most %d characters.', $field, $maxLength));
+            throw new UnprocessableEntityHttpException(sprintf('%s must be at most %d characters.', $field, $maxLength));
         }
 
         return trim($value);
