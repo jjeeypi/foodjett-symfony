@@ -1,0 +1,70 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Delivery {{ order.orderNumber }} | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
+    <h1>Delivery {{ order.orderNumber }}</h1>
+    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
+
+    <h2>Pick up</h2>
+    <p>{{ order.restaurant.name }}, {{ order.restaurant.address }} ({{ order.restaurant.latitude }}, {{ order.restaurant.longitude }})
+        {% if order.estimatedReadyAt %}· ready about {{ order.estimatedReadyAt|date('g:i A') }}{% endif %}</p>
+    <ul>
+        {% for item in order.items %}
+            <li>{{ item.quantity }} × {{ item.menuItem.name }}{% if item.specialInstructions %} · {{ item.specialInstructions }}{% endif %}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Deliver to</h2>
+    <p>
+        {{ order.customer.user.name }} · {{ order.customer.user.phone }}<br>
+        {{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} (near {{ order.customerAddress.landmark }}){% endif %}
+        ({{ order.customerAddress.latitude }}, {{ order.customerAddress.longitude }})
+        {% if order.customerAddress.deliveryInstructions %}<br>Instructions: {{ order.customerAddress.deliveryInstructions }}{% endif %}
+        {% if order.customerNotes %}<br>Notes: {{ order.customerNotes }}{% endif %}
+    </p>
+    <p id="payment">{% if cash_to_collect %}Collect <strong>PHP {{ cash_to_collect }}</strong> in cash.{% else %}Already paid online.{% endif %}</p>
+
+    <h2>Next step</h2>
+    {% if step %}
+        <form method="post" action="{{ path('app_rider_delivery_step', {action: step}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('delivery' ~ order.id) }}">
+            <button type="submit">{{ {'arrived-restaurant': 'I am at the restaurant', 'start': 'Start the delivery', 'arrived-customer': 'I have arrived'}[step] }}</button>
+        </form>
+    {% endif %}
+
+    {% if pickup_form %}
+        {{ form_start(pickup_form, {action: path('app_rider_delivery_pickup')}) }}
+            {{ form_widget(pickup_form) }}
+            <button type="submit">Confirm pickup</button>
+        {{ form_end(pickup_form) }}
+    {% endif %}
+
+    {% if proof_form %}
+        {{ form_start(proof_form, {action: path('app_rider_delivery_complete')}) }}
+            {{ form_widget(proof_form) }}
+            <button type="submit">Complete delivery</button>
+        {{ form_end(proof_form) }}
+
+        <form method="post" action="{{ path('app_rider_delivery_unreachable') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('delivery' ~ order.id) }}">
+            <button type="submit">Customer unreachable</button>
+            {% if unreachable_from %}<small>available from {{ unreachable_from|date('g:i:s A') }}</small>{% endif %}
+        </form>
+    {% endif %}
+
+    {% if cancel_form %}
+        <h2>Cannot make it?</h2>
+        {{ form_start(cancel_form, {action: path('app_rider_delivery_cancel')}) }}
+            {{ form_widget(cancel_form) }}
+            <button type="submit">Cancel this delivery</button>
+        {{ form_end(cancel_form) }}
+    {% endif %}
+
+    <h2>Report a problem</h2>
+    {{ form_start(issue_form, {action: path('app_rider_delivery_issue')}) }}
+        {{ form_widget(issue_form) }}
+        <button type="submit">Send report</button>
+    {{ form_end(issue_form) }}
+{% endblock %}

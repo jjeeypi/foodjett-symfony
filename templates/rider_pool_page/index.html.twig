@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Order pool | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
+    <h1>Orders near you</h1>
+
+    {% if reason %}<p id="pool-reason">{{ reason }}</p>{% endif %}
+
+    {% for offer in offers %}
+        <article id="offer-{{ offer.order_id }}">
+            <h2>{{ offer.restaurant.name }}</h2>
+            <p>
+                Earn about <strong>PHP {{ offer.estimated_pay }}</strong>
+                · {{ offer.pickup_distance_km }} km to the restaurant, {{ offer.delivery_distance_km }} km to the customer
+                · {{ offer.payment_method == 'cod' ? 'cash on delivery' : 'paid online' }}
+                {% if offer.estimated_ready_at %}· food ready about {{ offer.estimated_ready_at|date('g:i A') }}{% endif %}
+            </p>
+            <form method="post" action="{{ path('app_rider_pool_accept', {id: offer.order_id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('pool' ~ offer.order_id) }}">
+                <button type="submit">Accept</button>
+            </form>
+            <form method="post" action="{{ path('app_rider_pool_decline', {id: offer.order_id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('pool' ~ offer.order_id) }}">
+                <button type="submit">Decline</button>
+            </form>
+        </article>
+    {% endfor %}
+{% endblock %}
