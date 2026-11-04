@@ -11,9 +11,9 @@ use App\Enum\ApprovalStatus;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
+use App\Repository\AuditLogRepository;
 use App\Repository\RiderRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,7 +28,7 @@ final class AdminRiderController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly RiderRepository $riders,
     ) {
     }

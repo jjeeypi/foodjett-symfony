@@ -14,7 +14,6 @@ use App\Repository\MessageRepository;
 use App\Repository\OrderRepository;
 use App\Security\Voter\ConversationVoter;
 use App\Service\ApiPaginator;
-use App\Service\ConversationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,9 +29,8 @@ final class CustomerConversationController extends AbstractCustomerController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly MessageBusInterface $bus,
-        private readonly ConversationService $conversations,
+        private readonly ConversationRepository $conversations,
         private readonly OrderRepository $orders,
-        private readonly ConversationRepository $conversationRecords,
         private readonly MessageRepository $messages,
     ) {
     }
@@ -69,7 +67,7 @@ final class CustomerConversationController extends AbstractCustomerController
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->conversationRecords->createForCustomerQuery($this->customer());
+        $query = $this->conversations->createForCustomerQuery($this->customer());
 
         return $this->json($this->paginator->paginate($query, $request, $this->conversationData(...)));
     }
@@ -144,7 +142,7 @@ final class CustomerConversationController extends AbstractCustomerController
 
     private function ownedConversation(string $id): Conversation
     {
-        $conversation = $this->conversationRecords->findOneForCustomer($id, $this->customer());
+        $conversation = $this->conversations->findOneForCustomer($id, $this->customer());
         if (!$conversation instanceof Conversation) {
             throw $this->createNotFoundException('Conversation not found.');
         }

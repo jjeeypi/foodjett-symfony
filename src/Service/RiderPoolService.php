@@ -14,6 +14,7 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\RiderPoolDeclineAction;
+use App\Repository\DeliveryZoneRepository;
 use App\Repository\OrderRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -54,7 +55,7 @@ final readonly class RiderPoolService
                 continue;
             }
 
-            $pickupDistance = DeliveryZoneService::distanceKm(
+            $pickupDistance = DeliveryZoneRepository::distanceKm(
                 (float) $rider->getCurrentLatitude(),
                 (float) $rider->getCurrentLongitude(),
                 (float) $order->getRestaurant()->getLatitude(),
@@ -63,7 +64,7 @@ final readonly class RiderPoolService
             if ($pickupDistance > (float) $offer->getSearchRadiusKm()) {
                 continue;
             }
-            $deliveryDistance = DeliveryZoneService::distanceKm(
+            $deliveryDistance = DeliveryZoneRepository::distanceKm(
                 (float) $order->getRestaurant()->getLatitude(),
                 (float) $order->getRestaurant()->getLongitude(),
                 (float) $order->getCustomerAddress()->getLatitude(),
@@ -115,7 +116,7 @@ final readonly class RiderPoolService
                 $codBlocked = true;
                 continue;
             }
-            $distance = DeliveryZoneService::distanceKm(
+            $distance = DeliveryZoneRepository::distanceKm(
                 (float) $rider->getCurrentLatitude(),
                 (float) $rider->getCurrentLongitude(),
                 (float) $order->getRestaurant()->getLatitude(),
@@ -233,7 +234,7 @@ final readonly class RiderPoolService
         if (!$offer instanceof RiderPoolOffer) {
             throw new ConflictHttpException('This order has no active rider pool offer.');
         }
-        $distance = DeliveryZoneService::distanceKm(
+        $distance = DeliveryZoneRepository::distanceKm(
             (float) $rider->getCurrentLatitude(),
             (float) $rider->getCurrentLongitude(),
             (float) $order->getRestaurant()->getLatitude(),

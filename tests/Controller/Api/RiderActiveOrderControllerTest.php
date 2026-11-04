@@ -17,7 +17,7 @@ use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\RiderPoolEscalationStage;
-use App\Service\DeliveryZoneService;
+use App\Repository\DeliveryZoneRepository;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class RiderActiveOrderControllerTest extends RiderApiTestCase
@@ -98,7 +98,7 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
         $payload = $this->payload();
         self::assertSame('delivered', $payload['order']['status']);
         self::assertSame('40.00', $payload['earning']['base_pay']);
-        $deliveryDistance = DeliveryZoneService::distanceKm(14.5995000, 120.9842000, 14.6091000, 121.0223000);
+        $deliveryDistance = DeliveryZoneRepository::distanceKm(14.5995000, 120.9842000, 14.6091000, 121.0223000);
         $expectedDistancePay = number_format(round((2.5 + $deliveryDistance) * 10, 2), 2, '.', '');
         self::assertSame($expectedDistancePay, $payload['earning']['distance_pay']);
         self::assertSame('10.00', $payload['earning']['waiting_pay']);

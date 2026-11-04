@@ -7,10 +7,10 @@ namespace App\Controller\Api;
 use App\Entity\RiderPayout;
 use App\Entity\User;
 use App\Enum\PayoutStatus;
+use App\Repository\AuditLogRepository;
 use App\Repository\RiderEarningRepository;
 use App\Repository\RiderPayoutRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,7 +26,7 @@ final class AdminRiderPayoutController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly RiderPayoutRepository $payouts,
         private readonly RiderEarningRepository $earnings,
     ) {

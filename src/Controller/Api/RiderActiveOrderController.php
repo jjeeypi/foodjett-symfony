@@ -18,10 +18,10 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Enum\PaymentMethod;
 use App\Enum\RiderAvailabilityStatus;
+use App\Repository\PlatformSettingRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
-use App\Service\PlatformSettingService;
 use App\Service\RiderPayCalculator;
 use App\Service\UploadStorage;
 use Doctrine\DBAL\LockMode;
@@ -42,7 +42,7 @@ final class RiderActiveOrderController extends AbstractRiderController
         private readonly OrderTransitionService $transitions,
         private readonly PaymentTransitionService $payments,
         private readonly RiderPayCalculator $payCalculator,
-        private readonly PlatformSettingService $settings,
+        private readonly PlatformSettingRepository $settings,
         private readonly UploadStorage $uploads,
     ) {
         parent::__construct($entityManager);

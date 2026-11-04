@@ -9,9 +9,9 @@ use App\Entity\User;
 use App\Enum\PaymentActor;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
+use App\Repository\AuditLogRepository;
 use App\Repository\PaymentRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use App\Service\PaymentTransitionService;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,7 +28,7 @@ final class AdminPaymentController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly PaymentRepository $payments,
         private readonly PaymentTransitionService $paymentTransitions,
     ) {

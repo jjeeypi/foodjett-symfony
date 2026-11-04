@@ -9,9 +9,9 @@ use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
 use App\Entity\User;
 use App\Enum\RemittanceStatus;
+use App\Repository\AuditLogRepository;
 use App\Repository\RiderCashRemittanceRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,7 +27,7 @@ final class AdminRemittanceController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly RiderCashRemittanceRepository $remittances,
     ) {
     }

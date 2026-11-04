@@ -8,10 +8,10 @@ use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\User;
 use App\Enum\UserStatus;
+use App\Repository\AuditLogRepository;
 use App\Repository\CustomerRepository;
 use App\Repository\OrderRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,7 +26,7 @@ final class AdminCustomerController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly CustomerRepository $customers,
         private readonly OrderRepository $orders,
     ) {

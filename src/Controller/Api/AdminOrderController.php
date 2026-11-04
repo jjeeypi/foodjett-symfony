@@ -12,9 +12,9 @@ use App\Entity\User;
 use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
+use App\Repository\AuditLogRepository;
 use App\Repository\OrderRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
 use App\Service\RiderPoolService;
@@ -36,7 +36,7 @@ final class AdminOrderController extends AbstractController
         private readonly RiderPoolService $riderPool,
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly OrderRepository $orders,
     ) {
     }

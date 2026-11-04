@@ -6,6 +6,8 @@ namespace App\Service;
 
 use App\Entity\Order;
 use App\Entity\RiderPoolOffer;
+use App\Repository\DeliveryZoneRepository;
+use App\Repository\PlatformSettingRepository;
 
 /**
  * Rider pay is computed with bcmath on exact decimal strings. Distances (km) and waiting time
@@ -18,7 +20,7 @@ final readonly class RiderPayCalculator
 
     public const DEFAULT_DISTANCE_RATE_PER_KM = '10.00';
 
-    public function __construct(private PlatformSettingService $settings)
+    public function __construct(private PlatformSettingRepository $settings)
     {
     }
 
@@ -45,7 +47,7 @@ final readonly class RiderPayCalculator
         if (null === $pickupDistanceKm) {
             throw new \DomainException('The accepted pickup distance is missing for this order.');
         }
-        $deliveryDistanceKm = DeliveryZoneService::distanceKm(
+        $deliveryDistanceKm = DeliveryZoneRepository::distanceKm(
             (float) $order->getRestaurant()->getLatitude(),
             (float) $order->getRestaurant()->getLongitude(),
             (float) $order->getCustomerAddress()->getLatitude(),

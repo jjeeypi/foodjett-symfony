@@ -14,6 +14,7 @@ use App\Message\OrderStatusChanged;
 use App\Message\OrderUpdated;
 use App\Message\RiderPoolOfferCreated;
 use App\Message\RiderPoolOfferTaken;
+use App\Repository\PlatformSettingRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -34,7 +35,7 @@ final class OrderTransitionService
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly PlatformSettingService $settings,
+        private readonly PlatformSettingRepository $settings,
         private readonly MessageBusInterface $bus,
     ) {
         self::$authorizedStatuses ??= new \WeakMap();

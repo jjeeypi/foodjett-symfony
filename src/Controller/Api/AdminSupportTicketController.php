@@ -7,9 +7,9 @@ namespace App\Controller\Api;
 use App\Entity\SupportTicket;
 use App\Entity\User;
 use App\Enum\SupportTicketStatus;
+use App\Repository\AuditLogRepository;
 use App\Repository\SupportTicketRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,7 +24,7 @@ final class AdminSupportTicketController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly SupportTicketRepository $tickets,
     ) {
     }

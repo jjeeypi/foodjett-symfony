@@ -8,11 +8,11 @@ use App\Entity\MenuItem;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
 use App\Enum\RestaurantOperatingStatus;
+use App\Repository\DeliveryZoneRepository;
 use App\Repository\MenuItemRepository;
 use App\Repository\RestaurantRepository;
 use App\Repository\RestaurantReviewRepository;
 use App\Service\ApiPaginator;
-use App\Service\DeliveryZoneService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -58,7 +58,7 @@ final class CustomerBrowsingController extends AbstractController
             if ($openOnly && !$open) {
                 continue;
             }
-            $distance = null !== $latitude && null !== $longitude ? DeliveryZoneService::distanceKm($latitude, $longitude, (float) $restaurant->getLatitude(), (float) $restaurant->getLongitude()) : null;
+            $distance = null !== $latitude && null !== $longitude ? DeliveryZoneRepository::distanceKm($latitude, $longitude, (float) $restaurant->getLatitude(), (float) $restaurant->getLongitude()) : null;
             $rows[] = $this->restaurantSummary($restaurant, $rating, $open, $distance);
         }
         usort($rows, static function (array $left, array $right) use ($latitude): int {
