@@ -2,35 +2,27 @@
 
 namespace App\Form;
 
-use App\Entity\Customer;
 use App\Entity\CustomerAddress;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/** A customer's delivery address. The owner and the timestamps are set by the controller. */
 class CustomerAddressType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('label')
-            ->add('addressLine')
-            ->add('landmark')
-            ->add('deliveryInstructions')
-            ->add('latitude')
-            ->add('longitude')
-            ->add('isDefault')
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('customer', EntityType::class, [
-                'class' => Customer::class,
-                'choice_label' => 'id',
-            ])
+            ->add('label', TextType::class, ['help' => 'For example Home or Office.', 'empty_data' => ''])
+            ->add('addressLine', TextType::class, ['label' => 'Address', 'empty_data' => ''])
+            ->add('landmark', TextType::class, ['required' => false])
+            ->add('deliveryInstructions', TextareaType::class, ['required' => false])
+            ->add('latitude', TextType::class, ['empty_data' => ''])
+            ->add('longitude', TextType::class, ['empty_data' => ''])
+            ->add('isDefault', CheckboxType::class, ['label' => 'Use as my default address', 'required' => false])
         ;
     }
 

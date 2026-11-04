@@ -35,9 +35,13 @@ class SupportTicket
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private User $user;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $subject;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 10000)]
     #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $message;
 

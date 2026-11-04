@@ -9,6 +9,8 @@
 parameters:
     # Identity documents and other private files; served only through access-checked controllers.
     app.private_upload_dir: '%kernel.project_dir%/var/uploads'
+    # Files anyone may see (avatars, logos, food photos), served from public/uploads.
+    app.public_upload_dir: '%kernel.project_dir%/public/uploads'
 
 services:
     # default configuration for services in *this* file
@@ -27,3 +29,4 @@ services:
 when@test:
     parameters:
         app.private_upload_dir: '%kernel.project_dir%/var/test-uploads'
+        app.public_upload_dir: '%kernel.project_dir%/var/test-public-uploads'

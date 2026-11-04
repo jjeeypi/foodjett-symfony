@@ -2,64 +2,32 @@
 
 namespace App\Form;
 
-use App\Entity\Admin;
-use App\Entity\Customer;
-use App\Entity\Restaurant;
-use App\Entity\Rider;
 use App\Entity\User;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\TelType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Image;
 
+/** Name, contact details and profile photo of the signed-in account. */
 class ProfileFormType extends AbstractType
 {
+    public const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name')
-            ->add('email')
-            ->add('phone')
-            ->add('password')
-            ->add('twoFactorSecret')
-            ->add('twoFactorRecoveryCodes')
-            ->add('twoFactorConfirmedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('role')
-            ->add('status')
-            ->add('emailVerifiedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('phoneVerifiedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('avatarPath')
-            ->add('lastLoginAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('rememberToken')
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('admin', EntityType::class, [
-                'class' => Admin::class,
-                'choice_label' => 'id',
-            ])
-            ->add('restaurant', EntityType::class, [
-                'class' => Restaurant::class,
-                'choice_label' => 'id',
-            ])
-            ->add('rider', EntityType::class, [
-                'class' => Rider::class,
-                'choice_label' => 'id',
-            ])
-            ->add('customer', EntityType::class, [
-                'class' => Customer::class,
-                'choice_label' => 'id',
+            ->add('name', TextType::class, ['empty_data' => ''])
+            ->add('email', EmailType::class, ['empty_data' => ''])
+            ->add('phone', TelType::class, ['label' => 'Phone number', 'empty_data' => ''])
+            ->add('avatar', FileType::class, [
+                'label' => 'Profile photo',
+                'mapped' => false,
+                'required' => false,
+                'constraints' => [new Image(maxSize: '10M', mimeTypes: self::IMAGE_MIME_TYPES)],
             ])
         ;
     }

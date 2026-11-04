@@ -22,8 +22,10 @@
                 {% if is_granted('ROLE_CUSTOMER') %}
                     | <a href="{{ path('app_cart') }}">Cart</a>
                     | <a href="{{ path('app_orders') }}">Orders</a>
+                    | <a href="{{ path('app_account') }}">Account</a>
                 {% endif %}
                 {% if app.user %}
+                    | <a href="{{ path('app_support_ticket_index') }}">Help</a>
                     | Signed in as {{ app.user.name }} ({{ app.user.role }})
                     | <a href="{{ path('app_logout') }}">Log out</a>
                 {% else %}

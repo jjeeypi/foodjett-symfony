@@ -1,43 +1,33 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}SupportTicket index{% endblock %}
+{% block title %}Support | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>SupportTicket index</h1>
+    <h1>Support requests</h1>
 
     <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
                 <th>Subject</th>
-                <th>Message</th>
                 <th>Status</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
-                <th>actions</th>
+                <th>Sent</th>
             </tr>
         </thead>
         <tbody>
         {% for support_ticket in support_tickets %}
             <tr>
-                <td>{{ support_ticket.id }}</td>
-                <td>{{ support_ticket.subject }}</td>
-                <td>{{ support_ticket.message }}</td>
-                <td>{{ support_ticket.status }}</td>
-                <td>{{ support_ticket.createdAt ? support_ticket.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ support_ticket.updatedAt ? support_ticket.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_support_ticket_show', {'id': support_ticket.id}) }}">show</a>
-                    <a href="{{ path('app_support_ticket_edit', {'id': support_ticket.id}) }}">edit</a>
-                </td>
+                <td><a href="{{ path('app_support_ticket_show', {'id': support_ticket.id}) }}">{{ support_ticket.subject }}</a></td>
+                <td>{{ support_ticket.status|replace({'_': ' '}) }}</td>
+                <td>{{ support_ticket.createdAt ? support_ticket.createdAt|date('M j, Y g:i A') : '' }}</td>
             </tr>
         {% else %}
             <tr>
-                <td colspan="7">no records found</td>
+                <td colspan="3">You have not sent any requests.</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
+    {{ knp_pagination_render(support_tickets) }}
 
-    <a href="{{ path('app_support_ticket_new') }}">Create new</a>
+    <a href="{{ path('app_support_ticket_new') }}">Ask for help</a>
 {% endblock %}
