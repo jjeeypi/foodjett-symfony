@@ -6,29 +6,36 @@ use App\Repository\CartItemRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * One line in a customer's cart, saved in the database so the cart survives logins and devices.
+ * A cart holds items from one restaurant at a time; prices are recomputed at checkout.
+ */
 #[ORM\Entity(repositoryClass: CartItemRepository::class)]
+#[ORM\Table(name: 'cart_items')]
 class CartItem
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
+    private ?string $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'cartItems')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Customer $customer = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?MenuItem $menuItem = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?MenuItemVariant $variant = null;
 
+    /** @var list<string> ids of the chosen MenuItemAddon rows */
     #[ORM\Column]
     private array $addonIds = [];
 
-    #[ORM\Column]
+    #[ORM\Column(type: Types::SMALLINT, options: ['unsigned' => true])]
     private ?int $quantity = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -40,7 +47,7 @@ class CartItem
     #[ORM\Column]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    public function getId(): ?int
+    public function getId(): ?string
     {
         return $this->id;
     }
