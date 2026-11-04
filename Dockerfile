@@ -25,6 +25,12 @@ COPY docker/entrypoint.sh /usr/local/bin/foodjett-entrypoint
 COPY . .
 COPY --from=vendor /app/vendor ./vendor
 
+# Production does not serve assets/ on the fly: download the importmap packages (Turbo, Stimulus,
+# Leaflet) and write the versioned files to public/assets.
+RUN APP_ENV=prod APP_SECRET=build-only php bin/console importmap:install --no-interaction \
+    && APP_ENV=prod APP_SECRET=build-only php bin/console asset-map:compile --no-interaction \
+    && rm -rf var/cache
+
 RUN a2enmod proxy proxy_http \
     && chmod +x /usr/local/bin/foodjett-entrypoint \
     && mkdir -p var/cache var/log var/uploads public/uploads \

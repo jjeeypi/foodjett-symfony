@@ -23,10 +23,14 @@ class DeliveryZoneRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('zone')->orderBy('zone.name', 'ASC');
     }
 
-    /** Whether any active delivery zone contains the point. */
+    /** Whether Foodjett delivers to the point: inside an active zone, or anywhere while no zone is active. */
     public function isCovered(float $latitude, float $longitude): bool
     {
-        foreach ($this->findBy(['isActive' => true]) as $zone) {
+        $zones = $this->findBy(['isActive' => true]);
+        if ([] === $zones) {
+            return true;
+        }
+        foreach ($zones as $zone) {
             if ($this->contains($zone->getPolygon(), $latitude, $longitude)) {
                 return true;
             }

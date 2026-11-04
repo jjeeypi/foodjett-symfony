@@ -36,6 +36,22 @@ class CustomerAddressControllerTest extends CustomerWebTestCase
         self::assertTrue($addresses[0]->isDefault(), 'The remaining address becomes the default.');
     }
 
+    public function testTheFormOffersThePickerInsteadOfCoordinateBoxes(): void
+    {
+        $crawler = $this->client->request('GET', '/account/addresses/new');
+        $form = $crawler->filter('form[name="customer_address"]');
+        self::assertSame('location-picker', $form->attr('data-controller'));
+        self::assertSame('/delivery/coverage', $form->attr('data-location-picker-coverage-url-value'));
+        self::assertSame('hidden', $crawler->filter('#customer_address_latitude')->attr('type'));
+        self::assertSame('hidden', $crawler->filter('#customer_address_longitude')->attr('type'));
+        self::assertSame('address', $crawler->filter('#customer_address_addressLine')->attr('data-location-picker-target'));
+
+        $this->add('No spot', 'Somewhere in Dumaguete', latitude: '');
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('form', 'Choose the spot: pick a suggestion, use your location, or tap the map.');
+        self::assertCount(1, $this->addresses());
+    }
+
     public function testInvalidCoordinatesAreRejected(): void
     {
         $this->add('Bad', 'Nowhere', latitude: '123');

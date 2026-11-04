@@ -9,7 +9,7 @@
     <p>Commission: {{ restaurant.commissionRate }}% · Public page: <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.slug }}</a></p>
     {% if restaurant.logoPath %}<p><img src="{{ asset(restaurant.logoPath) }}" alt="Logo" width="96"></p>{% endif %}
 
-    {{ form_start(form) }}
+    {{ form_start(form, {attr: {'data-controller': 'location-picker', 'data-location-picker-coverage-url-value': path('app_delivery_coverage')}}) }}
         {{ form_widget(form) }}
         <button type="submit">Save profile</button>
     {{ form_end(form) }}

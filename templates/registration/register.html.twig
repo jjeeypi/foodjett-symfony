@@ -5,7 +5,8 @@
 {% block body %}
     <h1>{{ heading }}</h1>
 
-    {{ form_start(registrationForm) }}
+    {# Only the restaurant application has an address, so only it gets the address picker. #}
+    {{ form_start(registrationForm, registrationForm.address is defined ? {attr: {'data-controller': 'location-picker', 'data-location-picker-coverage-url-value': path('app_delivery_coverage')}} : {}) }}
         {{ form_errors(registrationForm) }}
         {{ form_widget(registrationForm) }}
 

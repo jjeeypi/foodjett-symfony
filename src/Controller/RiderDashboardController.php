@@ -74,7 +74,7 @@ final class RiderDashboardController extends AbstractController
         $rider = $this->rider($user);
         $form = $this->locationForm($rider)->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) {
-            $this->addFlash('error', 'Enter a latitude between -90 and 90 and a longitude between -180 and 180.');
+            $this->addFlash('error', 'Place the pin where you are (or allow location access), then share your location.');
 
             return $this->redirectToRoute('app_rider_dashboard');
         }

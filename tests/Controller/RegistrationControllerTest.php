@@ -39,6 +39,7 @@ class RegistrationControllerTest extends WebTestCase
     public function testCustomerRegistersAndIsSignedIn(): void
     {
         $form = $this->form('/register', 'registration_form');
+        self::assertNull($this->client->getCrawler()->filter('form[name="registration_form"]')->attr('data-controller'), 'Customers give addresses later, not here.');
         $this->fillAccount($form, 'registration_form', 'Register.Customer@Foodjett.test', '+639180000001');
         $this->client->submit($form);
 
@@ -55,6 +56,7 @@ class RegistrationControllerTest extends WebTestCase
     public function testRestaurantApplicationIsPendingClosedWithPrivateDocuments(): void
     {
         $form = $this->form('/register/restaurant', 'restaurant_registration_form');
+        self::assertSame('location-picker', $this->client->getCrawler()->filter('form[name="restaurant_registration_form"]')->attr('data-controller'));
         $this->fillAccount($form, 'restaurant_registration_form[user]', 'register-restaurant@foodjett.test', '+639180000002');
         $form['restaurant_registration_form[name]'] = 'Test Kitchen';
         $form['restaurant_registration_form[cuisineType]'] = 'Filipino';

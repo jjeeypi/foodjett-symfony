@@ -43,7 +43,7 @@ class CustomerAddress
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $deliveryInstructions = null;
 
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'Choose the spot: pick a suggestion, use your location, or tap the map.')]
     #[Assert\Regex(pattern: '/^-?(?:90(?:\.0+)?|[0-8]?\d(?:\.\d+)?)$/', message: 'Latitude must be between -90 and 90.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $latitude;
