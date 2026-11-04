@@ -2,26 +2,33 @@
 
 namespace App\Command;
 
-use Symfony\Component\Console\Attribute\Argument;
+use App\Service\OrderTransitionService;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Scheduler\Attribute\AsPeriodicTask;
 
+/**
+ * Advances every order still waiting for a rider through the escalation stages
+ * (wider radius, incentive, admin alert, customer notice, auto-cancel).
+ * The scheduler runs it every minute; it can also be run by hand.
+ */
 #[AsCommand(
     name: 'app:rider-pool:escalate',
-    description: 'Add a short description for your command',
+    description: 'Escalate orders that are still waiting for a rider',
 )]
-class RiderPoolEscalateCommand{
-    public function __invoke(
-        SymfonyStyle $io,
-        #[Argument('Argument description')] string $arg = '',
-        #[Option('Option description')] bool $enable = false,
-    ): int {
-        $io->note(sprintf('The value of $arg is: %s', var_export($arg, true)));
-        $io->note(sprintf('The value of $enable is: %s', var_export($enable, true)));
+#[AsPeriodicTask(frequency: '1 minute')]
+class RiderPoolEscalateCommand
+{
+    public function __construct(private readonly OrderTransitionService $transitions)
+    {
+    }
 
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+    public function __invoke(SymfonyStyle $io): int
+    {
+        $changed = $this->transitions->escalatePendingPoolOrders();
+
+        $io->success(sprintf('%d order(s) escalated.', $changed));
 
         return Command::SUCCESS;
     }
