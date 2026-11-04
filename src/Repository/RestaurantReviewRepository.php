@@ -26,6 +26,22 @@ class RestaurantReviewRepository extends ServiceEntityRepository
             ->orderBy('review.createdAt', 'DESC');
     }
 
+    /** Every restaurant review with its order, customer and restaurant, newest first, optionally only those at or below $maxRating stars. */
+    public function createAdminListQuery(?int $maxRating = null): QueryBuilder
+    {
+        $query = $this->createQueryBuilder('review')
+            ->innerJoin('review.order', 'orders')->addSelect('orders')
+            ->innerJoin('review.restaurant', 'restaurant')->addSelect('restaurant')
+            ->innerJoin('review.customer', 'customer')->addSelect('customer')
+            ->innerJoin('customer.user', 'customerUser')->addSelect('customerUser')
+            ->orderBy('review.createdAt', 'DESC');
+        if (null !== $maxRating) {
+            $query->andWhere('review.rating <= :maxRating')->setParameter('maxRating', $maxRating);
+        }
+
+        return $query;
+    }
+
     public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?RestaurantReview
     {
         return $this->createQueryBuilder('review')

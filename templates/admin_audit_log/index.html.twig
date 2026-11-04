@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Audit log | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Audit log</h1>
+
+    <form method="get">
+        <label for="action">Action contains</label>
+        <input type="search" id="action" name="action" value="{{ action }}" placeholder="voucher, rider.suspended, ...">
+        <label for="from">From</label>
+        <input type="date" id="from" name="from" value="{{ from ? from|date('Y-m-d') }}">
+        <label for="to">to</label>
+        <input type="date" id="to" name="to" value="{{ to ? to|date('Y-m-d') }}">
+        <button type="submit">Filter</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr><th>When</th><th>Admin</th><th>Action</th><th>Subject</th><th>Changes</th></tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            <tr id="log-{{ log.id }}">
+                <td>{{ log.createdAt|date('M j, Y g:i:s A') }}</td>
+                <td>{{ log.user ? log.user.name : 'system' }}</td>
+                <td class="action">{{ log.action }}</td>
+                <td>{{ log.subjectType|replace({'_': ' '}) }} #{{ log.subjectId }}</td>
+                <td><code>{{ log.changes|json_encode(constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_UNESCAPED_UNICODE')) }}</code></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">no records found</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(logs) }}
+{% endblock %}
