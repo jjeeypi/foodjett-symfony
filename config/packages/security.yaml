@@ -30,6 +30,18 @@ security:
             stateless: true
             provider: foodjett_users
             jwt: ~
+        # The web pages: session login with email or phone.
+        main:
+            lazy: true
+            provider: foodjett_users
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+            logout:
+                path: app_logout
+                # where to redirect after logout
+                # target: app_any_route
 
     # Note: Only the *first* matching rule is applied
     access_control:
