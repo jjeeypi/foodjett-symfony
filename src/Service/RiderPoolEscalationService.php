@@ -10,13 +10,14 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Enum\RiderPoolEscalationStage;
 use App\Repository\OrderRepository;
+use App\Repository\PlatformSettingRepository;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final readonly class RiderPoolEscalationService
 {
     public function __construct(
         private OrderRepository $orders,
-        private PlatformSettingService $settings,
+        private PlatformSettingRepository $settings,
         private OrderTransitionService $transitions,
         private PaymentTransitionService $payments,
     ) {

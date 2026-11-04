@@ -29,6 +29,8 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
 use App\Message\OrderStatusChanged;
+use App\Repository\DeliveryZoneRepository;
+use App\Repository\PlatformSettingRepository;
 use App\Repository\VoucherRedemptionRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -41,8 +43,8 @@ final readonly class CheckoutService
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private PlatformSettingService $settings,
-        private DeliveryZoneService $deliveryZones,
+        private PlatformSettingRepository $settings,
+        private DeliveryZoneRepository $deliveryZones,
         private MessageBusInterface $bus,
         private VoucherRedemptionRepository $voucherRedemptions,
     ) {
@@ -299,7 +301,7 @@ final readonly class CheckoutService
             throw new UnprocessableEntityHttpException('The order subtotal does not meet the restaurant minimum.');
         }
 
-        $distanceKm = DeliveryZoneService::distanceKm(
+        $distanceKm = DeliveryZoneRepository::distanceKm(
             (float) $restaurant->getLatitude(),
             (float) $restaurant->getLongitude(),
             (float) $address->getLatitude(),

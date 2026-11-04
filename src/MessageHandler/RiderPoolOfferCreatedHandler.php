@@ -5,7 +5,7 @@ namespace App\MessageHandler;
 use App\Entity\Order;
 use App\Entity\RiderPoolOffer;
 use App\Message\RiderPoolOfferCreated;
-use App\Service\DeliveryZoneService;
+use App\Repository\DeliveryZoneRepository;
 use App\Service\RiderPayCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mercure\HubInterface;
@@ -30,7 +30,7 @@ final class RiderPoolOfferCreatedHandler
             return;
         }
 
-        $deliveryDistance = DeliveryZoneService::distanceKm(
+        $deliveryDistance = DeliveryZoneRepository::distanceKm(
             (float) $order->getRestaurant()->getLatitude(),
             (float) $order->getRestaurant()->getLongitude(),
             (float) $order->getCustomerAddress()->getLatitude(),

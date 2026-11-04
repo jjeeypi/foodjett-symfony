@@ -17,8 +17,8 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Message\OrderStatusChanged;
+use App\Repository\PlatformSettingRepository;
 use App\Service\OrderTransitionService;
-use App\Service\PlatformSettingService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -58,7 +58,7 @@ final class OrderTransitionServiceTest extends KernelTestCase
         });
         $service = new OrderTransitionService(
             $this->entityManager,
-            new PlatformSettingService($this->entityManager),
+            self::getContainer()->get(PlatformSettingRepository::class),
             $bus,
         );
 
@@ -93,7 +93,7 @@ final class OrderTransitionServiceTest extends KernelTestCase
         $order = $this->createOrder();
         $service = new OrderTransitionService(
             $this->entityManager,
-            new PlatformSettingService($this->entityManager),
+            self::getContainer()->get(PlatformSettingRepository::class),
             $this->recordingBus(static function (): void {
             }),
         );

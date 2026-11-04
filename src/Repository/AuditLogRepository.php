@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\AuditLog;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -15,6 +16,25 @@ class AuditLogRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, AuditLog::class);
+    }
+
+    /**
+     * Queues an audit entry for an admin action. The caller's flush saves it
+     * together with the change it describes.
+     *
+     * @param array<string, mixed> $changes
+     */
+    public function record(User $admin, string $action, string $subjectType, string $subjectId, array $changes = []): AuditLog
+    {
+        $log = (new AuditLog())
+            ->setUser($admin)
+            ->setAction($action)
+            ->setSubjectType($subjectType)
+            ->setSubjectId($subjectId)
+            ->setChanges([] === $changes ? null : $changes);
+        $this->getEntityManager()->persist($log);
+
+        return $log;
     }
 
     /** Audit entries with their admin, newest first, optionally filtered by action, admin and date range. */

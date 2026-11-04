@@ -21,10 +21,10 @@ use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Repository\OrderRepository;
-use App\Service\RiderPoolEscalationService;
+use App\Repository\PlatformSettingRepository;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
-use App\Service\PlatformSettingService;
+use App\Service\RiderPoolEscalationService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -201,7 +201,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
 
     private function service(): RiderPoolEscalationService
     {
-        $settings = new PlatformSettingService($this->entityManager);
+        $settings = self::getContainer()->get(PlatformSettingRepository::class);
 
         return new RiderPoolEscalationService(
             self::getContainer()->get(OrderRepository::class),

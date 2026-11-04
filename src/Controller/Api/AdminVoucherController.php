@@ -8,9 +8,9 @@ use App\Entity\User;
 use App\Entity\Voucher;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
+use App\Repository\AuditLogRepository;
 use App\Repository\VoucherRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,7 +25,7 @@ final class AdminVoucherController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly VoucherRepository $vouchers,
     ) {
     }

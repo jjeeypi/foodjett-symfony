@@ -10,9 +10,9 @@ use App\Enum\UserStatus;
 use App\Enum\VehicleType;
 use App\Repository\UserRepository;
 use App\Security\Voter\ApprovedAccountVoter;
-use App\Service\SensitiveDataCipher;
 use App\Service\UploadStorage;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -28,8 +28,9 @@ final class RiderAccountController extends AbstractRiderController
     public function __construct(
         EntityManagerInterface $entityManager,
         private readonly UploadStorage $uploads,
-        private readonly SensitiveDataCipher $cipher,
         private readonly UserRepository $users,
+        #[Autowire('%kernel.secret%')]
+        private readonly string $secret,
     ) {
         parent::__construct($entityManager);
     }
@@ -71,7 +72,7 @@ final class RiderAccountController extends AbstractRiderController
         $rider->setVehicleType($vehicle)->setPlateNumber(VehicleType::BICYCLE === $vehicle && '' === (string) $plate ? null : $plate)
             ->setPayoutMethod($payoutMethod)->setUpdatedAt($now);
         if (array_key_exists('payout_account_details', $data)) {
-            $rider->setEncryptedPayoutAccountDetails(null === $payoutDetails ? null : $this->cipher->encrypt($payoutDetails));
+            $rider->setEncryptedPayoutAccountDetails(null === $payoutDetails ? null : $this->encryptPayoutDetails($payoutDetails));
         }
         $avatar = $request->files->get('avatar');
         if (null !== $avatar) {
@@ -121,6 +122,51 @@ final class RiderAccountController extends AbstractRiderController
             'current_latitude' => $rider->getCurrentLatitude(), 'current_longitude' => $rider->getCurrentLongitude(),
             'last_location_at' => $rider->getLastLocationAt()?->format(\DateTimeInterface::ATOM),
             'payout_method' => $rider->getPayoutMethod()?->value,
-            'payout_account_details' => null === $encrypted ? null : $this->cipher->decrypt($encrypted)];
+            'payout_account_details' => null === $encrypted ? null : $this->decryptPayoutDetails($encrypted)];
+    }
+
+    /**
+     * Payout account details are stored encrypted with AES-256-GCM, keyed from the app secret.
+     *
+     * @param array<string, mixed> $details
+     */
+    private function encryptPayoutDetails(array $details): string
+    {
+        $plaintext = json_encode($details, JSON_THROW_ON_ERROR);
+        $iv = random_bytes(12);
+        $tag = '';
+        $ciphertext = openssl_encrypt($plaintext, 'aes-256-gcm', $this->payoutKey(), OPENSSL_RAW_DATA, $iv, $tag);
+        if (false === $ciphertext) {
+            throw new \RuntimeException('Sensitive data could not be encrypted.');
+        }
+
+        return base64_encode("FJ1\0".$iv.$tag.$ciphertext);
+    }
+
+    /** @return array<string, mixed> */
+    private function decryptPayoutDetails(string $value): array
+    {
+        $payload = base64_decode($value, true);
+        if (false === $payload || !str_starts_with($payload, "FJ1\0") || strlen($payload) < 32) {
+            throw new \RuntimeException('Encrypted payout details are invalid.');
+        }
+        $iv = substr($payload, 4, 12);
+        $tag = substr($payload, 16, 16);
+        $ciphertext = substr($payload, 32);
+        $plaintext = openssl_decrypt($ciphertext, 'aes-256-gcm', $this->payoutKey(), OPENSSL_RAW_DATA, $iv, $tag);
+        if (false === $plaintext) {
+            throw new \RuntimeException('Encrypted payout details could not be decrypted.');
+        }
+        $decoded = json_decode($plaintext, true, flags: JSON_THROW_ON_ERROR);
+        if (!is_array($decoded)) {
+            throw new \RuntimeException('Encrypted payout details are invalid.');
+        }
+
+        return $decoded;
+    }
+
+    private function payoutKey(): string
+    {
+        return hash('sha256', $this->secret, true);
     }
 }

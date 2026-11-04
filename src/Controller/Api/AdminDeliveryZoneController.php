@@ -6,9 +6,9 @@ namespace App\Controller\Api;
 
 use App\Entity\DeliveryZone;
 use App\Entity\User;
+use App\Repository\AuditLogRepository;
 use App\Repository\DeliveryZoneRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,7 +23,7 @@ final class AdminDeliveryZoneController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly DeliveryZoneRepository $zones,
     ) {
     }

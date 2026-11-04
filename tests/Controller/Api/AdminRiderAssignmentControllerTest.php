@@ -21,7 +21,7 @@ use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
-use App\Service\DeliveryZoneService;
+use App\Repository\DeliveryZoneRepository;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -86,7 +86,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
         self::assertInstanceOf(Order::class, $order);
         self::assertTrue($order->getRiderPoolOffer()?->isAdminAssigned());
         self::assertSame(
-            number_format(round(DeliveryZoneService::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
+            number_format(round(DeliveryZoneRepository::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
             $order->getRiderPoolOffer()?->getAcceptedPickupDistanceKm(),
         );
         self::assertSame(RiderAvailabilityStatus::BUSY, $order->getRider()?->getAvailabilityStatus());

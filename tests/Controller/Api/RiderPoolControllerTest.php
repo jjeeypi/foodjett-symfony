@@ -22,7 +22,7 @@ use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
-use App\Service\DeliveryZoneService;
+use App\Repository\DeliveryZoneRepository;
 use App\Service\RiderPoolService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
@@ -158,7 +158,7 @@ final class RiderPoolControllerTest extends WebTestCase
         self::assertSame(self::RIDER_EMAIL, $wonOrder->getRider()?->getUser()->getEmail());
         self::assertSame(RiderAvailabilityStatus::BUSY, $wonOrder->getRider()?->getAvailabilityStatus());
         self::assertSame(
-            number_format(round(DeliveryZoneService::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
+            number_format(round(DeliveryZoneRepository::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
             $wonOrder->getRiderPoolOffer()?->getAcceptedPickupDistanceKm(),
         );
         self::assertCount(1, $wonOrder->getStatusHistory());

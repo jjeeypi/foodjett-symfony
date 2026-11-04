@@ -10,9 +10,9 @@ use App\Entity\User;
 use App\Enum\OrderReportAgainst;
 use App\Enum\OrderReportStatus;
 use App\Enum\OrderReportType;
+use App\Repository\AuditLogRepository;
 use App\Repository\OrderReportRepository;
 use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,7 +27,7 @@ final class AdminOrderReportController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly AuditLogger $audit,
+        private readonly AuditLogRepository $audit,
         private readonly OrderReportRepository $reports,
     ) {
     }

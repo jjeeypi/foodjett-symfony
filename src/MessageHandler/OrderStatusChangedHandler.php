@@ -8,7 +8,7 @@ use App\Enum\ConversationType;
 use App\Enum\OrderStatus;
 use App\Message\ConversationMessageSent;
 use App\Message\OrderStatusChanged;
-use App\Service\ConversationService;
+use App\Repository\ConversationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -24,7 +24,7 @@ final class OrderStatusChangedHandler
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly ConversationService $conversations,
+        private readonly ConversationRepository $conversations,
         private readonly MessageBusInterface $bus,
         private readonly HubInterface $hub,
     ) {
