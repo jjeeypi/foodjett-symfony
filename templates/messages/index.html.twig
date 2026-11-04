@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Messages | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Messages</h1>
+
+    <table>
+        <thead>
+            <tr><th>Order</th><th>Chat</th><th>Unread</th><th>Last activity</th></tr>
+        </thead>
+        <tbody>
+            {% for conversation in conversations %}
+                {% set order = conversation.order %}
+                <tr>
+                    <td><a href="{{ path('app_conversation', {id: conversation.id}) }}">{{ order.orderNumber }}</a></td>
+                    <td>
+                        {% if conversation.type == constant('App\\Entity\\Conversation::TYPE_CUSTOMER_RESTAURANT') %}
+                            Customer and {{ order.restaurant.name }}
+                        {% else %}
+                            Customer and rider
+                        {% endif %}
+                        {% if conversation.closed %}(closed){% endif %}
+                    </td>
+                    <td>{{ unread[conversation.id] ?? 0 }}</td>
+                    <td>{{ conversation.updatedAt ? conversation.updatedAt|date('M j, g:i A') : '' }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4">No conversations yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(conversations) }}
+{% endblock %}

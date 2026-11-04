@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: 'messages')]
@@ -27,6 +28,8 @@ class Message
     #[ORM\JoinColumn(name: 'sender_user_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private User $sender;
 
+    #[Assert\NotBlank(message: 'Write a message first.')]
+    #[Assert\Length(max: 1000)]
     #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $body;
 

@@ -6,6 +6,7 @@ use App\Entity\Conversation;
 use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\Rider;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -49,6 +50,26 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /** The customer's order conversations, most recently active first. */
+    /**
+     * Every conversation the user takes part in, most recently active first: as the order's
+     * customer, as its restaurant (restaurant chats) or as its rider (rider chats).
+     */
+    public function createForParticipantQuery(User $user): QueryBuilder
+    {
+        return $this->createQueryBuilder('conversation')
+            ->innerJoin('conversation.order', 'orders')->addSelect('orders')
+            ->innerJoin('orders.customer', 'customer')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->leftJoin('orders.rider', 'rider')
+            ->andWhere('customer.user = :user'
+                .' OR (conversation.type = :restaurantChat AND restaurant.user = :user)'
+                .' OR (conversation.type = :riderChat AND rider.user = :user)')
+            ->setParameter('user', $user)
+            ->setParameter('restaurantChat', Conversation::TYPE_CUSTOMER_RESTAURANT)
+            ->setParameter('riderChat', Conversation::TYPE_CUSTOMER_RIDER)
+            ->orderBy('conversation.updatedAt', 'DESC')->addOrderBy('conversation.id', 'DESC');
+    }
+
     public function createForCustomerQuery(Customer $customer): QueryBuilder
     {
         return $this->createQueryBuilder('conversation')
