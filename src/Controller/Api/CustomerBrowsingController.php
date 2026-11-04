@@ -163,12 +163,14 @@ final class CustomerBrowsingController extends AbstractController
     /** @return list<array<string, mixed>>|JsonResponse */
     private function availableMenuRows(Request $request): array|JsonResponse
     {
-        $minimum = $request->query->get('min_price');
-        $maximum = $request->query->get('max_price');
-        if ((null !== $minimum && (!is_numeric($minimum) || (float) $minimum < 0)) || (null !== $maximum && (!is_numeric($maximum) || (float) $maximum < 0))) {
+        $rawMinimum = $request->query->get('min_price');
+        $rawMaximum = $request->query->get('max_price');
+        $minimum = null === $rawMinimum ? null : $this->decimalInput($rawMinimum);
+        $maximum = null === $rawMaximum ? null : $this->decimalInput($rawMaximum);
+        if ((null !== $rawMinimum && null === $minimum) || (null !== $rawMaximum && null === $maximum)) {
             return $this->json(['message' => 'Price filters must be non-negative numbers.'], 422);
         }
-        if (null !== $minimum && null !== $maximum && (float) $minimum > (float) $maximum) {
+        if (null !== $minimum && null !== $maximum && 1 === bccomp($minimum, $maximum, 2)) {
             return $this->json(['message' => 'min_price cannot exceed max_price.'], 422);
         }
         $category = mb_strtolower(trim($request->query->getString('category')));
@@ -183,8 +185,8 @@ final class CustomerBrowsingController extends AbstractController
             if ('' !== $category && !str_contains(mb_strtolower($item->getMenuCategory()->getName()), $category) && (string) $item->getMenuCategory()->getId() !== $category) {
                 continue;
             }
-            $price = (float) $item->getBasePrice();
-            if ((null !== $minimum && $price < (float) $minimum) || (null !== $maximum && $price > (float) $maximum)) {
+            $price = $item->getBasePrice();
+            if ((null !== $minimum && -1 === bccomp($price, $minimum, 2)) || (null !== $maximum && 1 === bccomp($price, $maximum, 2))) {
                 continue;
             }
             if ('' !== $search && !str_contains(mb_strtolower($item->getName()), $search) && !str_contains(mb_strtolower((string) $item->getDescription()), $search)) {
@@ -312,5 +314,22 @@ final class CustomerBrowsingController extends AbstractController
         return ['data' => array_values(array_slice($rows, ($page - 1) * $perPage, $perPage)), 'meta' => [
             'page' => $page, 'perPage' => $perPage, 'total' => $total, 'lastPage' => max(1, (int) ceil($total / $perPage)),
         ]];
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }

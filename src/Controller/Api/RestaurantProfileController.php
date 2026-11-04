@@ -75,8 +75,8 @@ final class RestaurantProfileController extends AbstractRestaurantController
         if (isset($data['default_prep_time_minutes']) && (!is_numeric($data['default_prep_time_minutes']) || (int) $data['default_prep_time_minutes'] < 1 || (int) $data['default_prep_time_minutes'] > 240)) {
             $errors['default_prep_time_minutes'][] = 'Preparation time must be between 1 and 240 minutes.';
         }
-        if (isset($data['min_order_amount']) && is_numeric($data['min_order_amount']) && (float) $data['min_order_amount'] < 0) {
-            $errors['min_order_amount'][] = 'Minimum order amount cannot be negative.';
+        if (array_key_exists('min_order_amount', $data) && null === $this->decimalInput($data['min_order_amount'])) {
+            $errors['min_order_amount'][] = 'Minimum order amount must be a number that is zero or greater.';
         }
 
         $payoutMethod = null;
@@ -122,7 +122,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
             $restaurant->setDefaultPrepTimeMinutes((int) $data['default_prep_time_minutes']);
         }
         if (array_key_exists('min_order_amount', $data)) {
-            $restaurant->setMinOrderAmount(number_format((float) $data['min_order_amount'], 2, '.', ''));
+            $restaurant->setMinOrderAmount($this->decimalInput($data['min_order_amount']) ?? '0.00');
         }
         if (array_key_exists('payout_method', $data)) {
             $restaurant->setPayoutMethod($payoutMethod);
@@ -284,5 +284,22 @@ final class RestaurantProfileController extends AbstractRestaurantController
         }
 
         return \DateTimeImmutable::createFromFormat('!H:i', $value) ?: null;
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }
