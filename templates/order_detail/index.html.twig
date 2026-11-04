@@ -58,6 +58,22 @@
         </p>
     {% endif %}
 
+    {% if order.status not in constant('App\\Entity\\Order::TERMINAL_STATUSES') or order.conversations is not empty %}
+        <h2>Messages</h2>
+        {% if order.acceptedAt %}
+            <form method="post" action="{{ path('app_conversation_start', {id: order.id, type: 'customer_restaurant'}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ order.id) }}">
+                <button type="submit">Message the restaurant</button>
+            </form>
+        {% endif %}
+        {% if order.rider %}
+            <form method="post" action="{{ path('app_conversation_start', {id: order.id, type: 'customer_rider'}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ order.id) }}">
+                <button type="submit">Message the rider</button>
+            </form>
+        {% endif %}
+    {% endif %}
+
     <h2>Timeline</h2>
     <ol id="timeline">
         {% for entry in history %}

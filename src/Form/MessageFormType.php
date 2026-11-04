@@ -2,38 +2,22 @@
 
 namespace App\Form;
 
-use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Entity\User;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/** A new chat message. The conversation, sender and timestamps are set by the controller. */
 class MessageFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder
-            ->add('body')
-            ->add('readAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('conversation', EntityType::class, [
-                'class' => Conversation::class,
-                'choice_label' => 'id',
-            ])
-            ->add('sender', EntityType::class, [
-                'class' => User::class,
-                'choice_label' => 'id',
-            ])
-        ;
+        $builder->add('body', TextareaType::class, [
+            'label' => 'Message',
+            'empty_data' => '',
+            'attr' => ['maxlength' => 1000, 'rows' => 3],
+        ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
