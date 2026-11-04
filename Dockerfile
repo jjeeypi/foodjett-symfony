@@ -8,13 +8,14 @@ RUN composer install \
     --no-progress \
     --no-scripts \
     --prefer-dist \
-    --optimize-autoloader
+    --optimize-autoloader \
+    --ignore-platform-req=ext-bcmath
 
-FROM php:8.3-apache-bookworm
+FROM php:8.4-apache-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl gosu libicu-dev libzip-dev \
-    && docker-php-ext-install -j"$(nproc)" intl opcache pcntl pdo_mysql zip \
+    && docker-php-ext-install -j"$(nproc)" bcmath intl opcache pcntl pdo_mysql zip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
