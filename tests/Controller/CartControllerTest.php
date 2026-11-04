@@ -43,7 +43,7 @@ class CartControllerTest extends CustomerWebTestCase
         $this->client->request('GET', '/cart');
         self::assertResponseIsSuccessful();
         // 3 × (150 + 15) + 1 × 150
-        self::assertSelectorTextContains('#subtotal', 'PHP 645.00');
+        self::assertSelectorTextContains('#subtotal', '₱645.00');
     }
 
     public function testACartHoldsOneRestaurantAtATime(): void

@@ -93,7 +93,7 @@ class OrderPagesTest extends CustomerWebTestCase
         $crawler = $this->client->followRedirect();
         self::assertSelectorTextContains('.flash-success', 'Your cart now has the items from order '.$order->getOrderNumber());
         // Current price, not the 99.00 paid back then.
-        self::assertSelectorTextContains('#subtotal', 'PHP 351.00');
+        self::assertSelectorTextContains('#subtotal', '₱351.00');
         $lines = $this->entityManager->getRepository(CartItem::class)->findBy(['customer' => $this->customer->getId()]);
         self::assertCount(1, $lines);
         self::assertSame('Less salt', $lines[0]->getSpecialInstructions());
