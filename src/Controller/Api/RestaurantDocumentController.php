@@ -8,6 +8,7 @@ use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use App\Enum\DocumentStatus;
 use App\Enum\RestaurantDocumentType;
+use App\Repository\RestaurantDocumentRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\UploadStorage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,6 +27,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UploadStorage $uploads,
+        private readonly RestaurantDocumentRepository $documents,
     ) {
     }
 
@@ -110,10 +112,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
 
     private function ownedDocument(string $id): RestaurantDocument
     {
-        $document = $this->entityManager->getRepository(RestaurantDocument::class)->createQueryBuilder('document')
-            ->andWhere('document.id = :id')->setParameter('id', $id)
-            ->andWhere('document.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        $document = $this->documents->findOneForRestaurant($id, $this->restaurant());
         if (!$document instanceof RestaurantDocument) {
             throw $this->createNotFoundException('Document not found.');
         }

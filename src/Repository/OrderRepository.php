@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Customer;
 use App\Entity\Order;
+use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Enum\OrderStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -160,5 +161,78 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('orders.id = :id')->setParameter('id', $id)
             ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
             ->getQuery()->getOneOrNullResult();
+    }
+
+    /** The restaurant's orders, newest first, optionally filtered by status and order-number search. */
+    public function createForRestaurantQuery(Restaurant $restaurant, ?OrderStatus $status = null, string $search = ''): QueryBuilder
+    {
+        $builder = $this->createQueryBuilder('orders')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->orderBy('orders.placedAt', 'DESC');
+        if (null !== $status) {
+            $builder->andWhere('orders.status = :status')->setParameter('status', $status->value);
+        }
+        if ('' !== $search) {
+            $builder->andWhere('LOWER(orders.orderNumber) LIKE :search')->setParameter('search', '%'.mb_strtolower($search).'%');
+        }
+
+        return $builder;
+    }
+
+    public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?Order
+    {
+        return $this->createQueryBuilder('orders')
+            ->andWhere('orders.id = :id')->setParameter('id', $id)
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->getQuery()->getOneOrNullResult();
+    }
+
+    /** Orders the restaurant received with placedAt in [$start, $end). */
+    public function countPlacedForRestaurantBetween(Restaurant $restaurant, \DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('orders')->select('COUNT(orders.id)')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->andWhere('orders.placedAt >= :start AND orders.placedAt < :end')->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** Total of the restaurant's orders delivered in [$start, $end), as a decimal string. */
+    public function sumDeliveredTotalForRestaurantBetween(Restaurant $restaurant, \DateTimeImmutable $start, \DateTimeImmutable $end): string
+    {
+        return (string) $this->createQueryBuilder('orders')->select('COALESCE(SUM(orders.totalAmount), 0)')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    public function countForRestaurantWithStatus(Restaurant $restaurant, OrderStatus $status): int
+    {
+        return (int) $this->createQueryBuilder('orders')->select('COUNT(orders.id)')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->andWhere('orders.status = :status')->setParameter('status', $status->value)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return list<Order> */
+    public function findRecentForRestaurant(Restaurant $restaurant, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('orders')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->orderBy('orders.placedAt', 'DESC')->setMaxResults($limit)->getQuery()->getResult();
+    }
+
+    /**
+     * The restaurant's orders delivered between $start and $end inclusive.
+     *
+     * @return list<Order>
+     */
+    public function findDeliveredForRestaurantBetween(Restaurant $restaurant, \DateTimeImmutable $start, \DateTimeImmutable $end): array
+    {
+        return $this->createQueryBuilder('orders')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt <= :end')->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getResult();
     }
 }

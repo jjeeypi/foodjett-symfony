@@ -8,6 +8,8 @@ use App\Entity\MenuCategory;
 use App\Entity\MenuItem;
 use App\Entity\MenuItemAddon;
 use App\Entity\MenuItemVariant;
+use App\Repository\MenuCategoryRepository;
+use App\Repository\MenuItemRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
 use App\Service\UploadStorage;
@@ -28,16 +30,15 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly UploadStorage $uploads,
+        private readonly MenuItemRepository $menuItems,
+        private readonly MenuCategoryRepository $menuCategories,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(MenuItem::class)->createQueryBuilder('item')
-            ->innerJoin('item.menuCategory', 'category')->addSelect('category')
-            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->orderBy('category.sortOrder', 'ASC')->addOrderBy('item.name', 'ASC');
+        $query = $this->menuItems->createForRestaurantQuery($this->restaurant());
         if ('' !== ($search = trim((string) $request->query->get('search', '')))) {
             $query->andWhere('LOWER(item.name) LIKE :search')->setParameter('search', '%'.mb_strtolower($search).'%');
         }
@@ -169,11 +170,7 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
 
     private function ownedItem(string $id): MenuItem
     {
-        $item = $this->entityManager->getRepository(MenuItem::class)->createQueryBuilder('item')
-            ->innerJoin('item.menuCategory', 'category')->addSelect('category')
-            ->andWhere('item.id = :id')->setParameter('id', $id)
-            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        $item = $this->menuItems->findOneForRestaurant($id, $this->restaurant());
         if (!$item instanceof MenuItem) {
             throw $this->createNotFoundException('Menu item not found.');
         }
@@ -183,10 +180,7 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
 
     private function ownedCategory(string $id): ?MenuCategory
     {
-        return $this->entityManager->getRepository(MenuCategory::class)->createQueryBuilder('category')
-            ->andWhere('category.id = :id')->setParameter('id', $id)
-            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        return $this->menuCategories->findOneForRestaurant($id, $this->restaurant());
     }
 
     /** @param array<string, mixed> $data

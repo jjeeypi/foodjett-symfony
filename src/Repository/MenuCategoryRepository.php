@@ -3,7 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\MenuCategory;
+use App\Entity\Restaurant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +18,19 @@ class MenuCategoryRepository extends ServiceEntityRepository
         parent::__construct($registry, MenuCategory::class);
     }
 
-//    /**
-//     * @return MenuCategory[] Returns an array of MenuCategory objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('m.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** The restaurant's menu categories in display order. */
+    public function createForRestaurantQuery(Restaurant $restaurant): QueryBuilder
+    {
+        return $this->createQueryBuilder('category')
+            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->orderBy('category.sortOrder', 'ASC')->addOrderBy('category.name', 'ASC');
+    }
 
-//    public function findOneBySomeField($value): ?MenuCategory
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?MenuCategory
+    {
+        return $this->createQueryBuilder('category')
+            ->andWhere('category.id = :id')->setParameter('id', $id)
+            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->getQuery()->getOneOrNullResult();
+    }
 }

@@ -9,6 +9,7 @@ use App\Entity\RestaurantOperatingHour;
 use App\Entity\User;
 use App\Enum\PayoutMethod;
 use App\Enum\RestaurantOperatingStatus;
+use App\Repository\UserRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\UploadStorage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,6 +28,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UploadStorage $uploads,
+        private readonly UserRepository $users,
     ) {
     }
 
@@ -272,10 +274,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
 
     private function phoneExists(string $phone, User $current): bool
     {
-        return null !== $this->entityManager->getRepository(User::class)->createQueryBuilder('account')
-            ->select('account.id')->andWhere('account.phone = :phone')->setParameter('phone', $phone)
-            ->andWhere('account.id != :current')->setParameter('current', $current->getId())
-            ->setMaxResults(1)->getQuery()->getOneOrNullResult();
+        return $this->users->isIdentifierTakenByAnother('phone', $phone, $current);
     }
 
     private function parseTime(mixed $value): ?\DateTimeImmutable

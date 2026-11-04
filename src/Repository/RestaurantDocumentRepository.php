@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -16,28 +17,11 @@ class RestaurantDocumentRepository extends ServiceEntityRepository
         parent::__construct($registry, RestaurantDocument::class);
     }
 
-//    /**
-//     * @return RestaurantDocument[] Returns an array of RestaurantDocument objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?RestaurantDocument
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?RestaurantDocument
+    {
+        return $this->createQueryBuilder('document')
+            ->andWhere('document.id = :id')->setParameter('id', $id)
+            ->andWhere('document.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->getQuery()->getOneOrNullResult();
+    }
 }

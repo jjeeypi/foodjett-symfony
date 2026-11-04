@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Restaurant;
 use App\Entity\RestaurantPayout;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +18,11 @@ class RestaurantPayoutRepository extends ServiceEntityRepository
         parent::__construct($registry, RestaurantPayout::class);
     }
 
-//    /**
-//     * @return RestaurantPayout[] Returns an array of RestaurantPayout objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?RestaurantPayout
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** The restaurant's payouts, latest period first. */
+    public function createForRestaurantQuery(Restaurant $restaurant): QueryBuilder
+    {
+        return $this->createQueryBuilder('payout')
+            ->andWhere('payout.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->orderBy('payout.periodEnd', 'DESC');
+    }
 }

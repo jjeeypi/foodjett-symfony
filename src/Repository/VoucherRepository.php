@@ -2,8 +2,11 @@
 
 namespace App\Repository;
 
+use App\Entity\Restaurant;
 use App\Entity\Voucher;
+use App\Enum\VoucherScope;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +19,21 @@ class VoucherRepository extends ServiceEntityRepository
         parent::__construct($registry, Voucher::class);
     }
 
-//    /**
-//     * @return Voucher[] Returns an array of Voucher objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('v')
-//            ->andWhere('v.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('v.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** The restaurant's own vouchers, newest first. */
+    public function createForRestaurantQuery(Restaurant $restaurant): QueryBuilder
+    {
+        return $this->createQueryBuilder('voucher')
+            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::RESTAURANT->value)
+            ->andWhere('voucher.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->orderBy('voucher.createdAt', 'DESC');
+    }
 
-//    public function findOneBySomeField($value): ?Voucher
-//    {
-//        return $this->createQueryBuilder('v')
-//            ->andWhere('v.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?Voucher
+    {
+        return $this->createQueryBuilder('voucher')
+            ->andWhere('voucher.id = :id')->setParameter('id', $id)
+            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::RESTAURANT->value)
+            ->andWhere('voucher.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->getQuery()->getOneOrNullResult();
+    }
 }

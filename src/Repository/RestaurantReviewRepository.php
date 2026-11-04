@@ -25,4 +25,12 @@ class RestaurantReviewRepository extends ServiceEntityRepository
             ->andWhere('review.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
             ->orderBy('review.createdAt', 'DESC');
     }
+
+    public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?RestaurantReview
+    {
+        return $this->createQueryBuilder('review')
+            ->andWhere('review.id = :id')->setParameter('id', $id)
+            ->andWhere('review.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->getQuery()->getOneOrNullResult();
+    }
 }

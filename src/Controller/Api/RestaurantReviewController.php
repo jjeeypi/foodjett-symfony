@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\RestaurantReview;
+use App\Repository\RestaurantReviewRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
 use Doctrine\ORM\EntityManagerInterface;
@@ -18,16 +19,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your restaurant account is awaiting approval.')]
 final class RestaurantReviewController extends AbstractRestaurantController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ApiPaginator $paginator,
+        private readonly RestaurantReviewRepository $reviews,
+    ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RestaurantReview::class)->createQueryBuilder('review')
-            ->andWhere('review.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->orderBy('review.createdAt', 'DESC');
+        $query = $this->reviews->createForRestaurantQuery($this->restaurant());
 
         return $this->json($this->paginator->paginate($query, $request, $this->serialize(...)));
     }
@@ -35,10 +37,7 @@ final class RestaurantReviewController extends AbstractRestaurantController
     #[Route('/{id}/reply', name: 'reply', methods: ['PATCH'], requirements: ['id' => '\\d+'])]
     public function reply(string $id, Request $request): JsonResponse
     {
-        $review = $this->entityManager->getRepository(RestaurantReview::class)->createQueryBuilder('review')
-            ->andWhere('review.id = :id')->setParameter('id', $id)
-            ->andWhere('review.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        $review = $this->reviews->findOneForRestaurant($id, $this->restaurant());
         if (!$review instanceof RestaurantReview) {
             throw $this->createNotFoundException('Review not found.');
         }
