@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\VoucherScope;
-use App\Enum\VoucherType;
 use App\Repository\VoucherRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: VoucherRepository::class)]
 #[ORM\Table(name: 'vouchers')]
@@ -18,6 +17,28 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'vouchers_restaurant_id_foreign', columns: ['restaurant_id'])]
 class Voucher
 {
+    // Who funds the voucher (SCOPES)
+    public const SCOPE_PLATFORM = 'platform';
+    public const SCOPE_RESTAURANT = 'restaurant';
+
+    /** @var list<string> */
+    public const SCOPES = [
+        self::SCOPE_PLATFORM,
+        self::SCOPE_RESTAURANT,
+    ];
+
+    // How the discount is computed (TYPES)
+    public const TYPE_PERCENTAGE = 'percentage';
+    public const TYPE_FIXED = 'fixed';
+    public const TYPE_FREE_DELIVERY = 'free_delivery';
+
+    /** @var list<string> */
+    public const TYPES = [
+        self::TYPE_PERCENTAGE,
+        self::TYPE_FIXED,
+        self::TYPE_FREE_DELIVERY,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -26,15 +47,17 @@ class Voucher
     #[ORM\Column(length: 255, unique: true)]
     private string $code;
 
-    #[ORM\Column(length: 16, enumType: VoucherScope::class)]
-    private VoucherScope $scope;
+    #[Assert\Choice(choices: Voucher::SCOPES)]
+    #[ORM\Column(length: 16)]
+    private string $scope;
 
     #[ORM\ManyToOne(inversedBy: 'vouchers', targetEntity: Restaurant::class)]
     #[ORM\JoinColumn(name: 'restaurant_id', referencedColumnName: 'id', nullable: true, onDelete: 'RESTRICT')]
     private ?Restaurant $restaurant = null;
 
-    #[ORM\Column(length: 32, enumType: VoucherType::class)]
-    private VoucherType $type;
+    #[Assert\Choice(choices: Voucher::TYPES)]
+    #[ORM\Column(length: 32)]
+    private string $type;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $value = null;
@@ -75,12 +98,12 @@ class Voucher
     public function getId(): ?string { return $this->id; }
     public function getCode(): string { return $this->code; }
     public function setCode(string $code): self { $this->code = $code; return $this; }
-    public function getScope(): VoucherScope { return $this->scope; }
-    public function setScope(VoucherScope $scope): self { $this->scope = $scope; return $this; }
+    public function getScope(): string { return $this->scope; }
+    public function setScope(string $scope): self { $this->scope = $scope; return $this; }
     public function getRestaurant(): ?Restaurant { return $this->restaurant; }
     public function setRestaurant(?Restaurant $restaurant): self { $this->restaurant = $restaurant; return $this; }
-    public function getType(): VoucherType { return $this->type; }
-    public function setType(VoucherType $type): self { $this->type = $type; return $this; }
+    public function getType(): string { return $this->type; }
+    public function setType(string $type): self { $this->type = $type; return $this; }
     public function getValue(): ?string { return $this->value; }
     public function setValue(?string $value): self { $this->value = $value; return $this; }
     public function getMinOrderAmount(): string { return $this->minOrderAmount; }

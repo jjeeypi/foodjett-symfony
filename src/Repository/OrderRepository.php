@@ -6,8 +6,7 @@ use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
-use App\Enum\OrderStatus;
-use App\Enum\RiderPoolEscalationStage;
+use App\Entity\RiderPoolOffer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -39,8 +38,8 @@ class OrderRepository extends ServiceEntityRepository
     public function findActiveIdsForRider(Rider $rider): array
     {
         $terminalStatuses = array_map(
-            static fn (OrderStatus $status): string => $status->value,
-            array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal()),
+            static fn (string $status): string => $status,
+            Order::TERMINAL_STATUSES,
         );
 
         return $this->createQueryBuilder('orders')
@@ -110,8 +109,8 @@ class OrderRepository extends ServiceEntityRepository
     public function riderHasOtherActiveOrder(Rider $rider, int|string|null $excludeOrderId = null): bool
     {
         $terminal = array_map(
-            static fn (OrderStatus $status): string => $status->value,
-            array_values(array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal())),
+            static fn (string $status): string => $status,
+            Order::TERMINAL_STATUSES,
         );
         $builder = $this->createQueryBuilder('active')
             ->select('COUNT(active.id)')
@@ -133,7 +132,7 @@ class OrderRepository extends ServiceEntityRepository
             ->addSelect('offer')
             ->andWhere('orders.status = :status')
             ->andWhere('orders.rider IS NULL')
-            ->setParameter('status', OrderStatus::FINDING_RIDER);
+            ->setParameter('status', Order::STATUS_FINDING_RIDER);
     }
 
     /**
@@ -146,7 +145,7 @@ class OrderRepository extends ServiceEntityRepository
         $query = $this->createQueryBuilder('orders')
             ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
             ->orderBy('orders.placedAt', 'DESC');
-        $terminal = array_map(static fn (OrderStatus $status): string => $status->value, array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal()));
+        $terminal = Order::TERMINAL_STATUSES;
         if ('active' === $filter) {
             $query->andWhere('orders.status NOT IN (:terminal)')->setParameter('terminal', $terminal);
         } elseif ('past' === $filter) {
@@ -165,13 +164,13 @@ class OrderRepository extends ServiceEntityRepository
     }
 
     /** The restaurant's orders, newest first, optionally filtered by status and order-number search. */
-    public function createForRestaurantQuery(Restaurant $restaurant, ?OrderStatus $status = null, string $search = ''): QueryBuilder
+    public function createForRestaurantQuery(Restaurant $restaurant, ?string $status = null, string $search = ''): QueryBuilder
     {
         $builder = $this->createQueryBuilder('orders')
             ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
             ->orderBy('orders.placedAt', 'DESC');
         if (null !== $status) {
-            $builder->andWhere('orders.status = :status')->setParameter('status', $status->value);
+            $builder->andWhere('orders.status = :status')->setParameter('status', $status);
         }
         if ('' !== $search) {
             $builder->andWhere('LOWER(orders.orderNumber) LIKE :search')->setParameter('search', '%'.mb_strtolower($search).'%');
@@ -202,16 +201,16 @@ class OrderRepository extends ServiceEntityRepository
     {
         return (string) $this->createQueryBuilder('orders')->select('COALESCE(SUM(orders.totalAmount), 0)')
             ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.status = :status')->setParameter('status', Order::STATUS_DELIVERED)
             ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')->setParameter('start', $start)->setParameter('end', $end)
             ->getQuery()->getSingleScalarResult();
     }
 
-    public function countForRestaurantWithStatus(Restaurant $restaurant, OrderStatus $status): int
+    public function countForRestaurantWithStatus(Restaurant $restaurant, string $status): int
     {
         return (int) $this->createQueryBuilder('orders')->select('COUNT(orders.id)')
             ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
-            ->andWhere('orders.status = :status')->setParameter('status', $status->value)
+            ->andWhere('orders.status = :status')->setParameter('status', $status)
             ->getQuery()->getSingleScalarResult();
     }
 
@@ -232,7 +231,7 @@ class OrderRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('orders')
             ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.status = :status')->setParameter('status', Order::STATUS_DELIVERED)
             ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt <= :end')->setParameter('start', $start)->setParameter('end', $end)
             ->getQuery()->getResult();
     }
@@ -241,8 +240,8 @@ class OrderRepository extends ServiceEntityRepository
     public function findCurrentForRider(Rider $rider): ?Order
     {
         $terminal = array_map(
-            static fn (OrderStatus $status): string => $status->value,
-            array_values(array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal())),
+            static fn (string $status): string => $status,
+            Order::TERMINAL_STATUSES,
         );
 
         return $this->createQueryBuilder('orders')
@@ -254,7 +253,7 @@ class OrderRepository extends ServiceEntityRepository
 
     /** All orders with their parties loaded, newest first, optionally filtered by status, restaurant and placed date. */
     public function createAdminListQuery(
-        ?OrderStatus $status = null,
+        ?string $status = null,
         string $restaurantId = '',
         ?\DateTimeImmutable $placedFrom = null,
         ?\DateTimeImmutable $placedTo = null,
@@ -267,7 +266,7 @@ class OrderRepository extends ServiceEntityRepository
             ->leftJoin('rider.user', 'riderUser')->addSelect('riderUser')
             ->orderBy('orders.placedAt', 'DESC');
         if (null !== $status) {
-            $query->andWhere('orders.status = :status')->setParameter('status', $status->value);
+            $query->andWhere('orders.status = :status')->setParameter('status', $status);
         }
         if ('' !== $restaurantId) {
             $query->andWhere('restaurant.id = :restaurantId')->setParameter('restaurantId', $restaurantId);
@@ -293,11 +292,11 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('orders.status = :status')
             ->andWhere('orders.rider IS NULL')
             ->andWhere('offer.escalationStage IN (:stages)')
-            ->setParameter('status', OrderStatus::FINDING_RIDER)
+            ->setParameter('status', Order::STATUS_FINDING_RIDER)
             ->setParameter('stages', [
-                RiderPoolEscalationStage::ADMIN_ALERTED->value,
-                RiderPoolEscalationStage::CUSTOMER_NOTIFIED->value,
-                RiderPoolEscalationStage::AUTO_CANCELLED->value,
+                RiderPoolOffer::STAGE_ADMIN_ALERTED,
+                RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED,
+                RiderPoolOffer::STAGE_AUTO_CANCELLED,
             ])
             ->orderBy('orders.riderSearchStartedAt', 'ASC');
     }
@@ -311,7 +310,7 @@ class OrderRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('orders')
             ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.status = :status')->setParameter('status', Order::STATUS_DELIVERED)
             ->andWhere('orders.deliveredAt BETWEEN :startAt AND :endAt')->setParameter('startAt', $startAt)->setParameter('endAt', $endAt)
             ->getQuery()->getResult();
     }
@@ -348,13 +347,13 @@ class OrderRepository extends ServiceEntityRepository
             ->getQuery()->getSingleScalarResult();
     }
 
-    /** @param list<OrderStatus> $statuses */
+    /** @param list<string> $statuses */
     public function countWithStatuses(array $statuses): int
     {
         return (int) $this->createQueryBuilder('orders')
             ->select('COUNT(orders.id)')
             ->andWhere('orders.status IN (:statuses)')
-            ->setParameter('statuses', array_map(static fn (OrderStatus $status): string => $status->value, $statuses))
+            ->setParameter('statuses', array_map(static fn (string $status): string => $status, $statuses))
             ->getQuery()->getSingleScalarResult();
     }
 
@@ -363,7 +362,7 @@ class OrderRepository extends ServiceEntityRepository
     {
         return (int) $this->createQueryBuilder('orders')
             ->select('COUNT(orders.id)')
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.status = :status')->setParameter('status', Order::STATUS_DELIVERED)
             ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')
             ->setParameter('start', $start)->setParameter('end', $end)
             ->getQuery()->getSingleScalarResult();
@@ -374,7 +373,7 @@ class OrderRepository extends ServiceEntityRepository
     {
         return (string) $this->createQueryBuilder('orders')
             ->select('COALESCE(SUM(orders.totalAmount), 0)')
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.status = :status')->setParameter('status', Order::STATUS_DELIVERED)
             ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')
             ->setParameter('start', $start)->setParameter('end', $end)
             ->getQuery()->getSingleScalarResult();

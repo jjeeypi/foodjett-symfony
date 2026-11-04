@@ -7,9 +7,6 @@ namespace App\Tests\Controller\Api;
 use App\Entity\Admin;
 use App\Entity\SupportTicket;
 use App\Entity\User;
-use App\Enum\SupportTicketStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -78,20 +75,20 @@ final class AdminContentControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $adminUser = $this->user('Content Admin', self::ADMIN_EMAIL, '+639190500001', UserRole::ADMIN, $now);
+        $adminUser = $this->user('Content Admin', self::ADMIN_EMAIL, '+639190500001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $customerUser = $this->user('Support Customer', self::CUSTOMER_EMAIL, '+639190500002', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user('Support Customer', self::CUSTOMER_EMAIL, '+639190500002', User::ACCOUNT_CUSTOMER, $now);
         $ticket = (new SupportTicket())->setUser($customerUser)->setSubject('Test support ticket')->setMessage('This is a single-message ticket.')
-            ->setStatus(SupportTicketStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setStatus(SupportTicket::STATUS_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
         foreach ([$adminUser, $admin, $customerUser, $ticket] as $entity) { $entityManager->persist($entity); }
         $entityManager->flush();
         return (string) $ticket->getId();
     }
 
-    private function user(string $name, string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $name, string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function login(): string

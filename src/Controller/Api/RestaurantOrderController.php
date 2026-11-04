@@ -8,9 +8,7 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderItemAddon;
 use App\Entity\OrderStatusHistory;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentActor;
+use App\Entity\Payment;
 use App\Repository\OrderRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\OrderVoter;
@@ -41,7 +39,7 @@ final class RestaurantOrderController extends AbstractRestaurantController
         $statusValue = $request->query->getString('status');
         $status = null;
         if ('' !== $statusValue) {
-            $status = OrderStatus::tryFrom($statusValue);
+            $status = (in_array($statusValue, Order::STATUSES, true) ? $statusValue : null);
             if (null === $status) {
                 return $this->json(['message' => 'Unknown order status filter.'], 422);
             }
@@ -80,8 +78,8 @@ final class RestaurantOrderController extends AbstractRestaurantController
         try {
             $order = $this->transitions->transitionSequence(
                 $order,
-                [OrderStatus::ACCEPTED, OrderStatus::PREPARING, OrderStatus::FINDING_RIDER],
-                OrderActor::RESTAURANT,
+                [Order::STATUS_ACCEPTED, Order::STATUS_PREPARING, Order::STATUS_FINDING_RIDER],
+                Order::ACTOR_RESTAURANT,
                 ['Order accepted', 'Food preparation started', 'Rider search started in parallel with preparation'],
                 static function (Order $locked, \DateTimeImmutable $now) use ($minutes): void {
                     $locked->setAcceptedAt($now)->setEstimatedPrepMinutes($minutes)
@@ -112,13 +110,13 @@ final class RestaurantOrderController extends AbstractRestaurantController
         try {
             $order = $this->transitions->transition(
                 $order,
-                OrderStatus::REJECTED_BY_RESTAURANT,
-                OrderActor::RESTAURANT,
+                Order::STATUS_REJECTED_BY_RESTAURANT,
+                Order::ACTOR_RESTAURANT,
                 $reason,
                 function (Order $locked, \DateTimeImmutable $now) use ($reason): void {
                     $locked->setRejectionReason($reason);
                     if (null !== $locked->getPayment()) {
-                        $this->payments->cancelOrRefund($locked->getPayment(), PaymentActor::SYSTEM, 'Restaurant rejected order: '.$reason, $now);
+                        $this->payments->cancelOrRefund($locked->getPayment(), Payment::ACTOR_SYSTEM, 'Restaurant rejected order: '.$reason, $now);
                     }
                 },
             );
@@ -142,13 +140,13 @@ final class RestaurantOrderController extends AbstractRestaurantController
         if (false === $minutes || $minutes < 1 || $minutes > 120) {
             return $this->json(['message' => 'minutes must be between 1 and 120.'], 422);
         }
-        if (null === $order->getEstimatedReadyAt() || $order->getStatus()->isTerminal()) {
+        if (null === $order->getEstimatedReadyAt() || Order::isTerminalStatus($order->getStatus())) {
             return $this->json(['message' => 'Preparation time cannot be extended for this order.'], 409);
         }
 
         $order = $this->transitions->recordUpdate(
             $order,
-            OrderActor::RESTAURANT,
+            Order::ACTOR_RESTAURANT,
             'prep_time_extended',
             sprintf('Preparation time extended by %d minutes.', $minutes),
             static function (Order $locked) use ($minutes): void {
@@ -165,22 +163,22 @@ final class RestaurantOrderController extends AbstractRestaurantController
     {
         $order = $this->ownedOrder($id);
         $this->denyAccessUnlessGranted(OrderVoter::UPDATE_AS_RESTAURANT, $order);
-        if (null !== $order->getReadyAt() || $order->getStatus()->isTerminal()) {
+        if (null !== $order->getReadyAt() || Order::isTerminalStatus($order->getStatus())) {
             return $this->json(['message' => 'This order cannot be marked ready.'], 409);
         }
-        if (!in_array($order->getStatus(), [OrderStatus::FINDING_RIDER, OrderStatus::RIDER_ASSIGNED, OrderStatus::AT_RESTAURANT], true)) {
+        if (!in_array($order->getStatus(), [Order::STATUS_FINDING_RIDER, Order::STATUS_RIDER_ASSIGNED, Order::STATUS_AT_RESTAURANT], true)) {
             return $this->json(['message' => 'Food can only be marked ready after restaurant acceptance.'], 409);
         }
 
         $order = $this->transitions->recordUpdate(
             $order,
-            OrderActor::RESTAURANT,
+            Order::ACTOR_RESTAURANT,
             'food_ready',
             'Restaurant marked the food ready for pickup.',
             static function (Order $locked, \DateTimeImmutable $now): void {
                 $locked->setReadyAt($now);
             },
-            OrderStatus::READY,
+            Order::STATUS_READY,
         );
 
         return $this->json(['order' => $this->serializeSummary($order)]);
@@ -200,9 +198,9 @@ final class RestaurantOrderController extends AbstractRestaurantController
     private function serializeSummary(Order $order): array
     {
         return [
-            'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus()->value,
+            'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus(),
             'customer_name' => $order->getCustomer()->getUser()->getName(), 'total_amount' => $order->getTotalAmount(),
-            'payment_method' => $order->getPaymentMethod()->value, 'estimated_prep_minutes' => $order->getEstimatedPrepMinutes(),
+            'payment_method' => $order->getPaymentMethod(), 'estimated_prep_minutes' => $order->getEstimatedPrepMinutes(),
             'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
             'ready_at' => $order->getReadyAt()?->format(\DateTimeInterface::ATOM),
             'rider_search_started_at' => $order->getRiderSearchStartedAt()?->format(\DateTimeInterface::ATOM),
@@ -234,11 +232,11 @@ final class RestaurantOrderController extends AbstractRestaurantController
             ],
             'items' => array_map($this->serializeItem(...), $order->getItems()->toArray()),
             'status_history' => array_map(static fn (OrderStatusHistory $entry): array => [
-                'id' => $entry->getId(), 'status' => $entry->getStatus(), 'changed_by' => $entry->getChangedBy()->value,
+                'id' => $entry->getId(), 'status' => $entry->getStatus(), 'changed_by' => $entry->getChangedBy(),
                 'note' => $entry->getNote(), 'created_at' => $entry->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ], $history),
             'payment' => null === $payment ? null : [
-                'id' => $payment->getId(), 'method' => $payment->getMethod()->value, 'status' => $payment->getStatus()->value,
+                'id' => $payment->getId(), 'method' => $payment->getMethod(), 'status' => $payment->getStatus(),
                 'amount' => $payment->getAmount(), 'refunded_amount' => $payment->getRefundedAmount(),
                 'transaction_reference' => $payment->getTransactionReference(), 'paid_at' => $payment->getPaidAt()?->format(\DateTimeInterface::ATOM),
             ],

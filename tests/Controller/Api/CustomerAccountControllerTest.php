@@ -7,8 +7,6 @@ namespace App\Tests\Controller\Api;
 use App\Entity\Customer;
 use App\Entity\SupportTicket;
 use App\Entity\User;
-use App\Enum\SupportTicketStatus;
-use App\Enum\UserStatus;
 
 final class CustomerAccountControllerTest extends CustomerApiTestCase
 {
@@ -53,7 +51,7 @@ final class CustomerAccountControllerTest extends CustomerApiTestCase
     {
         $now = new \DateTimeImmutable('-1 hour');
         $foreign = (new SupportTicket())->setUser($this->otherCustomerUser)->setSubject('Foreign ticket')->setMessage('Not visible')
-            ->setStatus(SupportTicketStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setStatus(SupportTicket::STATUS_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($foreign);
         $this->entityManager->flush();
 
@@ -87,7 +85,7 @@ final class CustomerAccountControllerTest extends CustomerApiTestCase
         self::assertNull($user->getEmail());
         self::assertNull($user->getPhone());
         self::assertNull($user->getAvatarPath());
-        self::assertSame(UserStatus::BANNED, $user->getStatus());
+        self::assertSame(User::STATUS_BANNED, $user->getStatus());
         self::assertNotNull($this->entityManager->find(Customer::class, $customerId));
         self::assertNotNull($this->entityManager->find(\App\Entity\Order::class, $orderId));
     }

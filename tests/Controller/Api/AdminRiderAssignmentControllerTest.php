@@ -8,19 +8,11 @@ use App\Entity\Admin;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\RiderPoolOffer;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\RiderPoolEscalationStage;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use App\Repository\DeliveryZoneRepository;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
@@ -76,7 +68,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->payload()['order'] ?? [];
-        self::assertSame(OrderStatus::RIDER_ASSIGNED->value, $payload['status'] ?? null);
+        self::assertSame(Order::STATUS_RIDER_ASSIGNED, $payload['status'] ?? null);
         self::assertSame($this->riderId, $payload['rider_id'] ?? null);
         self::assertTrue($payload['admin_assigned'] ?? false);
 
@@ -89,7 +81,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
             number_format(round(DeliveryZoneRepository::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
             $order->getRiderPoolOffer()?->getAcceptedPickupDistanceKm(),
         );
-        self::assertSame(RiderAvailabilityStatus::BUSY, $order->getRider()?->getAvailabilityStatus());
+        self::assertSame(Rider::AVAILABILITY_BUSY, $order->getRider()?->getAvailabilityStatus());
         self::assertNotNull($order->getRiderAssignedAt());
         self::assertMatchesRegularExpression('/^\d{4}$/', (string) $order->getPickupCode());
         $poolUpdates = array_values(array_filter(
@@ -106,21 +98,21 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $adminUser = $this->user(self::ADMIN_EMAIL, '+639186500001', UserRole::ADMIN, $now);
+        $adminUser = $this->user(self::ADMIN_EMAIL, '+639186500001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $riderUser = $this->user(self::RIDER_EMAIL, '+639186500002', UserRole::RIDER, $now);
+        $riderUser = $this->user(self::RIDER_EMAIL, '+639186500002', User::ACCOUNT_RIDER, $now);
         $rider = (new Rider())
             ->setUser($riderUser)
-            ->setVehicleType(VehicleType::MOTORCYCLE)
+            ->setVehicleType(Rider::VEHICLE_MOTORCYCLE)
             ->setPlateNumber('ADMIN-POOL')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE)
             ->setCurrentLatitude('14.5996000')
             ->setCurrentLongitude('120.9843000')
             ->setLastLocationAt($now)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186500003', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186500003', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Admin Pool Restaurant')
@@ -128,11 +120,11 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
             ->setAddress('Admin pool pickup')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186500004', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186500004', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -147,11 +139,11 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
             ->setCustomerAddress($address)
-            ->setStatus(OrderStatus::FINDING_RIDER)
+            ->setStatus(Order::STATUS_FINDING_RIDER)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
-            ->setPaymentMethod(PaymentMethod::CARD)
+            ->setPaymentMethod(Payment::METHOD_CARD)
             ->setRiderSearchStartedAt($now->modify('-7 minutes'))
             ->setPlacedAt($now->modify('-8 minutes'))
             ->setCreatedAt($now)
@@ -160,7 +152,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
             ->setOrder($order)
             ->setSearchRadiusKm('8.0')
             ->setIncentiveAmount('20.00')
-            ->setEscalationStage(RiderPoolEscalationStage::ADMIN_ALERTED)
+            ->setEscalationStage(RiderPoolOffer::STAGE_ADMIN_ALERTED)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $order->setRiderPoolOffer($offer);
@@ -172,7 +164,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
         return [(string) $order->getId(), (string) $rider->getId()];
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Admin Pool Test User')
@@ -180,7 +172,7 @@ final class AdminRiderAssignmentControllerTest extends WebTestCase
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

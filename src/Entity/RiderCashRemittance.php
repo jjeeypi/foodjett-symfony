@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\RemittanceStatus;
 use App\Repository\RiderCashRemittanceRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RiderCashRemittanceRepository::class)]
 #[ORM\Table(name: 'rider_cash_remittances')]
@@ -15,6 +15,16 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'rider_cash_remittances_confirmed_by_admin_id_foreign', columns: ['confirmed_by_admin_id'])]
 class RiderCashRemittance
 {
+    // Cash remittance status (STATUSES)
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_CONFIRMED = 'confirmed';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -30,8 +40,9 @@ class RiderCashRemittance
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $referenceNote = null;
 
-    #[ORM\Column(length: 16, enumType: RemittanceStatus::class, options: ['default' => 'pending'])]
-    private RemittanceStatus $status = RemittanceStatus::PENDING;
+    #[Assert\Choice(choices: RiderCashRemittance::STATUSES)]
+    #[ORM\Column(length: 16, options: ['default' => 'pending'])]
+    private string $status = self::STATUS_PENDING;
 
     #[ORM\ManyToOne(inversedBy: 'confirmedCashRemittances', targetEntity: Admin::class)]
     #[ORM\JoinColumn(name: 'confirmed_by_admin_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
@@ -53,8 +64,8 @@ class RiderCashRemittance
     public function setAmount(string $amount): self { $this->amount = $amount; return $this; }
     public function getReferenceNote(): ?string { return $this->referenceNote; }
     public function setReferenceNote(?string $note): self { $this->referenceNote = $note; return $this; }
-    public function getStatus(): RemittanceStatus { return $this->status; }
-    public function setStatus(RemittanceStatus $status): self { $this->status = $status; return $this; }
+    public function getStatus(): string { return $this->status; }
+    public function setStatus(string $status): self { $this->status = $status; return $this; }
     public function getConfirmedByAdmin(): ?Admin { return $this->confirmedByAdmin; }
     public function setConfirmedByAdmin(?Admin $admin): self { $this->confirmedByAdmin = $admin; return $this; }
     public function getRemittedAt(): ?\DateTimeImmutable { return $this->remittedAt; }

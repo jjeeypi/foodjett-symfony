@@ -12,17 +12,11 @@ use App\Entity\MenuItem;
 use App\Entity\MenuItemAddon;
 use App\Entity\MenuItemVariant;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantOperatingHour;
 use App\Entity\User;
 use App\Entity\Voucher;
-use App\Enum\ApprovalStatus;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VoucherScope;
-use App\Enum\VoucherType;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -71,7 +65,7 @@ final class CheckoutControllerTest extends WebTestCase
         self::assertCount(1, $order->getItems()->first()->getAddons());
         self::assertCount(1, $order->getStatusHistory());
         self::assertNotNull($order->getVoucherRedemption());
-        self::assertSame(PaymentStatus::PENDING, $order->getPayment()?->getStatus());
+        self::assertSame(Payment::STATUS_PENDING, $order->getPayment()?->getStatus());
         self::assertNull($order->getPayment()?->getTransactionReference());
 
         $updates = self::getContainer()->get(RecordingMercureHub::class)->updates();
@@ -126,7 +120,7 @@ final class CheckoutControllerTest extends WebTestCase
         self::assertSame($firstOrderId, $second['order']['id'] ?? null);
 
         $order = $this->order((string) $firstOrderId);
-        self::assertSame(PaymentStatus::PAID, $order->getPayment()?->getStatus());
+        self::assertSame(Payment::STATUS_PAID, $order->getPayment()?->getStatus());
         self::assertNotNull($order->getPayment()?->getPaidAt());
         self::assertStringStartsWith('SIMULATED-', (string) $order->getPayment()?->getTransactionReference());
 
@@ -172,7 +166,7 @@ final class CheckoutControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $restaurant = $entityManager->find(Restaurant::class, $this->fixture['restaurant_id']);
         self::assertInstanceOf(Restaurant::class, $restaurant);
-        $restaurant->setOperatingStatus(RestaurantOperatingStatus::CLOSED);
+        $restaurant->setOperatingStatus(Restaurant::OPERATING_CLOSED);
         $entityManager->flush();
 
         $response = $this->checkout('cod', $this->uuid());
@@ -278,7 +272,7 @@ final class CheckoutControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186100001', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186100001', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Checkout Test Restaurant')
@@ -288,8 +282,8 @@ final class CheckoutControllerTest extends WebTestCase
             ->setLongitude('120.9842000')
             ->setMinOrderAmount('100.00')
             ->setCommissionRate('15.00')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $hours = (new RestaurantOperatingHour())
@@ -327,7 +321,7 @@ final class CheckoutControllerTest extends WebTestCase
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
 
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186100002', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186100002', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -345,8 +339,8 @@ final class CheckoutControllerTest extends WebTestCase
             ->setUpdatedAt($now);
         $voucher = (new Voucher())
             ->setCode(self::VOUCHER_CODE)
-            ->setScope(VoucherScope::PLATFORM)
-            ->setType(VoucherType::FIXED)
+            ->setScope(Voucher::SCOPE_PLATFORM)
+            ->setType(Voucher::TYPE_FIXED)
             ->setValue('10.00')
             ->setMinOrderAmount('100.00')
             ->setUsageLimitTotal(10)
@@ -372,7 +366,7 @@ final class CheckoutControllerTest extends WebTestCase
         ];
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Checkout Test User')
@@ -380,7 +374,7 @@ final class CheckoutControllerTest extends WebTestCase
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

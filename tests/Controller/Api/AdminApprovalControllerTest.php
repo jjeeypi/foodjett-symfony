@@ -11,15 +11,6 @@ use App\Entity\RestaurantDocument;
 use App\Entity\Rider;
 use App\Entity\RiderDocument;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\DocumentStatus;
-use App\Enum\RestaurantDocumentType;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\RiderDocumentType;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -152,8 +143,8 @@ final class AdminApprovalControllerTest extends WebTestCase
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->clear();
-        self::assertSame(ApprovalStatus::PENDING, $entityManager->find(Restaurant::class, $this->restaurantId)?->getApprovalStatus());
-        self::assertSame(ApprovalStatus::PENDING, $entityManager->find(Rider::class, $this->riderId)?->getApprovalStatus());
+        self::assertSame(Restaurant::APPROVAL_PENDING, $entityManager->find(Restaurant::class, $this->restaurantId)?->getApprovalStatus());
+        self::assertSame(Rider::APPROVAL_PENDING, $entityManager->find(Rider::class, $this->riderId)?->getApprovalStatus());
     }
 
     /** @return array{string, string, string, string} */
@@ -161,22 +152,22 @@ final class AdminApprovalControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $adminUser = $this->user('Approval Admin', self::ADMIN_EMAIL, '+639190100001', UserRole::ADMIN, $now);
+        $adminUser = $this->user('Approval Admin', self::ADMIN_EMAIL, '+639190100001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $restaurantUser = $this->user('Restaurant Owner', self::RESTAURANT_EMAIL, '+639190100002', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user('Restaurant Owner', self::RESTAURANT_EMAIL, '+639190100002', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)->setName('Approval Restaurant')->setSlug('approval-restaurant')
             ->setCuisineType('Filipino')->setAddress('Approval Street')->setLatitude('14.5995000')->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::PENDING)->setOperatingStatus(RestaurantOperatingStatus::CLOSED)
+            ->setApprovalStatus(Restaurant::APPROVAL_PENDING)->setOperatingStatus(Restaurant::OPERATING_CLOSED)
             ->setCreatedAt($now)->setUpdatedAt($now);
-        $restaurantDocument = (new RestaurantDocument())->setRestaurant($restaurant)->setType(RestaurantDocumentType::BUSINESS_PERMIT)
-            ->setFilePath('documents/test-permit.pdf')->setStatus(DocumentStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
-        $riderUser = $this->user('Approval Rider', self::RIDER_EMAIL, '+639190100003', UserRole::RIDER, $now);
-        $rider = (new Rider())->setUser($riderUser)->setVehicleType(VehicleType::MOTORCYCLE)->setPlateNumber('TEST-APPROVAL')
-            ->setApprovalStatus(ApprovalStatus::PENDING)->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+        $restaurantDocument = (new RestaurantDocument())->setRestaurant($restaurant)->setType(RestaurantDocument::TYPE_BUSINESS_PERMIT)
+            ->setFilePath('documents/test-permit.pdf')->setStatus(RestaurantDocument::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+        $riderUser = $this->user('Approval Rider', self::RIDER_EMAIL, '+639190100003', User::ACCOUNT_RIDER, $now);
+        $rider = (new Rider())->setUser($riderUser)->setVehicleType(Rider::VEHICLE_MOTORCYCLE)->setPlateNumber('TEST-APPROVAL')
+            ->setApprovalStatus(Rider::APPROVAL_PENDING)->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)
             ->setCreatedAt($now)->setUpdatedAt($now);
-        $riderDocument = (new RiderDocument())->setRider($rider)->setType(RiderDocumentType::DRIVERS_LICENSE)
-            ->setFilePath('documents/test-license.pdf')->setStatus(DocumentStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+        $riderDocument = (new RiderDocument())->setRider($rider)->setType(RiderDocument::TYPE_DRIVERS_LICENSE)
+            ->setFilePath('documents/test-license.pdf')->setStatus(RestaurantDocument::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
         foreach ([$adminUser, $admin, $restaurantUser, $restaurant, $restaurantDocument, $riderUser, $rider, $riderDocument] as $entity) {
             $entityManager->persist($entity);
         }
@@ -185,10 +176,10 @@ final class AdminApprovalControllerTest extends WebTestCase
         return [(string) $restaurant->getId(), (string) $restaurantDocument->getId(), (string) $rider->getId(), (string) $riderDocument->getId()];
     }
 
-    private function user(string $name, string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $name, string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))->setRole($role)->setStatus(UserStatus::ACTIVE)
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))->setRole($role)->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }
 

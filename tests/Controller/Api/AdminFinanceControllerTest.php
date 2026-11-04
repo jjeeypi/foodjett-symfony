@@ -14,16 +14,6 @@ use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
 use App\Entity\RiderEarning;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RemittanceStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -123,29 +113,29 @@ final class AdminFinanceControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $adminUser = $this->user('Finance Admin', self::ADMIN_EMAIL, '+639190300001', UserRole::ADMIN, $now);
+        $adminUser = $this->user('Finance Admin', self::ADMIN_EMAIL, '+639190300001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $restaurantUser = $this->user('Finance Owner', self::RESTAURANT_EMAIL, '+639190300002', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user('Finance Owner', self::RESTAURANT_EMAIL, '+639190300002', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())->setUser($restaurantUser)->setName('Finance Restaurant')->setSlug('finance-restaurant')
             ->setAddress('Finance Street')->setLatitude('14.5995000')->setLongitude('120.9842000')->setCommissionRate('15.00')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setOperatingStatus(RestaurantOperatingStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
-        $riderUser = $this->user('Finance Rider', self::RIDER_EMAIL, '+639190300003', UserRole::RIDER, $now);
-        $rider = (new Rider())->setUser($riderUser)->setVehicleType(VehicleType::MOTORCYCLE)->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE)->setCashOnHand('500.00')->setCreatedAt($now)->setUpdatedAt($now);
-        $customerUser = $this->user('Finance Customer', self::CUSTOMER_EMAIL, '+639190300004', UserRole::CUSTOMER, $now);
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)->setOperatingStatus(Restaurant::OPERATING_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+        $riderUser = $this->user('Finance Rider', self::RIDER_EMAIL, '+639190300003', User::ACCOUNT_RIDER, $now);
+        $rider = (new Rider())->setUser($riderUser)->setVehicleType(Rider::VEHICLE_MOTORCYCLE)->setApprovalStatus(Rider::APPROVAL_APPROVED)
+            ->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE)->setCashOnHand('500.00')->setCreatedAt($now)->setUpdatedAt($now);
+        $customerUser = $this->user('Finance Customer', self::CUSTOMER_EMAIL, '+639190300004', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())->setCustomer($customer)->setLabel('Finance Address')->setAddressLine('Finance Delivery')
             ->setLatitude('14.6000000')->setLongitude('120.9850000')->setCreatedAt($now)->setUpdatedAt($now);
         $order = (new Order())->setOrderNumber('ADMIN-FINANCE-ORDER')->setCustomer($customer)->setRestaurant($restaurant)->setCustomerAddress($address)->setRider($rider)
-            ->setStatus(OrderStatus::DELIVERED)->setSubtotal('100.00')->setDeliveryFee('15.00')->setTotalAmount('115.00')->setCommissionAmount('15.00')
-            ->setPaymentMethod(PaymentMethod::CARD)->setPlacedAt($now->modify('-1 hour'))->setDeliveredAt($now)->setCreatedAt($now)->setUpdatedAt($now);
-        $payment = (new Payment())->setOrder($order)->setMethod(PaymentMethod::CARD)->setStatus(PaymentStatus::PAID)->setAmount('115.00')
+            ->setStatus(Order::STATUS_DELIVERED)->setSubtotal('100.00')->setDeliveryFee('15.00')->setTotalAmount('115.00')->setCommissionAmount('15.00')
+            ->setPaymentMethod(Payment::METHOD_CARD)->setPlacedAt($now->modify('-1 hour'))->setDeliveredAt($now)->setCreatedAt($now)->setUpdatedAt($now);
+        $payment = (new Payment())->setOrder($order)->setMethod(Payment::METHOD_CARD)->setStatus(Payment::STATUS_PAID)->setAmount('115.00')
             ->setTransactionReference('SIMULATED-FINANCE')->setPaidAt($now)->setCreatedAt($now)->setUpdatedAt($now);
         $order->setPayment($payment);
         $earning = (new RiderEarning())->setRider($rider)->setOrder($order)->setBasePay('40.00')->setDistancePay('25.00')
             ->setWaitingPay('0.00')->setIncentivePay('10.00')->setTipAmount('0.00')->setTotalEarned('75.00')->setCreatedAt($now)->setUpdatedAt($now);
         $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount('200.00')->setReferenceNote('Deposit slip')
-            ->setStatus(RemittanceStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setStatus(RiderCashRemittance::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
         foreach ([$adminUser, $admin, $restaurantUser, $restaurant, $riderUser, $rider, $customerUser, $customer, $address, $order, $payment, $earning, $remittance] as $entity) {
             $entityManager->persist($entity);
         }
@@ -153,10 +143,10 @@ final class AdminFinanceControllerTest extends WebTestCase
         return [(string) $payment->getId(), (string) $remittance->getId()];
     }
 
-    private function user(string $name, string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $name, string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function login(): string

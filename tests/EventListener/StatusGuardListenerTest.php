@@ -8,15 +8,6 @@ use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentActor;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -50,7 +41,7 @@ class StatusGuardListenerTest extends KernelTestCase
     {
         $order = $this->createOrder();
 
-        $order->setStatus(OrderStatus::DELIVERED);
+        $order->setStatus(Order::STATUS_DELIVERED);
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('outside OrderTransitionService');
@@ -62,7 +53,7 @@ class StatusGuardListenerTest extends KernelTestCase
         $payment = $this->createOrder()->getPayment();
         self::assertInstanceOf(Payment::class, $payment);
 
-        $payment->setStatus(PaymentStatus::PAID);
+        $payment->setStatus(Payment::STATUS_PAID);
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('outside PaymentTransitionService');
@@ -76,24 +67,24 @@ class StatusGuardListenerTest extends KernelTestCase
         self::assertInstanceOf(Payment::class, $payment);
 
         $order = self::getContainer()->get(OrderTransitionService::class)
-            ->transition($order, OrderStatus::ACCEPTED, OrderActor::RESTAURANT);
+            ->transition($order, Order::STATUS_ACCEPTED, Order::ACTOR_RESTAURANT);
         self::getContainer()->get(PaymentTransitionService::class)
-            ->markPaid($payment, PaymentActor::ADMIN, 'Collected.', new \DateTimeImmutable());
+            ->markPaid($payment, Payment::ACTOR_ADMIN, 'Collected.', new \DateTimeImmutable());
         $this->entityManager->flush();
 
         $this->entityManager->clear();
         $reloaded = $this->entityManager->find(Order::class, $order->getId());
-        self::assertSame(OrderStatus::ACCEPTED, $reloaded?->getStatus());
-        self::assertSame(PaymentStatus::PAID, $reloaded?->getPayment()?->getStatus());
+        self::assertSame(Order::STATUS_ACCEPTED, $reloaded?->getStatus());
+        self::assertSame(Payment::STATUS_PAID, $reloaded?->getPayment()?->getStatus());
     }
 
     public function testAuthorizationCoversOnlyTheStatusTheServiceSet(): void
     {
         $order = self::getContainer()->get(OrderTransitionService::class)
-            ->transition($this->createOrder(), OrderStatus::ACCEPTED, OrderActor::RESTAURANT);
+            ->transition($this->createOrder(), Order::STATUS_ACCEPTED, Order::ACTOR_RESTAURANT);
 
         // The ACCEPTED authorization was used by the service's own flush; a later direct write is still rejected.
-        $order->setStatus(OrderStatus::PREPARING);
+        $order->setStatus(Order::STATUS_PREPARING);
 
         $this->expectException(\LogicException::class);
         $this->entityManager->flush();
@@ -103,7 +94,7 @@ class StatusGuardListenerTest extends KernelTestCase
     {
         $now = new \DateTimeImmutable();
         $suffix = bin2hex(random_bytes(4));
-        $restaurantUser = $this->user("guard-restaurant-$suffix@foodjett.test", UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user("guard-restaurant-$suffix@foodjett.test", User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Guard Kitchen')
@@ -111,11 +102,11 @@ class StatusGuardListenerTest extends KernelTestCase
             ->setAddress('Restaurant address')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $customerUser = $this->user("guard-customer-$suffix@foodjett.test", UserRole::CUSTOMER, $now);
+        $customerUser = $this->user("guard-customer-$suffix@foodjett.test", User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -130,18 +121,18 @@ class StatusGuardListenerTest extends KernelTestCase
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
             ->setCustomerAddress($address)
-            ->setStatus(OrderStatus::PLACED)
+            ->setStatus(Order::STATUS_PLACED)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
-            ->setPaymentMethod(PaymentMethod::COD)
+            ->setPaymentMethod(Payment::METHOD_COD)
             ->setPlacedAt($now)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $payment = (new Payment())
             ->setOrder($order)
-            ->setMethod(PaymentMethod::COD)
-            ->setStatus(PaymentStatus::PENDING)
+            ->setMethod(Payment::METHOD_COD)
+            ->setStatus(Payment::STATUS_PENDING)
             ->setAmount('135.00')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
@@ -155,14 +146,14 @@ class StatusGuardListenerTest extends KernelTestCase
         return $order;
     }
 
-    private function user(string $email, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Guard Test')
             ->setEmail($email)
             ->setPassword('not-used')
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

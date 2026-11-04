@@ -2,10 +2,9 @@
 
 namespace App\MessageHandler;
 
+use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Order;
-use App\Enum\ConversationType;
-use App\Enum\OrderStatus;
 use App\Message\ConversationMessageSent;
 use App\Message\OrderStatusChanged;
 use App\Repository\ConversationRepository;
@@ -44,8 +43,8 @@ final class OrderStatusChangedHandler
     private function openConversation(Order $order, OrderStatusChanged $message): void
     {
         $type = match ($message->currentStatus) {
-            OrderStatus::ACCEPTED => ConversationType::CUSTOMER_RESTAURANT,
-            OrderStatus::RIDER_ASSIGNED => ConversationType::CUSTOMER_RIDER,
+            Order::STATUS_ACCEPTED => Conversation::TYPE_CUSTOMER_RESTAURANT,
+            Order::STATUS_RIDER_ASSIGNED => Conversation::TYPE_CUSTOMER_RIDER,
             default => null,
         };
         if (null === $type) {
@@ -55,7 +54,7 @@ final class OrderStatusChangedHandler
         $conversation = $this->conversations->forOrder($order, $type, $message->changedAt);
         $greeting = null;
 
-        if (ConversationType::CUSTOMER_RESTAURANT === $type && $conversation->getMessages()->isEmpty()) {
+        if (Conversation::TYPE_CUSTOMER_RESTAURANT === $type && $conversation->getMessages()->isEmpty()) {
             $restaurant = $order->getRestaurant();
             $greeting = (new Message())
                 ->setConversation($conversation)
@@ -94,16 +93,16 @@ final class OrderStatusChangedHandler
                 'event' => 'order.status_changed',
                 'order_id' => $message->orderId,
                 'order_number' => $order->getOrderNumber(),
-                'previous_status' => $message->previousStatus?->value,
-                'status' => $message->currentStatus->value,
-                'changed_by' => $message->changedBy->value,
+                'previous_status' => $message->previousStatus,
+                'status' => $message->currentStatus,
+                'changed_by' => $message->changedBy,
                 'note' => $message->note,
                 'changed_at' => $message->changedAt->format(\DateTimeInterface::ATOM),
                 'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
                 'rider' => null === $rider ? null : [
                     'id' => (string) $rider->getId(),
                     'name' => $rider->getUser()->getName(),
-                    'vehicle_type' => $rider->getVehicleType()->value,
+                    'vehicle_type' => $rider->getVehicleType(),
                 ],
             ], JSON_THROW_ON_ERROR),
             true,

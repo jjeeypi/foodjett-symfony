@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\Restaurant;
 use App\Entity\RestaurantPayout;
-use App\Enum\PayoutStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -28,13 +27,13 @@ class RestaurantPayoutRepository extends ServiceEntityRepository
     }
 
     /** Every restaurant payout for the admin list, latest period first, optionally filtered. */
-    public function createAdminListQuery(?PayoutStatus $status = null, string $restaurantId = ''): QueryBuilder
+    public function createAdminListQuery(?string $status = null, string $restaurantId = ''): QueryBuilder
     {
         $query = $this->createQueryBuilder('payout')
             ->innerJoin('payout.restaurant', 'restaurant')->addSelect('restaurant')
             ->orderBy('payout.periodEnd', 'DESC')->addOrderBy('payout.id', 'DESC');
         if (null !== $status) {
-            $query->andWhere('payout.status = :status')->setParameter('status', $status->value);
+            $query->andWhere('payout.status = :status')->setParameter('status', $status);
         }
         if ('' !== $restaurantId) {
             $query->andWhere('restaurant.id = :restaurantId')->setParameter('restaurantId', $restaurantId);

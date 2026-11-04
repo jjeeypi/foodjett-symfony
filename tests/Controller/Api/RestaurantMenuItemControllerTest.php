@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api;
 
 use App\Entity\MenuItem;
+use App\Entity\Order;
 use App\Entity\OrderItem;
-use App\Enum\OrderStatus;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class RestaurantMenuItemControllerTest extends RestaurantApiTestCase
@@ -57,7 +57,7 @@ final class RestaurantMenuItemControllerTest extends RestaurantApiTestCase
     {
         $category = $this->createCategory($this->restaurant, 'Historical');
         $item = $this->createItem($category, 'Historic Meal');
-        $order = $this->createOrder($this->restaurant, OrderStatus::DELIVERED, deliveredAt: new \DateTimeImmutable());
+        $order = $this->createOrder($this->restaurant, Order::STATUS_DELIVERED, deliveredAt: new \DateTimeImmutable());
         $now = new \DateTimeImmutable();
         $orderItem = (new OrderItem())->setOrder($order)->setMenuItem($item)->setQuantity(1)->setUnitPrice('99.00')
             ->setCreatedAt($now)->setUpdatedAt($now);

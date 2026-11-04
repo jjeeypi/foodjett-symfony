@@ -50,7 +50,7 @@ final class RestaurantEarningsController extends AbstractRestaurantController
             'id' => $payout->getId(), 'period_start' => $payout->getPeriodStart()->format('Y-m-d'),
             'period_end' => $payout->getPeriodEnd()->format('Y-m-d'), 'gross_sales' => $payout->getGrossSales(),
             'commission_deducted' => $payout->getCommissionDeducted(), 'net_amount' => $payout->getNetAmount(),
-            'status' => $payout->getStatus()->value, 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM),
+            'status' => $payout->getStatus(), 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM),
         ]));
     }
 

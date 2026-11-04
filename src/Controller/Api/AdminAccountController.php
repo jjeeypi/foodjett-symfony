@@ -6,8 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\Admin;
 use App\Entity\User;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use App\Repository\AdminRepository;
 use App\Repository\AuditLogRepository;
 use App\Service\ApiPaginator;
@@ -55,14 +53,14 @@ final class AdminAccountController extends AbstractController
         if (null !== $this->entityManager->getRepository(User::class)->findOneBy(['phone' => $phone])) { return $this->json(['message' => 'A user with that phone already exists.'], 409); }
         $actor = $this->adminUser();
         $now = new \DateTimeImmutable();
-        $user = (new User())->setName($name)->setEmail($email)->setPhone($phone)->setRole(UserRole::ADMIN)->setStatus(UserStatus::ACTIVE)
+        $user = (new User())->setName($name)->setEmail($email)->setPhone($phone)->setRole(User::ACCOUNT_ADMIN)->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)->setUpdatedAt($now);
         $user->setPassword($this->passwordHasher->hashPassword($user, $password));
         $admin = (new Admin())->setUser($user)->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($user);
         $this->entityManager->persist($admin);
         $this->entityManager->flush();
-        $this->audit->record($actor, 'admin.created', 'admin', (string) $admin->getId(), ['name' => $name, 'email' => $email, 'phone' => $phone, 'status' => UserStatus::ACTIVE->value]);
+        $this->audit->record($actor, 'admin.created', 'admin', (string) $admin->getId(), ['name' => $name, 'email' => $email, 'phone' => $phone, 'status' => User::STATUS_ACTIVE]);
         $this->entityManager->flush();
         return $this->json(['admin' => $this->normalize($admin)], 201);
     }
@@ -74,21 +72,21 @@ final class AdminAccountController extends AbstractController
         if ($admin->getUser()->getId() === $actor->getId()) {
             return $this->json(['message' => 'You cannot suspend your own admin account.'], 409);
         }
-        return $this->setStatus($admin, UserStatus::SUSPENDED, $actor);
+        return $this->setStatus($admin, User::STATUS_SUSPENDED, $actor);
     }
 
     #[Route('/{id}/reactivate', name: 'reactivate', methods: ['POST'])]
     public function reactivate(Admin $admin): JsonResponse
     {
-        return $this->setStatus($admin, UserStatus::ACTIVE, $this->adminUser());
+        return $this->setStatus($admin, User::STATUS_ACTIVE, $this->adminUser());
     }
 
-    private function setStatus(Admin $admin, UserStatus $status, User $actor): JsonResponse
+    private function setStatus(Admin $admin, string $status, User $actor): JsonResponse
     {
         $before = $admin->getUser()->getStatus();
         $admin->getUser()->setStatus($status)->setUpdatedAt(new \DateTimeImmutable());
-        $this->audit->record($actor, 'admin.'.(UserStatus::ACTIVE === $status ? 'reactivated' : 'suspended'), 'admin', (string) $admin->getId(), [
-            'user_status' => ['from' => $before->value, 'to' => $status->value],
+        $this->audit->record($actor, 'admin.'.(User::STATUS_ACTIVE === $status ? 'reactivated' : 'suspended'), 'admin', (string) $admin->getId(), [
+            'user_status' => ['from' => $before, 'to' => $status],
         ]);
         $this->entityManager->flush();
         return $this->json(['admin' => $this->normalize($admin)]);
@@ -98,7 +96,7 @@ final class AdminAccountController extends AbstractController
     private function normalize(Admin $admin): array
     {
         return ['id' => $admin->getId(), 'user_id' => $admin->getUser()->getId(), 'name' => $admin->getUser()->getName(),
-            'email' => $admin->getUser()->getEmail(), 'phone' => $admin->getUser()->getPhone(), 'status' => $admin->getUser()->getStatus()->value,
+            'email' => $admin->getUser()->getEmail(), 'phone' => $admin->getUser()->getPhone(), 'status' => $admin->getUser()->getStatus(),
             'last_login_at' => $admin->getUser()->getLastLoginAt()?->format(\DateTimeInterface::ATOM), 'created_at' => $admin->getCreatedAt()?->format(\DateTimeInterface::ATOM)];
     }
 

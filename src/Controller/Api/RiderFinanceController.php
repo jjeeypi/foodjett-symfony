@@ -8,7 +8,6 @@ use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
-use App\Enum\RemittanceStatus;
 use App\Repository\RiderCashRemittanceRepository;
 use App\Repository\RiderEarningRepository;
 use App\Repository\RiderPayoutRepository;
@@ -67,7 +66,7 @@ final class RiderFinanceController extends AbstractRiderController
         return $this->json($this->paginator->paginate($query, $request, static fn (RiderPayout $payout): array => [
             'id' => $payout->getId(), 'period_start' => $payout->getPeriodStart()->format('Y-m-d'),
             'period_end' => $payout->getPeriodEnd()->format('Y-m-d'), 'total_amount' => $payout->getTotalAmount(),
-            'status' => $payout->getStatus()->value, 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM),
+            'status' => $payout->getStatus(), 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM),
         ]));
     }
 
@@ -117,7 +116,7 @@ final class RiderFinanceController extends AbstractRiderController
                 }
                 $now = new \DateTimeImmutable();
                 $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount($amount)
-                    ->setReferenceNote('' === $reference ? null : $reference)->setStatus(RemittanceStatus::PENDING)
+                    ->setReferenceNote('' === $reference ? null : $reference)->setStatus(RiderCashRemittance::STATUS_PENDING)
                     ->setCreatedAt($now)->setUpdatedAt($now);
                 $this->entityManager->persist($remittance);
                 $this->entityManager->flush();
@@ -153,7 +152,7 @@ final class RiderFinanceController extends AbstractRiderController
     private function remittanceData(RiderCashRemittance $remittance): array
     {
         return ['id' => $remittance->getId(), 'amount' => $remittance->getAmount(), 'reference_note' => $remittance->getReferenceNote(),
-            'status' => $remittance->getStatus()->value, 'remitted_at' => $remittance->getRemittedAt()?->format(\DateTimeInterface::ATOM),
+            'status' => $remittance->getStatus(), 'remitted_at' => $remittance->getRemittedAt()?->format(\DateTimeInterface::ATOM),
             'created_at' => $remittance->getCreatedAt()?->format(\DateTimeInterface::ATOM)];
     }
 

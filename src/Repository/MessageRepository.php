@@ -5,8 +5,6 @@ namespace App\Repository;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\User;
-use App\Enum\ConversationType;
-use App\Enum\UserRole;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -34,12 +32,12 @@ class MessageRepository extends ServiceEntityRepository
             ->andWhere('message.sender != :recipient')->setParameter('recipient', $recipient);
 
         match ($recipient->getRole()) {
-            UserRole::CUSTOMER => $builder->andWhere('orders.customer = :profile')->setParameter('profile', $recipient->getCustomer()),
-            UserRole::RIDER => $builder->andWhere('orders.rider = :profile')->setParameter('profile', $recipient->getRider())
-                ->andWhere('conversation.type = :conversationType')->setParameter('conversationType', ConversationType::CUSTOMER_RIDER),
-            UserRole::RESTAURANT => $builder->andWhere('orders.restaurant = :profile')->setParameter('profile', $recipient->getRestaurant())
-                ->andWhere('conversation.type = :conversationType')->setParameter('conversationType', ConversationType::CUSTOMER_RESTAURANT),
-            UserRole::ADMIN => $builder->andWhere('1 = 0'),
+            User::ACCOUNT_CUSTOMER => $builder->andWhere('orders.customer = :profile')->setParameter('profile', $recipient->getCustomer()),
+            User::ACCOUNT_RIDER => $builder->andWhere('orders.rider = :profile')->setParameter('profile', $recipient->getRider())
+                ->andWhere('conversation.type = :conversationType')->setParameter('conversationType', Conversation::TYPE_CUSTOMER_RIDER),
+            User::ACCOUNT_RESTAURANT => $builder->andWhere('orders.restaurant = :profile')->setParameter('profile', $recipient->getRestaurant())
+                ->andWhere('conversation.type = :conversationType')->setParameter('conversationType', Conversation::TYPE_CUSTOMER_RESTAURANT),
+            User::ACCOUNT_ADMIN => $builder->andWhere('1 = 0'),
         };
 
         return (int) $builder->getQuery()->getSingleScalarResult();

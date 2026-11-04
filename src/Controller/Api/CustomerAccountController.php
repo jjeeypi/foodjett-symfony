@@ -6,8 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\SupportTicket;
 use App\Entity\User;
-use App\Enum\SupportTicketStatus;
-use App\Enum\UserStatus;
 use App\Repository\SupportTicketRepository;
 use App\Repository\UserRepository;
 use App\Service\ApiPaginator;
@@ -117,7 +115,7 @@ final class CustomerAccountController extends AbstractCustomerController
         }
         $now = new \DateTimeImmutable();
         $ticket = (new SupportTicket())->setUser($this->customerUser())->setSubject($subject)->setMessage($message)
-            ->setStatus(SupportTicketStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setStatus(SupportTicket::STATUS_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($ticket);
         $this->entityManager->flush();
 
@@ -130,7 +128,7 @@ final class CustomerAccountController extends AbstractCustomerController
         $user = $this->customerUser();
         $this->uploads->delete($user->getAvatarPath());
         $user->setName('Deleted Customer')->setEmail(null)->setPhone(null)->setAvatarPath(null)
-            ->setEmailVerifiedAt(null)->setPhoneVerifiedAt(null)->setStatus(UserStatus::BANNED)->setUpdatedAt(new \DateTimeImmutable());
+            ->setEmailVerifiedAt(null)->setPhoneVerifiedAt(null)->setStatus(User::STATUS_BANNED)->setUpdatedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
         return new JsonResponse(null, 204);
@@ -155,7 +153,7 @@ final class CustomerAccountController extends AbstractCustomerController
     {
         return [
             'id' => $ticket->getId(), 'subject' => $ticket->getSubject(), 'message' => $ticket->getMessage(),
-            'status' => $ticket->getStatus()->value, 'created_at' => $ticket->getCreatedAt()?->format(\DateTimeInterface::ATOM),
+            'status' => $ticket->getStatus(), 'created_at' => $ticket->getCreatedAt()?->format(\DateTimeInterface::ATOM),
             'updated_at' => $ticket->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
         ];
     }

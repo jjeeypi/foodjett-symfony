@@ -9,6 +9,7 @@ use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Order;
 use App\Entity\OrderStatusHistory;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
@@ -16,19 +17,6 @@ use App\Entity\SupportTicket;
 use App\Entity\User;
 use App\Entity\Voucher;
 use App\Entity\VoucherRedemption;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RemittanceStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\SupportTicketStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
-use App\Enum\VoucherScope;
-use App\Enum\VoucherType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -115,9 +103,9 @@ final class AdminDashboardControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable('-2 weeks');
-        $adminUser = $this->user('Dashboard Admin', self::ADMIN_EMAIL, '+639193000001', UserRole::ADMIN, $now);
+        $adminUser = $this->user('Dashboard Admin', self::ADMIN_EMAIL, '+639193000001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $viewerUser = $this->user('Dashboard Viewer', self::VIEWER_EMAIL, '+639193000002', UserRole::CUSTOMER, $now);
+        $viewerUser = $this->user('Dashboard Viewer', self::VIEWER_EMAIL, '+639193000002', User::ACCOUNT_CUSTOMER, $now);
         $viewer = (new Customer())->setUser($viewerUser)->setCreatedAt($now)->setUpdatedAt($now);
         foreach ([$adminUser, $admin, $viewerUser, $viewer] as $entity) {
             $entityManager->persist($entity);
@@ -129,40 +117,40 @@ final class AdminDashboardControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $customerUser = $this->user('Dashboard Customer', self::CUSTOMER_EMAIL, '+639193000003', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user('Dashboard Customer', self::CUSTOMER_EMAIL, '+639193000003', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())->setCustomer($customer)->setLabel('Dashboard Address')->setAddressLine('Dashboard Street')
             ->setLatitude('14.6000000')->setLongitude('120.9850000')->setCreatedAt($now)->setUpdatedAt($now);
 
-        $restaurantUser = $this->user('Dashboard Restaurant Owner', self::RESTAURANT_EMAIL, '+639193000004', UserRole::RESTAURANT, $now);
-        $restaurant = $this->restaurant($restaurantUser, 'Dashboard Restaurant', 'dashboard-restaurant', ApprovalStatus::APPROVED, RestaurantOperatingStatus::OPEN, $now);
-        $pendingRestaurantUser = $this->user('Pending Dashboard Owner', self::PENDING_RESTAURANT_EMAIL, '+639193000005', UserRole::RESTAURANT, $now);
-        $pendingRestaurant = $this->restaurant($pendingRestaurantUser, 'Pending Dashboard Restaurant', 'pending-dashboard-restaurant', ApprovalStatus::PENDING, RestaurantOperatingStatus::CLOSED, $now);
+        $restaurantUser = $this->user('Dashboard Restaurant Owner', self::RESTAURANT_EMAIL, '+639193000004', User::ACCOUNT_RESTAURANT, $now);
+        $restaurant = $this->restaurant($restaurantUser, 'Dashboard Restaurant', 'dashboard-restaurant', Restaurant::APPROVAL_APPROVED, Restaurant::OPERATING_OPEN, $now);
+        $pendingRestaurantUser = $this->user('Pending Dashboard Owner', self::PENDING_RESTAURANT_EMAIL, '+639193000005', User::ACCOUNT_RESTAURANT, $now);
+        $pendingRestaurant = $this->restaurant($pendingRestaurantUser, 'Pending Dashboard Restaurant', 'pending-dashboard-restaurant', Restaurant::APPROVAL_PENDING, Restaurant::OPERATING_CLOSED, $now);
 
-        $riderUser = $this->user('Dashboard Rider', self::RIDER_EMAIL, '+639193000006', UserRole::RIDER, $now);
-        $rider = $this->rider($riderUser, ApprovalStatus::APPROVED, RiderAvailabilityStatus::AVAILABLE, $now);
-        $pendingRiderUser = $this->user('Pending Dashboard Rider', self::PENDING_RIDER_EMAIL, '+639193000007', UserRole::RIDER, $now);
-        $pendingRider = $this->rider($pendingRiderUser, ApprovalStatus::PENDING, RiderAvailabilityStatus::OFFLINE, $now);
+        $riderUser = $this->user('Dashboard Rider', self::RIDER_EMAIL, '+639193000006', User::ACCOUNT_RIDER, $now);
+        $rider = $this->rider($riderUser, Rider::APPROVAL_APPROVED, Rider::AVAILABILITY_AVAILABLE, $now);
+        $pendingRiderUser = $this->user('Pending Dashboard Rider', self::PENDING_RIDER_EMAIL, '+639193000007', User::ACCOUNT_RIDER, $now);
+        $pendingRider = $this->rider($pendingRiderUser, Rider::APPROVAL_PENDING, Rider::AVAILABILITY_OFFLINE, $now);
 
         // Keep every "today" fixture at the current instant. Relative offsets
         // crossed midnight when the suite ran shortly after 00:00 UTC, making
         // this aggregate test depend on the time of day.
-        $delivered = $this->order('DASHBOARD-DELIVERED', $customer, $address, $restaurant, OrderStatus::DELIVERED, '150.00', $now)
+        $delivered = $this->order('DASHBOARD-DELIVERED', $customer, $address, $restaurant, Order::STATUS_DELIVERED, '150.00', $now)
             ->setDeliveredAt($now);
-        $preparing = $this->order('DASHBOARD-PREPARING', $customer, $address, $restaurant, OrderStatus::PREPARING, '90.00', $now);
-        $cancelled = $this->order('DASHBOARD-CANCELLED', $customer, $address, $restaurant, OrderStatus::CANCELLED_BY_CUSTOMER, '75.00', $now);
-        $cancelledHistory = (new OrderStatusHistory())->setOrder($cancelled)->setStatus(OrderStatus::CANCELLED_BY_CUSTOMER->value)
-            ->setChangedBy(OrderActor::CUSTOMER)->setNote('Dashboard test cancellation')->setCreatedAt($now);
+        $preparing = $this->order('DASHBOARD-PREPARING', $customer, $address, $restaurant, Order::STATUS_PREPARING, '90.00', $now);
+        $cancelled = $this->order('DASHBOARD-CANCELLED', $customer, $address, $restaurant, Order::STATUS_CANCELLED_BY_CUSTOMER, '75.00', $now);
+        $cancelledHistory = (new OrderStatusHistory())->setOrder($cancelled)->setStatus(Order::STATUS_CANCELLED_BY_CUSTOMER)
+            ->setChangedBy(Order::ACTOR_CUSTOMER)->setNote('Dashboard test cancellation')->setCreatedAt($now);
 
-        $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount('40.00')->setStatus(RemittanceStatus::PENDING)
+        $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount('40.00')->setStatus(RiderCashRemittance::STATUS_PENDING)
             ->setCreatedAt($now)->setUpdatedAt($now);
-        $voucher = (new Voucher())->setCode('DASHBOARD-ACTIVE')->setScope(VoucherScope::PLATFORM)->setType(VoucherType::FIXED)
+        $voucher = (new Voucher())->setCode('DASHBOARD-ACTIVE')->setScope(Voucher::SCOPE_PLATFORM)->setType(Voucher::TYPE_FIXED)
             ->setValue('10.00')->setIsActive(true)->setStartsAt($now->modify('-1 day'))->setEndsAt($now->modify('+1 day'))
             ->setCreatedAt($now)->setUpdatedAt($now);
         $redemption = (new VoucherRedemption())->setVoucher($voucher)->setOrder($delivered)->setCustomer($customer)
             ->setDiscountApplied('10.00')->setCreatedAt($now)->setUpdatedAt($now);
         $ticket = (new SupportTicket())->setUser($customerUser)->setSubject('Dashboard support ticket')->setMessage('Please help with this dashboard test.')
-            ->setStatus(SupportTicketStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setStatus(SupportTicket::STATUS_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
 
         foreach ([$customerUser, $customer, $address, $restaurantUser, $restaurant, $pendingRestaurantUser, $pendingRestaurant,
             $riderUser, $rider, $pendingRiderUser, $pendingRider, $delivered, $preparing, $cancelled, $cancelledHistory,
@@ -172,30 +160,30 @@ final class AdminDashboardControllerTest extends WebTestCase
         $entityManager->flush();
     }
 
-    private function restaurant(User $user, string $name, string $slug, ApprovalStatus $approval, RestaurantOperatingStatus $operating, \DateTimeImmutable $now): Restaurant
+    private function restaurant(User $user, string $name, string $slug, string $approval, string $operating, \DateTimeImmutable $now): Restaurant
     {
         return (new Restaurant())->setUser($user)->setName($name)->setSlug($slug)->setAddress('Dashboard Restaurant Street')
             ->setLatitude('14.5995000')->setLongitude('120.9842000')->setApprovalStatus($approval)->setOperatingStatus($operating)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }
 
-    private function rider(User $user, ApprovalStatus $approval, RiderAvailabilityStatus $availability, \DateTimeImmutable $now): Rider
+    private function rider(User $user, string $approval, string $availability, \DateTimeImmutable $now): Rider
     {
-        return (new Rider())->setUser($user)->setVehicleType(VehicleType::MOTORCYCLE)->setPlateNumber('DASH-'.substr((string) $user->getPhone(), -3))
+        return (new Rider())->setUser($user)->setVehicleType(Rider::VEHICLE_MOTORCYCLE)->setPlateNumber('DASH-'.substr((string) $user->getPhone(), -3))
             ->setApprovalStatus($approval)->setAvailabilityStatus($availability)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
-    private function order(string $number, Customer $customer, CustomerAddress $address, Restaurant $restaurant, OrderStatus $status, string $total, \DateTimeImmutable $placedAt): Order
+    private function order(string $number, Customer $customer, CustomerAddress $address, Restaurant $restaurant, string $status, string $total, \DateTimeImmutable $placedAt): Order
     {
         return (new Order())->setOrderNumber($number)->setCustomer($customer)->setCustomerAddress($address)->setRestaurant($restaurant)
             ->setStatus($status)->setSubtotal($total)->setDeliveryFee('0.00')->setTotalAmount($total)
-            ->setPaymentMethod(PaymentMethod::COD)->setPlacedAt($placedAt)->setCreatedAt($placedAt)->setUpdatedAt($placedAt);
+            ->setPaymentMethod(Payment::METHOD_COD)->setPlacedAt($placedAt)->setCreatedAt($placedAt)->setUpdatedAt($placedAt);
     }
 
-    private function user(string $name, string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $name, string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function login(string $email): string

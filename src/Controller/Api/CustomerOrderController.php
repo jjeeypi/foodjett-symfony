@@ -9,14 +9,9 @@ use App\Entity\OrderItem;
 use App\Entity\OrderItemAddon;
 use App\Entity\OrderReport;
 use App\Entity\OrderStatusHistory;
+use App\Entity\Payment;
 use App\Entity\RestaurantReview;
 use App\Entity\RiderReview;
-use App\Enum\OrderActor;
-use App\Enum\OrderReportAgainst;
-use App\Enum\OrderReportStatus;
-use App\Enum\OrderReportType;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentActor;
 use App\Repository\OrderRepository;
 use App\Security\Voter\OrderVoter;
 use App\Service\ApiPaginator;
@@ -79,13 +74,13 @@ final class CustomerOrderController extends AbstractCustomerController
         try {
             $order = $this->transitions->transition(
                 $order,
-                OrderStatus::CANCELLED_BY_CUSTOMER,
-                OrderActor::CUSTOMER,
+                Order::STATUS_CANCELLED_BY_CUSTOMER,
+                Order::ACTOR_CUSTOMER,
                 $reason,
                 function (Order $locked, \DateTimeImmutable $now) use ($reason): void {
-                    $locked->setCancellationReason($reason)->setCancelledBy(OrderActor::CUSTOMER);
+                    $locked->setCancellationReason($reason)->setCancelledBy(Order::ACTOR_CUSTOMER);
                     if (null !== $locked->getPayment()) {
-                        $this->payments->cancelOrRefund($locked->getPayment(), PaymentActor::CUSTOMER, $reason, $now);
+                        $this->payments->cancelOrRefund($locked->getPayment(), Payment::ACTOR_CUSTOMER, $reason, $now);
                     }
                 },
             );
@@ -94,8 +89,8 @@ final class CustomerOrderController extends AbstractCustomerController
         }
 
         return $this->json(['order' => $this->summary($order) + [
-            'cancellation_reason' => $order->getCancellationReason(), 'cancelled_by' => $order->getCancelledBy()?->value,
-            'payment_status' => $order->getPayment()?->getStatus()->value,
+            'cancellation_reason' => $order->getCancellationReason(), 'cancelled_by' => $order->getCancelledBy(),
+            'payment_status' => $order->getPayment()?->getStatus(),
         ]]);
     }
 
@@ -103,7 +98,7 @@ final class CustomerOrderController extends AbstractCustomerController
     public function reorder(string $id): JsonResponse
     {
         $order = $this->ownedOrder($id);
-        if (!$order->getStatus()->isTerminal()) {
+        if (!Order::isTerminalStatus($order->getStatus())) {
             return $this->json(['message' => 'Only a past order can be reordered.'], 409);
         }
         $unavailable = [];
@@ -145,7 +140,7 @@ final class CustomerOrderController extends AbstractCustomerController
     public function reviews(string $id, Request $request): JsonResponse
     {
         $order = $this->ownedOrder($id);
-        if (OrderStatus::DELIVERED !== $order->getStatus() || null === $order->getDeliveredAt()) {
+        if (Order::STATUS_DELIVERED !== $order->getStatus() || null === $order->getDeliveredAt()) {
             return $this->json(['message' => 'Only delivered orders can be reviewed.'], 409);
         }
         $data = $this->body($request);
@@ -199,8 +194,8 @@ final class CustomerOrderController extends AbstractCustomerController
     public function reports(string $id, Request $request): JsonResponse
     {
         $order = $this->ownedOrder($id);
-        if ($order->getStatus()->isTerminal()
-            && (OrderStatus::DELIVERED !== $order->getStatus()
+        if (Order::isTerminalStatus($order->getStatus())
+            && (Order::STATUS_DELIVERED !== $order->getStatus()
                 || null === $order->getDeliveredAt()
                 || new \DateTimeImmutable() > $order->getDeliveredAt()->modify('+7 days'))) {
             return $this->json(['message' => 'Problems may only be reported while an order is active or within seven days after delivery.'], 409);
@@ -209,14 +204,14 @@ final class CustomerOrderController extends AbstractCustomerController
         if ($data instanceof JsonResponse) {
             return $data;
         }
-        $type = OrderReportType::tryFrom((string) ($data['type'] ?? ''));
-        $against = OrderReportAgainst::tryFrom((string) ($data['against'] ?? ''));
+        $type = (in_array((string) ($data['type'] ?? ''), OrderReport::TYPES, true) ? (string) ($data['type'] ?? '') : null);
+        $against = (in_array((string) ($data['against'] ?? ''), OrderReport::AGAINST_TARGETS, true) ? (string) ($data['against'] ?? '') : null);
         $description = trim((string) ($data['description'] ?? ''));
         $errors = [];
         if (null === $type) {
             $errors['type'][] = 'Invalid report type.';
         }
-        if (null === $against || OrderReportAgainst::CUSTOMER === $against) {
+        if (null === $against || OrderReport::AGAINST_CUSTOMER === $against) {
             $errors['against'][] = 'against must be restaurant, rider, or platform.';
         }
         if ('' === $description || mb_strlen($description) > 5000) {
@@ -227,13 +222,13 @@ final class CustomerOrderController extends AbstractCustomerController
         }
         $now = new \DateTimeImmutable();
         $report = (new OrderReport())->setOrder($order)->setReportedBy($this->customerUser())->setType($type)->setAgainst($against)
-            ->setDescription($description)->setStatus(OrderReportStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setDescription($description)->setStatus(OrderReport::STATUS_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($report);
         $this->entityManager->flush();
 
         return $this->json(['message' => 'Report submitted.', 'report' => [
-            'id' => $report->getId(), 'type' => $report->getType()->value, 'against' => $report->getAgainst()->value,
-            'description' => $report->getDescription(), 'status' => $report->getStatus()->value,
+            'id' => $report->getId(), 'type' => $report->getType(), 'against' => $report->getAgainst(),
+            'description' => $report->getDescription(), 'status' => $report->getStatus(),
         ]], 201);
     }
 
@@ -251,13 +246,13 @@ final class CustomerOrderController extends AbstractCustomerController
     private function summary(Order $order): array
     {
         return [
-            'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus()->value,
+            'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus(),
             'restaurant' => [
                 'id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName(),
                 'logo_path' => $order->getRestaurant()->getLogoPath(), 'address' => $order->getRestaurant()->getAddress(),
             ],
             'item_count' => array_sum(array_map(static fn (OrderItem $item): int => $item->getQuantity(), $order->getItems()->toArray())),
-            'total_amount' => $order->getTotalAmount(), 'payment_method' => $order->getPaymentMethod()->value,
+            'total_amount' => $order->getTotalAmount(), 'payment_method' => $order->getPaymentMethod(),
             'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM), 'delivered_at' => $order->getDeliveredAt()?->format(\DateTimeInterface::ATOM),
         ];
     }
@@ -270,11 +265,11 @@ final class CustomerOrderController extends AbstractCustomerController
         $address = $order->getCustomerAddress();
         $rider = $order->getRider();
         $locationVisible = null !== $rider && in_array($order->getStatus(), [
-            OrderStatus::RIDER_ASSIGNED,
-            OrderStatus::AT_RESTAURANT,
-            OrderStatus::PICKED_UP,
-            OrderStatus::ON_THE_WAY,
-            OrderStatus::ARRIVED,
+            Order::STATUS_RIDER_ASSIGNED,
+            Order::STATUS_AT_RESTAURANT,
+            Order::STATUS_PICKED_UP,
+            Order::STATUS_ON_THE_WAY,
+            Order::STATUS_ARRIVED,
         ], true);
 
         return $this->summary($order) + [
@@ -283,11 +278,11 @@ final class CustomerOrderController extends AbstractCustomerController
             'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
             'can_cancel' => $order->canBeCancelledByCustomer(),
             'cancellation_reason' => $order->getCancellationReason(),
-            'cancelled_by' => $order->getCancelledBy()?->value,
+            'cancelled_by' => $order->getCancelledBy(),
             'rider' => null === $rider ? null : [
                 'id' => $rider->getId(),
                 'name' => $rider->getUser()->getName(),
-                'vehicle_type' => $rider->getVehicleType()->value,
+                'vehicle_type' => $rider->getVehicleType(),
                 'current_latitude' => $locationVisible ? $rider->getCurrentLatitude() : null,
                 'current_longitude' => $locationVisible ? $rider->getCurrentLongitude() : null,
                 'last_location_at' => $locationVisible ? $rider->getLastLocationAt()?->format(\DateTimeInterface::ATOM) : null,
@@ -299,10 +294,10 @@ final class CustomerOrderController extends AbstractCustomerController
             ],
             'items' => array_map($this->item(...), $order->getItems()->toArray()),
             'status_history' => array_map(static fn (OrderStatusHistory $entry): array => [
-                'id' => $entry->getId(), 'status' => $entry->getStatus(), 'changed_by' => $entry->getChangedBy()->value,
+                'id' => $entry->getId(), 'status' => $entry->getStatus(), 'changed_by' => $entry->getChangedBy(),
                 'note' => $entry->getNote(), 'created_at' => $entry->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ], $history),
-            'payment' => null === $order->getPayment() ? null : ['status' => $order->getPayment()?->getStatus()->value, 'amount' => $order->getPayment()?->getAmount(), 'refunded_amount' => $order->getPayment()?->getRefundedAmount()],
+            'payment' => null === $order->getPayment() ? null : ['status' => $order->getPayment()?->getStatus(), 'amount' => $order->getPayment()?->getAmount(), 'refunded_amount' => $order->getPayment()?->getRefundedAmount()],
             'timestamps' => [
                 'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
                 'accepted_at' => $order->getAcceptedAt()?->format(\DateTimeInterface::ATOM),

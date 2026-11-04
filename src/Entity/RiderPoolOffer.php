@@ -4,16 +4,34 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\RiderPoolEscalationStage;
 use App\Repository\RiderPoolOfferRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RiderPoolOfferRepository::class)]
 #[ORM\Table(name: 'rider_pool_offers')]
 #[ORM\UniqueConstraint(name: 'rider_pool_offers_order_id_unique', columns: ['order_id'])]
 class RiderPoolOffer
 {
+    // Rider search escalation stage (STAGES)
+    public const STAGE_INITIAL = 'initial';
+    public const STAGE_WIDENED = 'widened';
+    public const STAGE_INCENTIVIZED = 'incentivized';
+    public const STAGE_ADMIN_ALERTED = 'admin_alerted';
+    public const STAGE_CUSTOMER_NOTIFIED = 'customer_notified';
+    public const STAGE_AUTO_CANCELLED = 'auto_cancelled';
+
+    /** @var list<string> */
+    public const STAGES = [
+        self::STAGE_INITIAL,
+        self::STAGE_WIDENED,
+        self::STAGE_INCENTIVIZED,
+        self::STAGE_ADMIN_ALERTED,
+        self::STAGE_CUSTOMER_NOTIFIED,
+        self::STAGE_AUTO_CANCELLED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -29,8 +47,9 @@ class RiderPoolOffer
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $incentiveAmount = '0.00';
 
-    #[ORM\Column(length: 32, enumType: RiderPoolEscalationStage::class, options: ['default' => 'initial'])]
-    private RiderPoolEscalationStage $escalationStage = RiderPoolEscalationStage::INITIAL;
+    #[Assert\Choice(choices: RiderPoolOffer::STAGES)]
+    #[ORM\Column(length: 32, options: ['default' => 'initial'])]
+    private string $escalationStage = self::STAGE_INITIAL;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private bool $adminAssigned = false;
@@ -85,12 +104,12 @@ class RiderPoolOffer
         return $this;
     }
 
-    public function getEscalationStage(): RiderPoolEscalationStage
+    public function getEscalationStage(): string
     {
         return $this->escalationStage;
     }
 
-    public function setEscalationStage(RiderPoolEscalationStage $escalationStage): self
+    public function setEscalationStage(string $escalationStage): self
     {
         $this->escalationStage = $escalationStage;
 

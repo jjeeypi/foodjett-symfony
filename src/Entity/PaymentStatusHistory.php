@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\PaymentActor;
-use App\Enum\PaymentStatus;
 use App\Repository\PaymentStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PaymentStatusHistoryRepository::class)]
 #[ORM\Table(name: 'payment_status_history')]
@@ -24,14 +23,17 @@ class PaymentStatusHistory
     #[ORM\JoinColumn(name: 'payment_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private Payment $payment;
 
-    #[ORM\Column(length: 32, nullable: true, enumType: PaymentStatus::class)]
-    private ?PaymentStatus $fromStatus = null;
+    #[Assert\Choice(choices: Payment::STATUSES)]
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $fromStatus = null;
 
-    #[ORM\Column(length: 32, enumType: PaymentStatus::class)]
-    private PaymentStatus $toStatus;
+    #[Assert\Choice(choices: Payment::STATUSES)]
+    #[ORM\Column(length: 32)]
+    private string $toStatus;
 
-    #[ORM\Column(length: 16, enumType: PaymentActor::class)]
-    private PaymentActor $changedBy;
+    #[Assert\Choice(choices: Payment::ACTORS)]
+    #[ORM\Column(length: 16)]
+    private string $changedBy;
 
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $note = null;
@@ -42,12 +44,12 @@ class PaymentStatusHistory
     public function getId(): ?string { return $this->id; }
     public function getPayment(): Payment { return $this->payment; }
     public function setPayment(Payment $payment): self { $this->payment = $payment; return $this; }
-    public function getFromStatus(): ?PaymentStatus { return $this->fromStatus; }
-    public function setFromStatus(?PaymentStatus $status): self { $this->fromStatus = $status; return $this; }
-    public function getToStatus(): PaymentStatus { return $this->toStatus; }
-    public function setToStatus(PaymentStatus $status): self { $this->toStatus = $status; return $this; }
-    public function getChangedBy(): PaymentActor { return $this->changedBy; }
-    public function setChangedBy(PaymentActor $actor): self { $this->changedBy = $actor; return $this; }
+    public function getFromStatus(): ?string { return $this->fromStatus; }
+    public function setFromStatus(?string $status): self { $this->fromStatus = $status; return $this; }
+    public function getToStatus(): string { return $this->toStatus; }
+    public function setToStatus(string $status): self { $this->toStatus = $status; return $this; }
+    public function getChangedBy(): string { return $this->changedBy; }
+    public function setChangedBy(string $actor): self { $this->changedBy = $actor; return $this; }
     public function getNote(): ?string { return $this->note; }
     public function setNote(?string $note): self { $this->note = $note; return $this; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }

@@ -4,19 +4,60 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
 use App\Repository\PaymentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]
 #[ORM\Table(name: 'payments')]
 #[ORM\UniqueConstraint(name: 'payments_order_id_unique', columns: ['order_id'])]
 class Payment
 {
+    // Who changed the payment (ACTORS)
+    public const ACTOR_CUSTOMER = 'customer';
+    public const ACTOR_RIDER = 'rider';
+    public const ACTOR_ADMIN = 'admin';
+    public const ACTOR_SYSTEM = 'system';
+
+    /** @var list<string> */
+    public const ACTORS = [
+        self::ACTOR_CUSTOMER,
+        self::ACTOR_RIDER,
+        self::ACTOR_ADMIN,
+        self::ACTOR_SYSTEM,
+    ];
+
+    // How the customer pays (METHODS)
+    public const METHOD_COD = 'cod';
+    public const METHOD_GCASH = 'gcash';
+    public const METHOD_CARD = 'card';
+
+    /** @var list<string> */
+    public const METHODS = [
+        self::METHOD_COD,
+        self::METHOD_GCASH,
+        self::METHOD_CARD,
+    ];
+
+    // Payment status (STATUSES)
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_PAID = 'paid';
+    public const STATUS_REFUNDED = 'refunded';
+    public const STATUS_PARTIALLY_REFUNDED = 'partially_refunded';
+    public const STATUS_FAILED = 'failed';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_PAID,
+        self::STATUS_REFUNDED,
+        self::STATUS_PARTIALLY_REFUNDED,
+        self::STATUS_FAILED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -26,11 +67,13 @@ class Payment
     #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: false, unique: true, onDelete: 'RESTRICT')]
     private Order $order;
 
-    #[ORM\Column(length: 16, enumType: PaymentMethod::class)]
-    private PaymentMethod $method;
+    #[Assert\Choice(choices: Payment::METHODS)]
+    #[ORM\Column(length: 16)]
+    private string $method;
 
-    #[ORM\Column(length: 32, enumType: PaymentStatus::class, options: ['default' => 'pending'])]
-    private PaymentStatus $status = PaymentStatus::PENDING;
+    #[Assert\Choice(choices: Payment::STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'pending'])]
+    private string $status = self::STATUS_PENDING;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $amount;
@@ -66,10 +109,10 @@ class Payment
     public function getId(): ?string { return $this->id; }
     public function getOrder(): Order { return $this->order; }
     public function setOrder(Order $order): self { $this->order = $order; return $this; }
-    public function getMethod(): PaymentMethod { return $this->method; }
-    public function setMethod(PaymentMethod $method): self { $this->method = $method; return $this; }
-    public function getStatus(): PaymentStatus { return $this->status; }
-    public function setStatus(PaymentStatus $status): self { $this->status = $status; return $this; }
+    public function getMethod(): string { return $this->method; }
+    public function setMethod(string $method): self { $this->method = $method; return $this; }
+    public function getStatus(): string { return $this->status; }
+    public function setStatus(string $status): self { $this->status = $status; return $this; }
     public function getAmount(): string { return $this->amount; }
     public function setAmount(string $amount): self { $this->amount = $amount; return $this; }
     public function getRefundedAmount(): string { return $this->refundedAmount; }

@@ -6,7 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\RestaurantDocument;
 use App\Entity\User;
-use App\Enum\DocumentStatus;
 use App\Repository\AuditLogRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,7 +25,7 @@ final class AdminRestaurantDocumentController extends AbstractController
     #[Route('/{id}/verify', name: 'verify', methods: ['POST'])]
     public function verify(RestaurantDocument $document): JsonResponse
     {
-        return $this->change($document, DocumentStatus::VERIFIED, null);
+        return $this->change($document, RestaurantDocument::STATUS_VERIFIED, null);
     }
 
     #[Route('/{id}/reject', name: 'reject', methods: ['POST'])]
@@ -42,10 +41,10 @@ final class AdminRestaurantDocumentController extends AbstractController
             return $this->json(['message' => 'A rejection_reason of at most 2000 characters is required.'], 422);
         }
 
-        return $this->change($document, DocumentStatus::REJECTED, $reason);
+        return $this->change($document, RestaurantDocument::STATUS_REJECTED, $reason);
     }
 
-    private function change(RestaurantDocument $document, DocumentStatus $status, ?string $reason): JsonResponse
+    private function change(RestaurantDocument $document, string $status, ?string $reason): JsonResponse
     {
         $before = $document->getStatus();
         $document->setStatus($status)->setRejectionReason($reason)->setUpdatedAt(new \DateTimeImmutable());
@@ -53,8 +52,8 @@ final class AdminRestaurantDocumentController extends AbstractController
         if (!$user instanceof User) {
             throw $this->createAccessDeniedException();
         }
-        $this->audit->record($user, 'restaurant_document.'.(DocumentStatus::VERIFIED === $status ? 'verified' : 'rejected'), 'restaurant_document', (string) $document->getId(), [
-            'status' => ['from' => $before->value, 'to' => $status->value],
+        $this->audit->record($user, 'restaurant_document.'.(RestaurantDocument::STATUS_VERIFIED === $status ? 'verified' : 'rejected'), 'restaurant_document', (string) $document->getId(), [
+            'status' => ['from' => $before, 'to' => $status],
             'rejection_reason' => $reason,
         ]);
         $this->entityManager->flush();
@@ -62,9 +61,9 @@ final class AdminRestaurantDocumentController extends AbstractController
         return $this->json(['document' => [
             'id' => $document->getId(),
             'restaurant_id' => $document->getRestaurant()->getId(),
-            'type' => $document->getType()->value,
+            'type' => $document->getType(),
             'file_path' => $document->getFilePath(),
-            'status' => $document->getStatus()->value,
+            'status' => $document->getStatus(),
             'rejection_reason' => $document->getRejectionReason(),
         ]]);
     }

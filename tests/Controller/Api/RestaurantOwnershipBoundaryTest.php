@@ -9,17 +9,10 @@ use App\Entity\CustomerAddress;
 use App\Entity\MenuCategory;
 use App\Entity\MenuItem;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\DocumentStatus;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantDocumentType;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -96,7 +89,7 @@ final class RestaurantOwnershipBoundaryTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->clear();
         self::assertSame('Boundary B Item', $entityManager->find(MenuItem::class, $this->itemBId)?->getName());
-        self::assertSame(OrderStatus::PLACED, $entityManager->find(Order::class, $this->orderBId)?->getStatus());
+        self::assertSame(Order::STATUS_PLACED, $entityManager->find(Order::class, $this->orderBId)?->getStatus());
         self::assertNotNull($entityManager->find(RestaurantDocument::class, $this->documentBId));
     }
 
@@ -104,20 +97,20 @@ final class RestaurantOwnershipBoundaryTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $userA = $this->user(self::RESTAURANT_A_EMAIL, '+639188100001', UserRole::RESTAURANT, 'Boundary Restaurant A', $now);
-        $userB = $this->user(self::RESTAURANT_B_EMAIL, '+639188100002', UserRole::RESTAURANT, 'Boundary Restaurant B', $now);
+        $userA = $this->user(self::RESTAURANT_A_EMAIL, '+639188100001', User::ACCOUNT_RESTAURANT, 'Boundary Restaurant A', $now);
+        $userB = $this->user(self::RESTAURANT_B_EMAIL, '+639188100002', User::ACCOUNT_RESTAURANT, 'Boundary Restaurant B', $now);
         $restaurantA = $this->restaurant($userA, 'Boundary Restaurant A', 'boundary-restaurant-a', $now);
         $restaurantB = $this->restaurant($userB, 'Boundary Restaurant B', 'boundary-restaurant-b', $now);
         $categoryA = (new MenuCategory())->setRestaurant($restaurantA)->setName('Boundary A Category')->setSortOrder(1)->setCreatedAt($now)->setUpdatedAt($now);
         $categoryB = (new MenuCategory())->setRestaurant($restaurantB)->setName('Boundary B Category')->setSortOrder(1)->setCreatedAt($now)->setUpdatedAt($now);
         $itemA = (new MenuItem())->setMenuCategory($categoryA)->setName('Boundary A Item')->setBasePrice('99.00')->setCreatedAt($now)->setUpdatedAt($now);
         $itemB = (new MenuItem())->setMenuCategory($categoryB)->setName('Boundary B Item')->setBasePrice('109.00')->setCreatedAt($now)->setUpdatedAt($now);
-        $documentA = (new RestaurantDocument())->setRestaurant($restaurantA)->setType(RestaurantDocumentType::BUSINESS_PERMIT)
-            ->setFilePath('tests/boundary-a.pdf')->setStatus(DocumentStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
-        $documentB = (new RestaurantDocument())->setRestaurant($restaurantB)->setType(RestaurantDocumentType::BUSINESS_PERMIT)
-            ->setFilePath('tests/boundary-b.pdf')->setStatus(DocumentStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+        $documentA = (new RestaurantDocument())->setRestaurant($restaurantA)->setType(RestaurantDocument::TYPE_BUSINESS_PERMIT)
+            ->setFilePath('tests/boundary-a.pdf')->setStatus(RestaurantDocument::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+        $documentB = (new RestaurantDocument())->setRestaurant($restaurantB)->setType(RestaurantDocument::TYPE_BUSINESS_PERMIT)
+            ->setFilePath('tests/boundary-b.pdf')->setStatus(RestaurantDocument::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
 
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639188100003', UserRole::CUSTOMER, 'Boundary Customer', $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639188100003', User::ACCOUNT_CUSTOMER, 'Boundary Customer', $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())->setCustomer($customer)->setLabel('Restaurant ownership boundary')
             ->setAddressLine('Boundary address')->setLatitude('14.6091000')->setLongitude('121.0223000')->setCreatedAt($now)->setUpdatedAt($now);
@@ -139,24 +132,24 @@ final class RestaurantOwnershipBoundaryTest extends WebTestCase
         $this->documentBId = (string) $documentB->getId();
     }
 
-    private function user(string $email, string $phone, UserRole $role, string $name, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, string $name, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function restaurant(User $user, string $name, string $slug, \DateTimeImmutable $now): Restaurant
     {
         return (new Restaurant())->setUser($user)->setName($name)->setSlug($slug)->setAddress('Boundary restaurant address')
-            ->setLatitude('14.5995000')->setLongitude('120.9842000')->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setLatitude('14.5995000')->setLongitude('120.9842000')->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function order(Customer $customer, CustomerAddress $address, Restaurant $restaurant, string $prefix, \DateTimeImmutable $now): Order
     {
         return (new Order())->setOrderNumber($prefix.bin2hex(random_bytes(4)))->setCustomer($customer)->setRestaurant($restaurant)
-            ->setCustomerAddress($address)->setStatus(OrderStatus::PLACED)->setSubtotal('100.00')->setDeliveryFee('35.00')
-            ->setTotalAmount('135.00')->setPaymentMethod(PaymentMethod::COD)->setPlacedAt($now)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setCustomerAddress($address)->setStatus(Order::STATUS_PLACED)->setSubtotal('100.00')->setDeliveryFee('35.00')
+            ->setTotalAmount('135.00')->setPaymentMethod(Payment::METHOD_COD)->setPlacedAt($now)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function login(): string

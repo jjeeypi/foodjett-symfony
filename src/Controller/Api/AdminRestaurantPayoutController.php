@@ -6,7 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\RestaurantPayout;
 use App\Entity\User;
-use App\Enum\PayoutStatus;
 use App\Repository\AuditLogRepository;
 use App\Repository\OrderRepository;
 use App\Repository\RestaurantPayoutRepository;
@@ -37,7 +36,7 @@ final class AdminRestaurantPayoutController extends AbstractController
     {
         $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
-            $status = PayoutStatus::tryFrom($statusValue);
+            $status = (in_array($statusValue, RestaurantPayout::STATUSES, true) ? $statusValue : null);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid status.'], 422);
             }
@@ -79,7 +78,7 @@ final class AdminRestaurantPayoutController extends AbstractController
                 }
                 $payout = (new RestaurantPayout())->setRestaurant($total['restaurant'])->setPeriodStart($periodStart)->setPeriodEnd($periodEnd)
                     ->setGrossSales($total['gross'])->setCommissionDeducted($total['commission'])
-                    ->setNetAmount(bcsub($total['gross'], $total['commission'], 2))->setStatus(PayoutStatus::PENDING)
+                    ->setNetAmount(bcsub($total['gross'], $total['commission'], 2))->setStatus(RestaurantPayout::STATUS_PENDING)
                     ->setCreatedAt($now)->setUpdatedAt($now);
                 $this->entityManager->persist($payout);
                 $created[] = $payout;
@@ -112,13 +111,13 @@ final class AdminRestaurantPayoutController extends AbstractController
             if (!$locked instanceof RestaurantPayout) {
                 throw new \RuntimeException('Payout not found.');
             }
-            if (PayoutStatus::PAID === $locked->getStatus()) {
+            if (RestaurantPayout::STATUS_PAID === $locked->getStatus()) {
                 return $locked;
             }
             $now = new \DateTimeImmutable();
-            $locked->setStatus(PayoutStatus::PAID)->setPaidAt($now)->setUpdatedAt($now);
+            $locked->setStatus(RestaurantPayout::STATUS_PAID)->setPaidAt($now)->setUpdatedAt($now);
             $this->audit->record($admin, 'restaurant_payout.paid', 'restaurant_payout', (string) $locked->getId(), [
-                'status' => ['from' => PayoutStatus::PENDING->value, 'to' => PayoutStatus::PAID->value],
+                'status' => ['from' => RestaurantPayout::STATUS_PENDING, 'to' => RestaurantPayout::STATUS_PAID],
                 'paid_at' => $now->format(\DateTimeInterface::ATOM),
             ]);
             $this->entityManager->flush();
@@ -155,7 +154,7 @@ final class AdminRestaurantPayoutController extends AbstractController
         return ['id' => $payout->getId(), 'restaurant' => ['id' => $payout->getRestaurant()->getId(), 'name' => $payout->getRestaurant()->getName()],
             'period_start' => $payout->getPeriodStart()->format('Y-m-d'), 'period_end' => $payout->getPeriodEnd()->format('Y-m-d'),
             'gross_sales' => $payout->getGrossSales(), 'commission_deducted' => $payout->getCommissionDeducted(), 'net_amount' => $payout->getNetAmount(),
-            'status' => $payout->getStatus()->value, 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM)];
+            'status' => $payout->getStatus(), 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM)];
     }
 
     private function admin(): User

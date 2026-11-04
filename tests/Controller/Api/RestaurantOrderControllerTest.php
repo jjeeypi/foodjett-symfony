@@ -4,26 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Conversation;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
-use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\ConversationType;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use App\Service\OrderTransitionService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
@@ -63,11 +52,11 @@ final class RestaurantOrderControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->payload();
-        self::assertSame(OrderStatus::FINDING_RIDER->value, $payload['order']['status'] ?? null);
+        self::assertSame(Order::STATUS_FINDING_RIDER, $payload['order']['status'] ?? null);
         self::assertNotNull($payload['order']['rider_search_started_at'] ?? null);
         $conversation = self::getContainer()->get(EntityManagerInterface::class)->getRepository(Conversation::class)->findOneBy([
             'order' => $this->orderId,
-            'type' => ConversationType::CUSTOMER_RESTAURANT,
+            'type' => Conversation::TYPE_CUSTOMER_RESTAURANT,
         ]);
         self::assertInstanceOf(Conversation::class, $conversation);
         self::assertCount(1, $conversation->getMessages());
@@ -140,7 +129,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/mark-ready', server: $this->auth($token));
         self::assertResponseIsSuccessful();
         $readyPayload = $this->payload();
-        self::assertSame(OrderStatus::FINDING_RIDER->value, $readyPayload['order']['status'] ?? null);
+        self::assertSame(Order::STATUS_FINDING_RIDER, $readyPayload['order']['status'] ?? null);
         self::assertNotNull($readyPayload['order']['ready_at'] ?? null);
         $readyUpdates = $this->orderUpdates();
         self::assertCount(1, $readyUpdates);
@@ -168,11 +157,11 @@ final class RestaurantOrderControllerTest extends WebTestCase
         ], server: $this->auth($token));
 
         self::assertResponseIsSuccessful();
-        self::assertSame(OrderStatus::REJECTED_BY_RESTAURANT->value, $this->payload()['order']['status'] ?? null);
+        self::assertSame(Order::STATUS_REJECTED_BY_RESTAURANT, $this->payload()['order']['status'] ?? null);
 
         $payment = $this->order()->getPayment();
         self::assertNotNull($payment);
-        self::assertSame(PaymentStatus::REFUNDED, $payment->getStatus());
+        self::assertSame(Payment::STATUS_REFUNDED, $payment->getStatus());
         self::assertSame($payment->getAmount(), $payment->getRefundedAmount());
         self::assertNotNull($payment->getRefundedAt());
         self::assertCount(1, $payment->getStatusHistory());
@@ -199,12 +188,12 @@ final class RestaurantOrderControllerTest extends WebTestCase
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $riderUser = $this->user(self::RIDER_EMAIL, '+639187000003', UserRole::RIDER, $now);
+        $riderUser = $this->user(self::RIDER_EMAIL, '+639187000003', User::ACCOUNT_RIDER, $now);
         $rider = (new Rider())
             ->setUser($riderUser)
-            ->setVehicleType(VehicleType::MOTORCYCLE)
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)
+            ->setVehicleType(Rider::VEHICLE_MOTORCYCLE)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setAvailabilityStatus(Rider::AVAILABILITY_BUSY)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $entityManager->persist($riderUser);
@@ -216,13 +205,13 @@ final class RestaurantOrderControllerTest extends WebTestCase
         $transitions = self::getContainer()->get(OrderTransitionService::class);
         $order = $transitions->transitionSequence(
             $order,
-            [OrderStatus::ACCEPTED, OrderStatus::PREPARING, OrderStatus::FINDING_RIDER],
-            OrderActor::RESTAURANT,
+            [Order::STATUS_ACCEPTED, Order::STATUS_PREPARING, Order::STATUS_FINDING_RIDER],
+            Order::ACTOR_RESTAURANT,
         );
         $order = $transitions->transition(
             $order,
-            OrderStatus::RIDER_ASSIGNED,
-            OrderActor::ADMIN,
+            Order::STATUS_RIDER_ASSIGNED,
+            Order::ACTOR_ADMIN,
             applyChanges: static function (Order $locked) use ($rider): void {
                 $locked->setRider($rider);
             },
@@ -239,7 +228,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639187000001', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639187000001', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Restaurant Orders Test')
@@ -247,11 +236,11 @@ final class RestaurantOrderControllerTest extends WebTestCase
             ->setAddress('Restaurant address')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639187000002', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639187000002', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -266,18 +255,18 @@ final class RestaurantOrderControllerTest extends WebTestCase
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
             ->setCustomerAddress($address)
-            ->setStatus(OrderStatus::PLACED)
+            ->setStatus(Order::STATUS_PLACED)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
-            ->setPaymentMethod(PaymentMethod::CARD)
+            ->setPaymentMethod(Payment::METHOD_CARD)
             ->setPlacedAt($now)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $payment = (new Payment())
             ->setOrder($order)
-            ->setMethod(PaymentMethod::CARD)
-            ->setStatus(PaymentStatus::PAID)
+            ->setMethod(Payment::METHOD_CARD)
+            ->setStatus(Payment::STATUS_PAID)
             ->setAmount('135.00')
             ->setTransactionReference('SIMULATED-TEST')
             ->setPaidAt($now)
@@ -293,7 +282,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
         return $order;
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Restaurant Order Test')
@@ -301,7 +290,7 @@ final class RestaurantOrderControllerTest extends WebTestCase
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

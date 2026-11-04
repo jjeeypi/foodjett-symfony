@@ -6,7 +6,6 @@ namespace App\Security\Voter;
 
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\UserRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -30,7 +29,7 @@ final class RiderVoter extends Voter
             return false;
         }
 
-        if (UserRole::ADMIN === $user->getRole()) {
+        if (User::ACCOUNT_ADMIN === $user->getRole()) {
             return true;
         }
 

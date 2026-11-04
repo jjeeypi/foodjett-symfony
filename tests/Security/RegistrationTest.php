@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
+use App\Entity\Restaurant;
+use App\Entity\RestaurantDocument;
+use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\DocumentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserRole;
 use App\Service\UploadStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -59,7 +57,7 @@ final class RegistrationTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
         $payload = $this->payload();
         self::assertNotEmpty($payload['token'] ?? null);
-        self::assertSame(UserRole::CUSTOMER->value, $payload['user']['role'] ?? null);
+        self::assertSame(User::ACCOUNT_CUSTOMER, $payload['user']['role'] ?? null);
         self::assertNull($payload['user']['approval_status'] ?? null);
 
         $user = $this->user($email);
@@ -85,15 +83,15 @@ final class RegistrationTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
         $payload = $this->payload();
         self::assertArrayNotHasKey('token', $payload);
-        self::assertSame(ApprovalStatus::PENDING->value, $payload['user']['approval_status'] ?? null);
+        self::assertSame(Restaurant::APPROVAL_PENDING, $payload['user']['approval_status'] ?? null);
 
         $restaurant = $this->user($email)->getRestaurant();
         self::assertNotNull($restaurant);
-        self::assertSame(RestaurantOperatingStatus::CLOSED, $restaurant->getOperatingStatus());
+        self::assertSame(Restaurant::OPERATING_CLOSED, $restaurant->getOperatingStatus());
         self::assertSame('15.00', $restaurant->getCommissionRate());
         self::assertCount(3, $restaurant->getDocuments());
         foreach ($restaurant->getDocuments() as $document) {
-            self::assertSame(DocumentStatus::PENDING, $document->getStatus());
+            self::assertSame(RestaurantDocument::STATUS_PENDING, $document->getStatus());
             self::assertStringStartsWith('uploads/restaurants/documents/', $document->getFilePath());
         }
     }
@@ -114,14 +112,14 @@ final class RegistrationTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
         $payload = $this->payload();
         self::assertArrayNotHasKey('token', $payload);
-        self::assertSame(ApprovalStatus::PENDING->value, $payload['user']['approval_status'] ?? null);
+        self::assertSame(Restaurant::APPROVAL_PENDING, $payload['user']['approval_status'] ?? null);
 
         $rider = $this->user($email)->getRider();
         self::assertNotNull($rider);
-        self::assertSame(RiderAvailabilityStatus::OFFLINE, $rider->getAvailabilityStatus());
+        self::assertSame(Rider::AVAILABILITY_OFFLINE, $rider->getAvailabilityStatus());
         self::assertCount(4, $rider->getDocuments());
         foreach ($rider->getDocuments() as $document) {
-            self::assertSame(DocumentStatus::PENDING, $document->getStatus());
+            self::assertSame(RestaurantDocument::STATUS_PENDING, $document->getStatus());
             self::assertStringStartsWith('uploads/riders/documents/', $document->getFilePath());
         }
     }

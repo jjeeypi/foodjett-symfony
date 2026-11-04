@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Order;
+use App\Entity\RestaurantPayout;
 use App\Entity\RiderCashRemittance;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
-use App\Enum\OrderStatus;
-use App\Enum\PayoutStatus;
-use App\Enum\RemittanceStatus;
 
 final class RiderFinanceControllerTest extends RiderApiTestCase
 {
@@ -20,9 +19,9 @@ final class RiderFinanceControllerTest extends RiderApiTestCase
         $earlier = $this->earning($this->rider, '70.00', $now->modify('-2 days'));
         $foreign = $this->earning($this->otherRider, '999.00', $now);
         $payout = (new RiderPayout())->setRider($this->rider)->setPeriodStart($now->modify('-7 days'))->setPeriodEnd($now)
-            ->setTotalAmount('120.00')->setStatus(PayoutStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setTotalAmount('120.00')->setStatus(RestaurantPayout::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
         $foreignPayout = (new RiderPayout())->setRider($this->otherRider)->setPeriodStart($now->modify('-7 days'))->setPeriodEnd($now)
-            ->setTotalAmount('999.00')->setStatus(PayoutStatus::PAID)->setPaidAt($now)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setTotalAmount('999.00')->setStatus(RestaurantPayout::STATUS_PAID)->setPaidAt($now)->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($payout, $foreignPayout);
         $this->entityManager->flush();
 
@@ -57,8 +56,8 @@ final class RiderFinanceControllerTest extends RiderApiTestCase
         $now = new \DateTimeImmutable();
         $this->rider->setCashOnHand('500.00')->setCashRemitLimit('1000.00');
         $pending = (new RiderCashRemittance())->setRider($this->rider)->setAmount('100.00')->setReferenceNote('First deposit')
-            ->setStatus(RemittanceStatus::PENDING)->setCreatedAt($now->modify('-1 day'))->setUpdatedAt($now->modify('-1 day'));
-        $foreign = (new RiderCashRemittance())->setRider($this->otherRider)->setAmount('50.00')->setStatus(RemittanceStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setStatus(RiderCashRemittance::STATUS_PENDING)->setCreatedAt($now->modify('-1 day'))->setUpdatedAt($now->modify('-1 day'));
+        $foreign = (new RiderCashRemittance())->setRider($this->otherRider)->setAmount('50.00')->setStatus(RiderCashRemittance::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($pending, $foreign);
         $this->entityManager->flush();
 
@@ -83,7 +82,7 @@ final class RiderFinanceControllerTest extends RiderApiTestCase
 
     private function earning(\App\Entity\Rider $rider, string $total, \DateTimeImmutable $at): RiderEarning
     {
-        $order = $this->createOrder(OrderStatus::DELIVERED, $rider, at: $at)->setDeliveredAt($at);
+        $order = $this->createOrder(Order::STATUS_DELIVERED, $rider, at: $at)->setDeliveredAt($at);
         $earning = (new RiderEarning())->setRider($rider)->setOrder($order)->setBasePay('40.00')->setDistancePay('0.00')
             ->setWaitingPay('0.00')->setIncentivePay('0.00')->setTipAmount('10.00')->setTotalEarned($total)->setCreatedAt($at)->setUpdatedAt($at);
         $order->setRiderEarning($earning);

@@ -6,9 +6,6 @@ namespace App\Service;
 
 use App\Entity\Payment;
 use App\Entity\PaymentStatusHistory;
-use App\Enum\PaymentActor;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -22,7 +19,7 @@ final class PaymentTransitionService
      * Statuses this service set and has not yet seen flushed, keyed by entity. Shared by every
      * instance in the process; a WeakMap so entries disappear together with their entities.
      *
-     * @var \WeakMap<Payment, PaymentStatus>|null
+     * @var \WeakMap<Payment, string>|null
      */
     private static ?\WeakMap $authorizedStatuses = null;
 
@@ -34,7 +31,7 @@ final class PaymentTransitionService
     /**
      * Whether this service set $payment's status to $status; a matching authorization is used up.
      */
-    public function consumeAuthorizedStatus(Payment $payment, PaymentStatus $status): bool
+    public function consumeAuthorizedStatus(Payment $payment, string $status): bool
     {
         if ((self::$authorizedStatuses[$payment] ?? null) !== $status) {
             return false;
@@ -49,22 +46,22 @@ final class PaymentTransitionService
      */
     public function cancelOrRefund(
         Payment $payment,
-        PaymentActor $changedBy,
+        string $changedBy,
         string $note,
         \DateTimeImmutable $now,
     ): void {
         $from = $payment->getStatus();
 
-        if (PaymentMethod::COD === $payment->getMethod()) {
-            if (PaymentStatus::FAILED === $from) {
+        if (Payment::METHOD_COD === $payment->getMethod()) {
+            if (Payment::STATUS_FAILED === $from) {
                 return;
             }
-            $to = PaymentStatus::FAILED;
+            $to = Payment::STATUS_FAILED;
         } else {
-            if (PaymentStatus::REFUNDED === $from) {
+            if (Payment::STATUS_REFUNDED === $from) {
                 return;
             }
-            $to = PaymentStatus::REFUNDED;
+            $to = Payment::STATUS_REFUNDED;
             $payment
                 ->setRefundedAmount($payment->getAmount())
                 ->setRefundedAt($now);
@@ -75,18 +72,18 @@ final class PaymentTransitionService
 
     public function markPaid(
         Payment $payment,
-        PaymentActor $changedBy,
+        string $changedBy,
         string $note,
         \DateTimeImmutable $now,
     ): void {
-        if (PaymentStatus::PAID === $payment->getStatus()) {
+        if (Payment::STATUS_PAID === $payment->getStatus()) {
             return;
         }
-        if (PaymentStatus::PENDING !== $payment->getStatus()) {
+        if (Payment::STATUS_PENDING !== $payment->getStatus()) {
             throw new \DomainException('Only a pending payment can be marked paid.');
         }
         $payment->setPaidAt($now);
-        $this->move($payment, PaymentStatus::PENDING, PaymentStatus::PAID, $changedBy, $note, $now);
+        $this->move($payment, Payment::STATUS_PENDING, Payment::STATUS_PAID, $changedBy, $note, $now);
     }
 
     /**
@@ -96,12 +93,12 @@ final class PaymentTransitionService
     public function refund(
         Payment $payment,
         string $amount,
-        PaymentActor $changedBy,
+        string $changedBy,
         ?string $reason,
         \DateTimeImmutable $now,
-    ): PaymentStatus {
+    ): string {
         $from = $payment->getStatus();
-        if (!in_array($from, [PaymentStatus::PAID, PaymentStatus::PARTIALLY_REFUNDED], true)) {
+        if (!in_array($from, [Payment::STATUS_PAID, Payment::STATUS_PARTIALLY_REFUNDED], true)) {
             throw new \DomainException('Only paid or partially refunded payments can be refunded.');
         }
         $remaining = bcsub($payment->getAmount(), $payment->getRefundedAmount(), 2);
@@ -109,12 +106,12 @@ final class PaymentTransitionService
             throw new \DomainException('The refund amount cannot exceed the remaining refundable balance.');
         }
         $refunded = bcadd($payment->getRefundedAmount(), $amount, 2);
-        $to = -1 !== bccomp($refunded, $payment->getAmount(), 2) ? PaymentStatus::REFUNDED : PaymentStatus::PARTIALLY_REFUNDED;
+        $to = -1 !== bccomp($refunded, $payment->getAmount(), 2) ? Payment::STATUS_REFUNDED : Payment::STATUS_PARTIALLY_REFUNDED;
         $payment->setRefundedAmount($refunded)->setRefundedAt($now);
         $note = sprintf(
             '%s recorded a %s refund of PHP %s%s',
-            ucfirst($changedBy->value),
-            PaymentStatus::REFUNDED === $to ? 'full' : 'partial',
+            ucfirst($changedBy),
+            Payment::STATUS_REFUNDED === $to ? 'full' : 'partial',
             $amount,
             null === $reason || '' === $reason ? '.' : ': '.$reason,
         );
@@ -125,9 +122,9 @@ final class PaymentTransitionService
 
     private function move(
         Payment $payment,
-        PaymentStatus $from,
-        PaymentStatus $to,
-        PaymentActor $changedBy,
+        string $from,
+        string $to,
+        string $changedBy,
         string $note,
         \DateTimeImmutable $now,
     ): void {

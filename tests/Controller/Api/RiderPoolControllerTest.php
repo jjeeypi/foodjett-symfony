@@ -8,20 +8,11 @@ use App\Entity\Conversation;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\RiderPoolOffer;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\ConversationType;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\RiderPoolEscalationStage;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use App\Repository\DeliveryZoneRepository;
 use App\Service\OrderTransitionService;
 use App\Tests\Double\RecordingMercureHub;
@@ -83,7 +74,7 @@ final class RiderPoolControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $rider = $entityManager->getRepository(Rider::class)->findOneBy(['user' => $entityManager->getRepository(User::class)->findOneBy(['email' => self::RIDER_EMAIL])]);
         self::assertInstanceOf(Rider::class, $rider);
-        $rider->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE);
+        $rider->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE);
         $entityManager->flush();
 
         $this->client->request('GET', '/api/rider/pool', server: $this->auth($this->login()));
@@ -122,11 +113,11 @@ final class RiderPoolControllerTest extends WebTestCase
         $this->client->jsonRequest('POST', '/api/rider/pool/'.$order->getId().'/accept', [], server: $this->auth($this->login()));
         self::assertResponseIsSuccessful();
         $payload = $this->payload()['order'] ?? [];
-        self::assertSame(OrderStatus::RIDER_ASSIGNED->value, $payload['status'] ?? null);
+        self::assertSame(Order::STATUS_RIDER_ASSIGNED, $payload['status'] ?? null);
         self::assertMatchesRegularExpression('/^\d{4}$/', (string) ($payload['pickup_code'] ?? ''));
         $conversation = $entityManager->getRepository(Conversation::class)->findOneBy([
             'order' => $order,
-            'type' => ConversationType::CUSTOMER_RIDER,
+            'type' => Conversation::TYPE_CUSTOMER_RIDER,
         ]);
         self::assertInstanceOf(Conversation::class, $conversation);
         $poolUpdates = array_values(array_filter(
@@ -156,7 +147,7 @@ final class RiderPoolControllerTest extends WebTestCase
         $wonOrder = $entityManager->find(Order::class, $order->getId());
         self::assertInstanceOf(Order::class, $wonOrder);
         self::assertSame(self::RIDER_EMAIL, $wonOrder->getRider()?->getUser()->getEmail());
-        self::assertSame(RiderAvailabilityStatus::BUSY, $wonOrder->getRider()?->getAvailabilityStatus());
+        self::assertSame(Rider::AVAILABILITY_BUSY, $wonOrder->getRider()?->getAvailabilityStatus());
         self::assertSame(
             number_format(round(DeliveryZoneRepository::distanceKm(14.5996000, 120.9843000, 14.5995000, 120.9842000), 4), 4, '.', ''),
             $wonOrder->getRiderPoolOffer()?->getAcceptedPickupDistanceKm(),
@@ -211,7 +202,7 @@ final class RiderPoolControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(409);
         self::assertSame('Remit cash before accepting another COD order.', $this->payload()['message'] ?? null);
-        self::assertSame(OrderStatus::FINDING_RIDER, $this->reloadOrder((string) $order->getId())->getStatus());
+        self::assertSame(Order::STATUS_FINDING_RIDER, $this->reloadOrder((string) $order->getId())->getStatus());
     }
 
     public function testAtomicAcceptEnforcesOneActiveOrderPerRider(): void
@@ -229,20 +220,20 @@ final class RiderPoolControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(409);
         self::assertSame('Finish your current delivery before accepting another order.', $this->payload()['message'] ?? null);
-        self::assertSame(OrderStatus::FINDING_RIDER, $this->reloadOrder((string) $cod->getId())->getStatus());
+        self::assertSame(Order::STATUS_FINDING_RIDER, $this->reloadOrder((string) $cod->getId())->getStatus());
     }
 
     private function createFixture(): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $riderUser = $this->user(self::RIDER_EMAIL, '+639186400001', UserRole::RIDER, $now);
+        $riderUser = $this->user(self::RIDER_EMAIL, '+639186400001', User::ACCOUNT_RIDER, $now);
         $rider = (new Rider())
             ->setUser($riderUser)
-            ->setVehicleType(VehicleType::MOTORCYCLE)
+            ->setVehicleType(Rider::VEHICLE_MOTORCYCLE)
             ->setPlateNumber('POOL-001')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)
             ->setCurrentLatitude('14.5996000')
             ->setCurrentLongitude('120.9843000')
             ->setLastLocationAt($now)
@@ -250,13 +241,13 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setCashRemitLimit('2000.00')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $secondRiderUser = $this->user(self::SECOND_RIDER_EMAIL, '+639186400004', UserRole::RIDER, $now);
+        $secondRiderUser = $this->user(self::SECOND_RIDER_EMAIL, '+639186400004', User::ACCOUNT_RIDER, $now);
         $secondRider = (new Rider())
             ->setUser($secondRiderUser)
-            ->setVehicleType(VehicleType::MOTORCYCLE)
+            ->setVehicleType(Rider::VEHICLE_MOTORCYCLE)
             ->setPlateNumber('POOL-002')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)
             ->setCurrentLatitude('14.5997000')
             ->setCurrentLongitude('120.9844000')
             ->setLastLocationAt($now)
@@ -264,7 +255,7 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setCashRemitLimit('2000.00')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186400002', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186400002', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Pool Test Restaurant')
@@ -272,11 +263,11 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setAddress('Pool test pickup')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186400003', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186400003', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -290,8 +281,8 @@ final class RiderPoolControllerTest extends WebTestCase
         foreach ([$riderUser, $rider, $secondRiderUser, $secondRider, $restaurantUser, $restaurant, $customerUser, $customer, $address] as $entity) {
             $entityManager->persist($entity);
         }
-        $this->order($entityManager, $customer, $restaurant, $address, 'POOL-CARD', PaymentMethod::CARD, $now);
-        $this->order($entityManager, $customer, $restaurant, $address, 'POOL-COD', PaymentMethod::COD, $now);
+        $this->order($entityManager, $customer, $restaurant, $address, 'POOL-CARD', Payment::METHOD_CARD, $now);
+        $this->order($entityManager, $customer, $restaurant, $address, 'POOL-COD', Payment::METHOD_COD, $now);
         $entityManager->flush();
     }
 
@@ -301,7 +292,7 @@ final class RiderPoolControllerTest extends WebTestCase
         Restaurant $restaurant,
         CustomerAddress $address,
         string $number,
-        PaymentMethod $paymentMethod,
+        string $paymentMethod,
         \DateTimeImmutable $now,
     ): void {
         $order = (new Order())
@@ -309,7 +300,7 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
             ->setCustomerAddress($address)
-            ->setStatus(OrderStatus::FINDING_RIDER)
+            ->setStatus(Order::STATUS_FINDING_RIDER)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
@@ -323,7 +314,7 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setOrder($order)
             ->setSearchRadiusKm('3.0')
             ->setIncentiveAmount('20.00')
-            ->setEscalationStage(RiderPoolEscalationStage::INITIAL)
+            ->setEscalationStage(RiderPoolOffer::STAGE_INITIAL)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $order->setRiderPoolOffer($offer);
@@ -331,7 +322,7 @@ final class RiderPoolControllerTest extends WebTestCase
         $entityManager->persist($offer);
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Pool Test User')
@@ -339,7 +330,7 @@ final class RiderPoolControllerTest extends WebTestCase
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

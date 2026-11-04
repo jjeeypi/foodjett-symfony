@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\OrderActor;
 use App\Repository\OrderStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderStatusHistoryRepository::class)]
 #[ORM\Table(name: 'order_status_history')]
@@ -26,8 +26,9 @@ class OrderStatusHistory
     #[ORM\Column(length: 255)]
     private string $status;
 
-    #[ORM\Column(length: 32, enumType: OrderActor::class)]
-    private OrderActor $changedBy;
+    #[Assert\Choice(choices: Order::ACTORS)]
+    #[ORM\Column(length: 32)]
+    private string $changedBy;
 
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $note = null;
@@ -40,8 +41,8 @@ class OrderStatusHistory
     public function setOrder(Order $order): self { $this->order = $order; return $this; }
     public function getStatus(): string { return $this->status; }
     public function setStatus(string $status): self { $this->status = $status; return $this; }
-    public function getChangedBy(): OrderActor { return $this->changedBy; }
-    public function setChangedBy(OrderActor $changedBy): self { $this->changedBy = $changedBy; return $this; }
+    public function getChangedBy(): string { return $this->changedBy; }
+    public function setChangedBy(string $changedBy): self { $this->changedBy = $changedBy; return $this; }
     public function getNote(): ?string { return $this->note; }
     public function setNote(?string $note): self { $this->note = $note; return $this; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }

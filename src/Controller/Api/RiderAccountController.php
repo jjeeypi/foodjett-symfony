@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\Restaurant;
+use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\PayoutMethod;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use App\Repository\UserRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\UploadStorage;
@@ -50,10 +49,10 @@ final class RiderAccountController extends AbstractRiderController
         if ($data instanceof JsonResponse) { return $data; }
         $name = array_key_exists('name', $data) ? trim((string) $data['name']) : $user->getName();
         $phone = array_key_exists('phone', $data) ? trim((string) $data['phone']) : $user->getPhone();
-        $vehicle = array_key_exists('vehicle_type', $data) ? VehicleType::tryFrom((string) $data['vehicle_type']) : $rider->getVehicleType();
+        $vehicle = array_key_exists('vehicle_type', $data) ? (in_array((string) $data['vehicle_type'], Rider::VEHICLE_TYPES, true) ? (string) $data['vehicle_type'] : null) : $rider->getVehicleType();
         $plate = array_key_exists('plate_number', $data) ? trim((string) $data['plate_number']) : $rider->getPlateNumber();
         $payoutMethod = array_key_exists('payout_method', $data) && null !== $data['payout_method'] && '' !== $data['payout_method']
-            ? PayoutMethod::tryFrom((string) $data['payout_method']) : $rider->getPayoutMethod();
+            ? (in_array((string) $data['payout_method'], Restaurant::PAYOUT_METHODS, true) ? (string) $data['payout_method'] : null) : $rider->getPayoutMethod();
         $payoutDetails = $data['payout_account_details'] ?? null;
         if (is_string($payoutDetails)) { $payoutDetails = json_decode($payoutDetails, true); }
         $errors = [];
@@ -61,7 +60,7 @@ final class RiderAccountController extends AbstractRiderController
         if (null !== $phone && ('' === $phone || mb_strlen($phone) > 255)) { $errors['phone'][] = 'Phone must be between 1 and 255 characters.'; }
         elseif (null !== $phone && $this->phoneExists($phone, $user)) { $errors['phone'][] = 'This phone number is already in use.'; }
         if (null === $vehicle) { $errors['vehicle_type'][] = 'Vehicle type must be motorcycle, bicycle, or car.'; }
-        if (VehicleType::BICYCLE !== $vehicle && (null === $plate || '' === $plate)) { $errors['plate_number'][] = 'Plate number is required unless the vehicle is a bicycle.'; }
+        if (Rider::VEHICLE_BICYCLE !== $vehicle && (null === $plate || '' === $plate)) { $errors['plate_number'][] = 'Plate number is required unless the vehicle is a bicycle.'; }
         if (null !== $plate && mb_strlen($plate) > 255) { $errors['plate_number'][] = 'Plate number cannot exceed 255 characters.'; }
         if (array_key_exists('payout_method', $data) && null !== $data['payout_method'] && '' !== $data['payout_method'] && null === $payoutMethod) { $errors['payout_method'][] = 'Payout method must be bank or ewallet.'; }
         if (array_key_exists('payout_account_details', $data) && null !== $payoutDetails && !is_array($payoutDetails)) { $errors['payout_account_details'][] = 'Payout account details must be an object.'; }
@@ -69,7 +68,7 @@ final class RiderAccountController extends AbstractRiderController
 
         $now = new \DateTimeImmutable();
         $user->setName($name)->setPhone($phone)->setUpdatedAt($now);
-        $rider->setVehicleType($vehicle)->setPlateNumber(VehicleType::BICYCLE === $vehicle && '' === (string) $plate ? null : $plate)
+        $rider->setVehicleType($vehicle)->setPlateNumber(Rider::VEHICLE_BICYCLE === $vehicle && '' === (string) $plate ? null : $plate)
             ->setPayoutMethod($payoutMethod)->setUpdatedAt($now);
         if (array_key_exists('payout_account_details', $data)) {
             $rider->setEncryptedPayoutAccountDetails(null === $payoutDetails ? null : $this->encryptPayoutDetails($payoutDetails));
@@ -98,7 +97,7 @@ final class RiderAccountController extends AbstractRiderController
         }
         $now = new \DateTimeImmutable();
         $user->setName('Deleted Rider')->setEmail(null)->setPhone(null)->setAvatarPath(null)->setEmailVerifiedAt(null)
-            ->setPhoneVerifiedAt(null)->setStatus(UserStatus::BANNED)->setUpdatedAt($now);
+            ->setPhoneVerifiedAt(null)->setStatus(User::STATUS_BANNED)->setUpdatedAt($now);
         $rider->setPlateNumber(null)->setPayoutMethod(null)->setEncryptedPayoutAccountDetails(null)->setUpdatedAt($now);
         $this->entityManager->flush();
 
@@ -117,11 +116,11 @@ final class RiderAccountController extends AbstractRiderController
         $user = $this->riderUser();
         $encrypted = $rider->getEncryptedPayoutAccountDetails();
         return ['id' => $rider->getId(), 'name' => $user->getName(), 'email' => $user->getEmail(), 'phone' => $user->getPhone(),
-            'avatar_path' => $user->getAvatarPath(), 'vehicle_type' => $rider->getVehicleType()->value, 'plate_number' => $rider->getPlateNumber(),
-            'approval_status' => $rider->getApprovalStatus()->value, 'availability_status' => $rider->getAvailabilityStatus()->value,
+            'avatar_path' => $user->getAvatarPath(), 'vehicle_type' => $rider->getVehicleType(), 'plate_number' => $rider->getPlateNumber(),
+            'approval_status' => $rider->getApprovalStatus(), 'availability_status' => $rider->getAvailabilityStatus(),
             'current_latitude' => $rider->getCurrentLatitude(), 'current_longitude' => $rider->getCurrentLongitude(),
             'last_location_at' => $rider->getLastLocationAt()?->format(\DateTimeInterface::ATOM),
-            'payout_method' => $rider->getPayoutMethod()?->value,
+            'payout_method' => $rider->getPayoutMethod(),
             'payout_account_details' => null === $encrypted ? null : $this->decryptPayoutDetails($encrypted)];
     }
 

@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\ApprovalStatus;
-use App\Enum\PayoutMethod;
-use App\Enum\RestaurantOperatingStatus;
 use App\Repository\RestaurantRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RestaurantRepository::class)]
 #[ORM\Table(name: 'restaurants')]
@@ -20,6 +18,40 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'restaurants_user_id_unique', columns: ['user_id'])]
 class Restaurant
 {
+    // Admin approval of the account (APPROVAL_STATUSES)
+    public const APPROVAL_PENDING = 'pending';
+    public const APPROVAL_APPROVED = 'approved';
+    public const APPROVAL_REJECTED = 'rejected';
+
+    /** @var list<string> */
+    public const APPROVAL_STATUSES = [
+        self::APPROVAL_PENDING,
+        self::APPROVAL_APPROVED,
+        self::APPROVAL_REJECTED,
+    ];
+
+    // Where payouts are sent (PAYOUT_METHODS)
+    public const PAYOUT_METHOD_BANK = 'bank';
+    public const PAYOUT_METHOD_EWALLET = 'ewallet';
+
+    /** @var list<string> */
+    public const PAYOUT_METHODS = [
+        self::PAYOUT_METHOD_BANK,
+        self::PAYOUT_METHOD_EWALLET,
+    ];
+
+    // Whether the restaurant takes orders now (OPERATING_STATUSES)
+    public const OPERATING_OPEN = 'open';
+    public const OPERATING_CLOSED = 'closed';
+    public const OPERATING_TEMPORARILY_CLOSED = 'temporarily_closed';
+
+    /** @var list<string> */
+    public const OPERATING_STATUSES = [
+        self::OPERATING_OPEN,
+        self::OPERATING_CLOSED,
+        self::OPERATING_TEMPORARILY_CLOSED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -65,17 +97,20 @@ class Restaurant
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => '15.00'])]
     private string $commissionRate = '15.00';
 
-    #[ORM\Column(length: 32, enumType: ApprovalStatus::class, options: ['default' => 'pending'])]
-    private ApprovalStatus $approvalStatus = ApprovalStatus::PENDING;
+    #[Assert\Choice(choices: Restaurant::APPROVAL_STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'pending'])]
+    private string $approvalStatus = self::APPROVAL_PENDING;
 
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $rejectionReason = null;
 
-    #[ORM\Column(length: 32, enumType: RestaurantOperatingStatus::class, options: ['default' => 'closed'])]
-    private RestaurantOperatingStatus $operatingStatus = RestaurantOperatingStatus::CLOSED;
+    #[Assert\Choice(choices: Restaurant::OPERATING_STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'closed'])]
+    private string $operatingStatus = self::OPERATING_CLOSED;
 
-    #[ORM\Column(length: 32, nullable: true, enumType: PayoutMethod::class)]
-    private ?PayoutMethod $payoutMethod = null;
+    #[Assert\Choice(choices: Restaurant::PAYOUT_METHODS)]
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $payoutMethod = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $payoutAccountDetails = null;
@@ -292,12 +327,12 @@ class Restaurant
         return $this;
     }
 
-    public function getApprovalStatus(): ApprovalStatus
+    public function getApprovalStatus(): string
     {
         return $this->approvalStatus;
     }
 
-    public function setApprovalStatus(ApprovalStatus $approvalStatus): self
+    public function setApprovalStatus(string $approvalStatus): self
     {
         $this->approvalStatus = $approvalStatus;
 
@@ -316,24 +351,24 @@ class Restaurant
         return $this;
     }
 
-    public function getOperatingStatus(): RestaurantOperatingStatus
+    public function getOperatingStatus(): string
     {
         return $this->operatingStatus;
     }
 
-    public function setOperatingStatus(RestaurantOperatingStatus $operatingStatus): self
+    public function setOperatingStatus(string $operatingStatus): self
     {
         $this->operatingStatus = $operatingStatus;
 
         return $this;
     }
 
-    public function getPayoutMethod(): ?PayoutMethod
+    public function getPayoutMethod(): ?string
     {
         return $this->payoutMethod;
     }
 
-    public function setPayoutMethod(?PayoutMethod $payoutMethod): self
+    public function setPayoutMethod(?string $payoutMethod): self
     {
         $this->payoutMethod = $payoutMethod;
 

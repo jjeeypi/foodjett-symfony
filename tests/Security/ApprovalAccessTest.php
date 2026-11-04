@@ -7,12 +7,6 @@ namespace App\Tests\Security;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -46,7 +40,7 @@ final class ApprovalAccessTest extends WebTestCase
     public function testPendingRestaurantCanSeeStatusButCannotUseFunctionalEndpoint(): void
     {
         $email = 'approval-pending-restaurant@foodjett.test';
-        $this->createRestaurant($email, ApprovalStatus::PENDING);
+        $this->createRestaurant($email, Restaurant::APPROVAL_PENDING);
         $token = $this->login($email);
 
         $this->client->request('GET', '/api/restaurant/approval-status', server: $this->auth($token));
@@ -59,7 +53,7 @@ final class ApprovalAccessTest extends WebTestCase
     public function testApprovedRestaurantCanUseFunctionalEndpoint(): void
     {
         $email = 'approval-approved-restaurant@foodjett.test';
-        $this->createRestaurant($email, ApprovalStatus::APPROVED);
+        $this->createRestaurant($email, Restaurant::APPROVAL_APPROVED);
         $token = $this->login($email);
 
         $this->client->request('GET', '/api/restaurant/dashboard', server: $this->auth($token));
@@ -69,7 +63,7 @@ final class ApprovalAccessTest extends WebTestCase
     public function testPendingRiderCanSeeStatusButCannotUsePool(): void
     {
         $email = 'approval-pending-rider@foodjett.test';
-        $this->createRider($email, ApprovalStatus::PENDING);
+        $this->createRider($email, Rider::APPROVAL_PENDING);
         $token = $this->login($email);
 
         $this->client->request('GET', '/api/rider/approval-status', server: $this->auth($token));
@@ -79,10 +73,10 @@ final class ApprovalAccessTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
-    private function createRestaurant(string $email, ApprovalStatus $approvalStatus): void
+    private function createRestaurant(string $email, string $approvalStatus): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $user = $this->createUser($email, UserRole::RESTAURANT);
+        $user = $this->createUser($email, User::ACCOUNT_RESTAURANT);
         $restaurant = (new Restaurant())
             ->setUser($user)
             ->setName('Approval Test Restaurant')
@@ -91,7 +85,7 @@ final class ApprovalAccessTest extends WebTestCase
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
             ->setApprovalStatus($approvalStatus)
-            ->setOperatingStatus(RestaurantOperatingStatus::CLOSED)
+            ->setOperatingStatus(Restaurant::OPERATING_CLOSED)
             ->setCreatedAt(new \DateTimeImmutable())
             ->setUpdatedAt(new \DateTimeImmutable());
 
@@ -100,16 +94,16 @@ final class ApprovalAccessTest extends WebTestCase
         $entityManager->flush();
     }
 
-    private function createRider(string $email, ApprovalStatus $approvalStatus): void
+    private function createRider(string $email, string $approvalStatus): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $user = $this->createUser($email, UserRole::RIDER);
+        $user = $this->createUser($email, User::ACCOUNT_RIDER);
         $rider = (new Rider())
             ->setUser($user)
-            ->setVehicleType(VehicleType::MOTORCYCLE)
+            ->setVehicleType(Rider::VEHICLE_MOTORCYCLE)
             ->setPlateNumber('TEST-123')
             ->setApprovalStatus($approvalStatus)
-            ->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE)
+            ->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE)
             ->setCreatedAt(new \DateTimeImmutable())
             ->setUpdatedAt(new \DateTimeImmutable());
 
@@ -118,7 +112,7 @@ final class ApprovalAccessTest extends WebTestCase
         $entityManager->flush();
     }
 
-    private function createUser(string $email, UserRole $role): User
+    private function createUser(string $email, string $role): User
     {
         $now = new \DateTimeImmutable();
 
@@ -128,7 +122,7 @@ final class ApprovalAccessTest extends WebTestCase
             ->setPhone('+639'.random_int(100000000, 999999999))
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

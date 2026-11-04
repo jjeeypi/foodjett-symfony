@@ -7,8 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantOperatingHour;
 use App\Entity\User;
-use App\Enum\PayoutMethod;
-use App\Enum\RestaurantOperatingStatus;
 use App\Repository\UserRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\UploadStorage;
@@ -81,7 +79,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
 
         $payoutMethod = null;
         if (array_key_exists('payout_method', $data) && null !== $data['payout_method'] && '' !== $data['payout_method']) {
-            $payoutMethod = PayoutMethod::tryFrom((string) $data['payout_method']);
+            $payoutMethod = (in_array((string) $data['payout_method'], Restaurant::PAYOUT_METHODS, true) ? (string) $data['payout_method'] : null);
             if (null === $payoutMethod) {
                 $errors['payout_method'][] = 'Payout method must be bank or ewallet.';
             }
@@ -163,7 +161,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
         if ($data instanceof JsonResponse) {
             return $data;
         }
-        $status = RestaurantOperatingStatus::tryFrom((string) ($data['operating_status'] ?? ''));
+        $status = (in_array((string) ($data['operating_status'] ?? ''), Restaurant::OPERATING_STATUSES, true) ? (string) ($data['operating_status'] ?? '') : null);
         if (null === $status) {
             return $this->json(['message' => 'The submitted data is invalid.', 'errors' => ['operating_status' => ['Status must be open, closed, or temporarily_closed.']]], 422);
         }
@@ -171,7 +169,7 @@ final class RestaurantProfileController extends AbstractRestaurantController
         $restaurant->setOperatingStatus($status)->setUpdatedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        return $this->json(['message' => 'Operating status updated.', 'operating_status' => $status->value]);
+        return $this->json(['message' => 'Operating status updated.', 'operating_status' => $status]);
     }
 
     #[Route('/operating-hours', name: 'operating_hours_show', methods: ['GET'])]
@@ -253,8 +251,8 @@ final class RestaurantProfileController extends AbstractRestaurantController
             'phone' => $restaurant->getUser()->getPhone(),
             'address' => $restaurant->getAddress(), 'latitude' => $restaurant->getLatitude(), 'longitude' => $restaurant->getLongitude(),
             'default_prep_time_minutes' => $restaurant->getDefaultPrepTimeMinutes(), 'min_order_amount' => $restaurant->getMinOrderAmount(),
-            'commission_rate' => $restaurant->getCommissionRate(), 'approval_status' => $restaurant->getApprovalStatus()->value,
-            'operating_status' => $restaurant->getOperatingStatus()->value, 'payout_method' => $restaurant->getPayoutMethod()?->value,
+            'commission_rate' => $restaurant->getCommissionRate(), 'approval_status' => $restaurant->getApprovalStatus(),
+            'operating_status' => $restaurant->getOperatingStatus(), 'payout_method' => $restaurant->getPayoutMethod(),
             'payout_account_details' => $restaurant->getPayoutAccountDetails(),
         ];
     }

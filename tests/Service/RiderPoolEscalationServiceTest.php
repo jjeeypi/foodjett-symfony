@@ -11,15 +11,6 @@ use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\RiderPoolOffer;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderPoolEscalationStage;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use App\Service\OrderTransitionService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
@@ -53,14 +44,14 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
     public function testOverdueOfferCatchesUpThroughCustomerNotified(): void
     {
         $now = new \DateTimeImmutable();
-        $order = $this->createOrder('ESCALATION-NOTIFIED', PaymentMethod::COD, PaymentStatus::PENDING, $now->modify('-9 minutes'));
+        $order = $this->createOrder('ESCALATION-NOTIFIED', Payment::METHOD_COD, Payment::STATUS_PENDING, $now->modify('-9 minutes'));
 
         $changed = $this->service()->escalatePoolOrder($order, $now);
 
         self::assertTrue($changed);
         $order = $this->reload((string) $order->getId());
-        self::assertSame(OrderStatus::FINDING_RIDER, $order->getStatus());
-        self::assertSame(RiderPoolEscalationStage::CUSTOMER_NOTIFIED, $order->getRiderPoolOffer()?->getEscalationStage());
+        self::assertSame(Order::STATUS_FINDING_RIDER, $order->getStatus());
+        self::assertSame(RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED, $order->getRiderPoolOffer()?->getEscalationStage());
         self::assertSame('8.0', $order->getRiderPoolOffer()?->getSearchRadiusKm());
         self::assertSame('20.00', $order->getRiderPoolOffer()?->getIncentiveAmount());
         self::assertTrue($order->canBeCancelledByCustomer());
@@ -70,15 +61,15 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
     public function testAutoCancellationRefundsPaidSimulatedPayment(): void
     {
         $now = new \DateTimeImmutable();
-        $order = $this->createOrder('ESCALATION-CARD', PaymentMethod::CARD, PaymentStatus::PAID, $now->modify('-16 minutes'));
+        $order = $this->createOrder('ESCALATION-CARD', Payment::METHOD_CARD, Payment::STATUS_PAID, $now->modify('-16 minutes'));
 
         self::assertTrue($this->service()->escalatePoolOrder($order, $now));
 
         $order = $this->reload((string) $order->getId());
-        self::assertSame(OrderStatus::CANCELLED_NO_RIDER, $order->getStatus());
-        self::assertSame(OrderActor::SYSTEM, $order->getCancelledBy());
-        self::assertSame(RiderPoolEscalationStage::AUTO_CANCELLED, $order->getRiderPoolOffer()?->getEscalationStage());
-        self::assertSame(PaymentStatus::REFUNDED, $order->getPayment()?->getStatus());
+        self::assertSame(Order::STATUS_CANCELLED_NO_RIDER, $order->getStatus());
+        self::assertSame(Order::ACTOR_SYSTEM, $order->getCancelledBy());
+        self::assertSame(RiderPoolOffer::STAGE_AUTO_CANCELLED, $order->getRiderPoolOffer()?->getEscalationStage());
+        self::assertSame(Payment::STATUS_REFUNDED, $order->getPayment()?->getStatus());
         self::assertSame($order->getPayment()?->getAmount(), $order->getPayment()?->getRefundedAmount());
         self::assertCount(1, $order->getPayment()?->getStatusHistory());
         $poolUpdates = array_values(array_filter(
@@ -95,20 +86,20 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
     public function testAutoCancellationMarksUncollectedCodPaymentFailed(): void
     {
         $now = new \DateTimeImmutable();
-        $order = $this->createOrder('ESCALATION-COD', PaymentMethod::COD, PaymentStatus::PENDING, $now->modify('-16 minutes'));
+        $order = $this->createOrder('ESCALATION-COD', Payment::METHOD_COD, Payment::STATUS_PENDING, $now->modify('-16 minutes'));
 
         self::assertTrue($this->service()->escalatePoolOrder($order, $now));
 
         $order = $this->reload((string) $order->getId());
-        self::assertSame(OrderStatus::CANCELLED_NO_RIDER, $order->getStatus());
-        self::assertSame(PaymentStatus::FAILED, $order->getPayment()?->getStatus());
+        self::assertSame(Order::STATUS_CANCELLED_NO_RIDER, $order->getStatus());
+        self::assertSame(Payment::STATUS_FAILED, $order->getPayment()?->getStatus());
         self::assertSame('0.00', $order->getPayment()?->getRefundedAmount());
     }
 
     private function createFixture(): void
     {
         $now = new \DateTimeImmutable();
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186600001', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186600001', User::ACCOUNT_CUSTOMER, $now);
         $this->customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $this->address = (new CustomerAddress())
             ->setCustomer($this->customer)
@@ -118,7 +109,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
             ->setLongitude('121.0223000')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186600002', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186600002', User::ACCOUNT_RESTAURANT, $now);
         $this->restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Escalation Test Restaurant')
@@ -126,8 +117,8 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
             ->setAddress('Escalation pickup')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         foreach ([$customerUser, $this->customer, $this->address, $restaurantUser, $this->restaurant] as $entity) {
@@ -138,8 +129,8 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
 
     private function createOrder(
         string $number,
-        PaymentMethod $method,
-        PaymentStatus $paymentStatus,
+        string $method,
+        string $paymentStatus,
         \DateTimeImmutable $startedAt,
     ): Order {
         $now = new \DateTimeImmutable();
@@ -148,7 +139,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
             ->setCustomer($this->customer)
             ->setRestaurant($this->restaurant)
             ->setCustomerAddress($this->address)
-            ->setStatus(OrderStatus::FINDING_RIDER)
+            ->setStatus(Order::STATUS_FINDING_RIDER)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
@@ -160,7 +151,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         $offer = (new RiderPoolOffer())
             ->setOrder($order)
             ->setSearchRadiusKm('3.0')
-            ->setEscalationStage(RiderPoolEscalationStage::INITIAL)
+            ->setEscalationStage(RiderPoolOffer::STAGE_INITIAL)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $payment = (new Payment())
@@ -168,8 +159,8 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
             ->setMethod($method)
             ->setStatus($paymentStatus)
             ->setAmount('135.00')
-            ->setPaidAt(PaymentStatus::PAID === $paymentStatus ? $now : null)
-            ->setTransactionReference(PaymentStatus::PAID === $paymentStatus ? 'SIMULATED-ESCALATION' : null)
+            ->setPaidAt(Payment::STATUS_PAID === $paymentStatus ? $now : null)
+            ->setTransactionReference(Payment::STATUS_PAID === $paymentStatus ? 'SIMULATED-ESCALATION' : null)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $order->setRiderPoolOffer($offer)->setPayment($payment);
@@ -181,7 +172,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         return $order;
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Escalation Test User')
@@ -189,7 +180,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
             ->setPhone($phone)
             ->setPassword('not-used')
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Security;
 
 use App\Entity\User;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -29,8 +27,8 @@ final class PasswordResetTest extends WebTestCase
             ->setEmail(self::EMAIL)
             ->setPhone('+639186666666')
             ->setPassword(password_hash(self::OLD_PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole(UserRole::CUSTOMER)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setRole(User::ACCOUNT_CUSTOMER)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);

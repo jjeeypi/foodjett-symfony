@@ -6,7 +6,6 @@ namespace App\Tests\Command;
 
 use App\Command\MakeAdminCommand;
 use App\Entity\User;
-use App\Enum\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Command\Command;
@@ -43,7 +42,7 @@ final class MakeAdminCommandTest extends KernelTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $entityManager->getRepository(User::class)->findOneBy(['email' => self::EMAIL]);
         self::assertInstanceOf(User::class, $user);
-        self::assertSame(UserRole::ADMIN, $user->getRole());
+        self::assertSame(User::ACCOUNT_ADMIN, $user->getRole());
         self::assertNotNull($user->getAdmin());
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'AdminPassword123!'));
 

@@ -9,14 +9,9 @@ use App\Entity\CustomerAddress;
 use App\Entity\MenuCategory;
 use App\Entity\MenuItem;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -49,11 +44,11 @@ abstract class RestaurantApiTestCase extends WebTestCase
         $this->marker = 'RAPI-'.bin2hex(random_bytes(5));
         $now = new \DateTimeImmutable();
 
-        $this->restaurantUser = $this->user('restaurant-a', UserRole::RESTAURANT, $now);
-        $otherUser = $this->user('restaurant-b', UserRole::RESTAURANT, $now);
+        $this->restaurantUser = $this->user('restaurant-a', User::ACCOUNT_RESTAURANT, $now);
+        $otherUser = $this->user('restaurant-b', User::ACCOUNT_RESTAURANT, $now);
         $this->restaurant = $this->restaurantProfile($this->restaurantUser, 'Restaurant A', 'a', $now);
         $this->otherRestaurant = $this->restaurantProfile($otherUser, 'Restaurant B', 'b', $now);
-        $customerUser = $this->user('customer', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user('customer', User::ACCOUNT_CUSTOMER, $now);
         $this->customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $this->address = (new CustomerAddress())->setCustomer($this->customer)->setLabel($this->marker)
             ->setAddressLine('123 Test Street')->setLatitude('14.6091000')->setLongitude('121.0223000')
@@ -126,7 +121,7 @@ abstract class RestaurantApiTestCase extends WebTestCase
 
     protected function createOrder(
         Restaurant $restaurant,
-        OrderStatus $status = OrderStatus::PLACED,
+        string $status = Order::STATUS_PLACED,
         string $subtotal = '100.00',
         string $total = '135.00',
         ?\DateTimeImmutable $placedAt = null,
@@ -137,7 +132,7 @@ abstract class RestaurantApiTestCase extends WebTestCase
         $order = (new Order())->setOrderNumber($this->marker.'-'.(++$this->orderSequence))->setCustomer($this->customer)
             ->setRestaurant($restaurant)->setCustomerAddress($this->address)->setStatus($status)->setSubtotal($subtotal)
             ->setDeliveryFee('35.00')->setServiceFee('0.00')->setDiscountAmount('0.00')->setTipAmount('0.00')
-            ->setTotalAmount($total)->setCommissionAmount($commission)->setPaymentMethod(PaymentMethod::COD)
+            ->setTotalAmount($total)->setCommissionAmount($commission)->setPaymentMethod(Payment::METHOD_COD)
             ->setPlacedAt($placedAt)->setDeliveredAt($deliveredAt)->setCreatedAt($placedAt)->setUpdatedAt($placedAt);
         $this->persist($order);
 
@@ -164,20 +159,20 @@ abstract class RestaurantApiTestCase extends WebTestCase
         return $item;
     }
 
-    private function user(string $label, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $label, string $role, \DateTimeImmutable $now): User
     {
         $suffix = bin2hex(random_bytes(3));
 
         return (new User())->setName($this->marker.' '.$label)->setEmail(strtolower($this->marker)."-$label-$suffix@foodjett.test")
             ->setPhone('+639'.random_int(100000000, 999999999))->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function restaurantProfile(User $user, string $name, string $suffix, \DateTimeImmutable $now): Restaurant
     {
         return (new Restaurant())->setUser($user)->setName($this->marker.' '.$name)->setSlug(strtolower($this->marker)."-$suffix")
             ->setAddress('Restaurant Test Address')->setLatitude('14.5995000')->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }
 }

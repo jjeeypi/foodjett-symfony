@@ -6,19 +6,18 @@ namespace App\Tests\Controller\Api;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Enum\ConversationType;
-use App\Enum\OrderStatus;
+use App\Entity\Order;
 use App\Tests\Double\RecordingMercureHub;
 
 final class RiderConversationControllerTest extends RiderApiTestCase
 {
     public function testConversationListAndMessagesAreScopedToAssignedRider(): void
     {
-        $order = $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->rider);
-        $foreignOrder = $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->otherRider);
-        $conversation = $this->conversation($order, ConversationType::CUSTOMER_RIDER, new \DateTimeImmutable('-1 hour'));
-        $restaurantConversation = $this->conversation($order, ConversationType::CUSTOMER_RESTAURANT, new \DateTimeImmutable());
-        $foreign = $this->conversation($foreignOrder, ConversationType::CUSTOMER_RIDER, new \DateTimeImmutable());
+        $order = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider);
+        $foreignOrder = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->otherRider);
+        $conversation = $this->conversation($order, Conversation::TYPE_CUSTOMER_RIDER, new \DateTimeImmutable('-1 hour'));
+        $restaurantConversation = $this->conversation($order, Conversation::TYPE_CUSTOMER_RESTAURANT, new \DateTimeImmutable());
+        $foreign = $this->conversation($foreignOrder, Conversation::TYPE_CUSTOMER_RIDER, new \DateTimeImmutable());
         $older = $this->message($conversation, $this->customer->getUser(), 'Please call when you arrive.', new \DateTimeImmutable('-50 minutes'));
         $newer = $this->message($conversation, $this->riderUser, 'I am on my way.', new \DateTimeImmutable('-40 minutes'));
         $this->persist($conversation, $restaurantConversation, $foreign, $older, $newer);
@@ -49,8 +48,8 @@ final class RiderConversationControllerTest extends RiderApiTestCase
 
     public function testRiderCanSendAndMarkCustomerMessagesRead(): void
     {
-        $order = $this->createOrder(OrderStatus::ON_THE_WAY, $this->rider);
-        $conversation = $this->conversation($order, ConversationType::CUSTOMER_RIDER, new \DateTimeImmutable('-5 minutes'));
+        $order = $this->createOrder(Order::STATUS_ON_THE_WAY, $this->rider);
+        $conversation = $this->conversation($order, Conversation::TYPE_CUSTOMER_RIDER, new \DateTimeImmutable('-5 minutes'));
         $incoming = $this->message($conversation, $this->customer->getUser(), 'The gate is blue.', new \DateTimeImmutable('-2 minutes'));
         $outgoing = $this->message($conversation, $this->riderUser, 'Understood.', new \DateTimeImmutable('-1 minute'));
         $this->persist($conversation, $incoming, $outgoing);
@@ -88,11 +87,11 @@ final class RiderConversationControllerTest extends RiderApiTestCase
 
     public function testClosedConversationAndMessageRateLimitAreEnforced(): void
     {
-        $closedOrder = $this->createOrder(OrderStatus::DELIVERED, $this->rider);
-        $closed = $this->conversation($closedOrder, ConversationType::CUSTOMER_RIDER, new \DateTimeImmutable('-1 hour'))
+        $closedOrder = $this->createOrder(Order::STATUS_DELIVERED, $this->rider);
+        $closed = $this->conversation($closedOrder, Conversation::TYPE_CUSTOMER_RIDER, new \DateTimeImmutable('-1 hour'))
             ->setClosedAt(new \DateTimeImmutable('-1 minute'));
-        $openOrder = $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->rider);
-        $open = $this->conversation($openOrder, ConversationType::CUSTOMER_RIDER, new \DateTimeImmutable());
+        $openOrder = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider);
+        $open = $this->conversation($openOrder, Conversation::TYPE_CUSTOMER_RIDER, new \DateTimeImmutable());
         $this->persist($closed, $open);
         for ($index = 0; $index < 20; ++$index) {
             $this->persist($this->message($open, $this->riderUser, 'Message '.$index, new \DateTimeImmutable('-10 seconds')));
@@ -108,7 +107,7 @@ final class RiderConversationControllerTest extends RiderApiTestCase
         self::assertStringContainsString('Too many messages', $this->payload()['message']);
     }
 
-    private function conversation(\App\Entity\Order $order, ConversationType $type, \DateTimeImmutable $at): Conversation
+    private function conversation(\App\Entity\Order $order, string $type, \DateTimeImmutable $at): Conversation
     {
         return (new Conversation())->setOrder($order)->setType($type)->setCreatedAt($at)->setUpdatedAt($at);
     }

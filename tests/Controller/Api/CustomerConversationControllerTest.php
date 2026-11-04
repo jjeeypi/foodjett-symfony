@@ -6,7 +6,6 @@ namespace App\Tests\Controller\Api;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Enum\ConversationType;
 use App\Tests\Double\RecordingMercureHub;
 
 final class CustomerConversationControllerTest extends CustomerApiTestCase
@@ -120,7 +119,7 @@ final class CustomerConversationControllerTest extends CustomerApiTestCase
         self::assertSame($firstId, $this->payload()['conversation']['id']);
         self::assertSame(1, $this->entityManager->getRepository(Conversation::class)->count([
             'order' => $order,
-            'type' => ConversationType::CUSTOMER_RIDER,
+            'type' => Conversation::TYPE_CUSTOMER_RIDER,
         ]));
 
         $this->client->jsonRequest('POST', '/api/customer/conversations/for-order/'.$unassigned->getId(), ['type' => 'customer_rider'], server: $this->auth());
@@ -137,7 +136,7 @@ final class CustomerConversationControllerTest extends CustomerApiTestCase
 
     private function conversation(\App\Entity\Order $order, \DateTimeImmutable $at): Conversation
     {
-        return (new Conversation())->setOrder($order)->setType(ConversationType::CUSTOMER_RESTAURANT)->setCreatedAt($at)->setUpdatedAt($at);
+        return (new Conversation())->setOrder($order)->setType(Conversation::TYPE_CUSTOMER_RESTAURANT)->setCreatedAt($at)->setUpdatedAt($at);
     }
 
     private function message(Conversation $conversation, \App\Entity\User $sender, string $body, \DateTimeImmutable $at): Message

@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\SupportTicket;
 use App\Entity\User;
-use App\Enum\SupportTicketStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -28,24 +27,24 @@ class SupportTicketRepository extends ServiceEntityRepository
     }
 
     /** Every support ticket with its account, newest first, optionally filtered by status. */
-    public function createAdminListQuery(?SupportTicketStatus $status = null): QueryBuilder
+    public function createAdminListQuery(?string $status = null): QueryBuilder
     {
         $query = $this->createQueryBuilder('ticket')
             ->innerJoin('ticket.user', 'account')->addSelect('account')->orderBy('ticket.createdAt', 'DESC');
         if (null !== $status) {
-            $query->andWhere('ticket.status = :status')->setParameter('status', $status->value);
+            $query->andWhere('ticket.status = :status')->setParameter('status', $status);
         }
 
         return $query;
     }
 
-    /** @param list<SupportTicketStatus> $statuses */
+    /** @param list<string> $statuses */
     public function countWithStatuses(array $statuses): int
     {
         return (int) $this->createQueryBuilder('ticket')
             ->select('COUNT(ticket.id)')
             ->andWhere('ticket.status IN (:statuses)')
-            ->setParameter('statuses', array_map(static fn (SupportTicketStatus $status): string => $status->value, $statuses))
+            ->setParameter('statuses', array_map(static fn (string $status): string => $status, $statuses))
             ->getQuery()->getSingleScalarResult();
     }
 }

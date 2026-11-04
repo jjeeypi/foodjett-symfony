@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Order;
+use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\RestaurantOperatingStatus;
 
 final class CustomerBrowsingControllerTest extends CustomerApiTestCase
 {
@@ -21,7 +20,7 @@ final class CustomerBrowsingControllerTest extends CustomerApiTestCase
 
         /** @var \App\Entity\Restaurant $restaurant */
         $restaurant = $this->fresh(\App\Entity\Restaurant::class, (string) $this->restaurant->getId());
-        $restaurant->setOperatingStatus(RestaurantOperatingStatus::CLOSED);
+        $restaurant->setOperatingStatus(Restaurant::OPERATING_CLOSED);
         $this->entityManager->flush();
 
         $this->client->request('GET', '/api/restaurants?open_now=1', server: $this->auth());
@@ -47,7 +46,7 @@ final class CustomerBrowsingControllerTest extends CustomerApiTestCase
 
         /** @var \App\Entity\Restaurant $other */
         $other = $this->fresh(\App\Entity\Restaurant::class, (string) $this->otherRestaurant->getId());
-        $other->setApprovalStatus(ApprovalStatus::REJECTED);
+        $other->setApprovalStatus(Restaurant::APPROVAL_REJECTED);
         $this->entityManager->flush();
         $this->client->request('GET', '/api/restaurants', server: $this->auth());
         self::assertNotContains((string) $other->getId(), array_column($this->payload()['data'], 'id'));
@@ -77,7 +76,7 @@ final class CustomerBrowsingControllerTest extends CustomerApiTestCase
 
         /** @var \App\Entity\Restaurant $other */
         $other = $this->fresh(\App\Entity\Restaurant::class, (string) $this->otherRestaurant->getId());
-        $other->setApprovalStatus(ApprovalStatus::PENDING);
+        $other->setApprovalStatus(Restaurant::APPROVAL_PENDING);
         $this->entityManager->flush();
         $this->client->request('GET', '/api/restaurants/'.$other->getId(), server: $this->auth());
         self::assertResponseStatusCodeSame(404);
@@ -112,7 +111,7 @@ final class CustomerBrowsingControllerTest extends CustomerApiTestCase
     private function review(\App\Entity\Restaurant $restaurant, int $rating, string $comment = 'Review'): RestaurantReview
     {
         $now = new \DateTimeImmutable();
-        $order = $this->createOrder($this->customer, $restaurant, $this->address, OrderStatus::DELIVERED, $now, $now);
+        $order = $this->createOrder($this->customer, $restaurant, $this->address, Order::STATUS_DELIVERED, $now, $now);
         $review = (new RestaurantReview())->setOrder($order)->setCustomer($this->customer)->setRestaurant($restaurant)
             ->setRating($rating)->setComment($comment)->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($review);

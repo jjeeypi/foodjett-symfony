@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\Restaurant;
 use App\Entity\Voucher;
-use App\Enum\VoucherScope;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -23,7 +22,7 @@ class VoucherRepository extends ServiceEntityRepository
     public function createForRestaurantQuery(Restaurant $restaurant): QueryBuilder
     {
         return $this->createQueryBuilder('voucher')
-            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::RESTAURANT->value)
+            ->andWhere('voucher.scope = :scope')->setParameter('scope', Voucher::SCOPE_RESTAURANT)
             ->andWhere('voucher.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
             ->orderBy('voucher.createdAt', 'DESC');
     }
@@ -32,7 +31,7 @@ class VoucherRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('voucher')
             ->andWhere('voucher.id = :id')->setParameter('id', $id)
-            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::RESTAURANT->value)
+            ->andWhere('voucher.scope = :scope')->setParameter('scope', Voucher::SCOPE_RESTAURANT)
             ->andWhere('voucher.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
             ->getQuery()->getOneOrNullResult();
     }
@@ -41,7 +40,7 @@ class VoucherRepository extends ServiceEntityRepository
     public function createPlatformListQuery(): QueryBuilder
     {
         return $this->createQueryBuilder('voucher')
-            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::PLATFORM->value)
+            ->andWhere('voucher.scope = :scope')->setParameter('scope', Voucher::SCOPE_PLATFORM)
             ->orderBy('voucher.createdAt', 'DESC');
     }
 

@@ -7,9 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\Admin;
 use App\Entity\OrderReport;
 use App\Entity\User;
-use App\Enum\OrderReportAgainst;
-use App\Enum\OrderReportStatus;
-use App\Enum\OrderReportType;
 use App\Repository\AuditLogRepository;
 use App\Repository\OrderReportRepository;
 use App\Service\ApiPaginator;
@@ -36,15 +33,16 @@ final class AdminOrderReportController extends AbstractController
     public function index(Request $request): JsonResponse
     {
         $filters = ['status' => null, 'type' => null, 'against' => null];
-        foreach (['status' => OrderReportStatus::class, 'type' => OrderReportType::class, 'against' => OrderReportAgainst::class] as $parameter => $enumClass) {
+        $allowed = ['status' => OrderReport::STATUSES, 'type' => OrderReport::TYPES, 'against' => OrderReport::AGAINST_TARGETS];
+        foreach ($allowed as $parameter => $values) {
             $value = trim((string) $request->query->get($parameter, ''));
             if ('' === $value) {
                 continue;
             }
-            $filters[$parameter] = $enumClass::tryFrom($value);
-            if (null === $filters[$parameter]) {
+            if (!in_array($value, $values, true)) {
                 return $this->json(['message' => 'Invalid '.$parameter.'.'], 422);
             }
+            $filters[$parameter] = $value;
         }
         $query = $this->reports->createAdminListQuery($filters['status'], $filters['type'], $filters['against']);
 
@@ -54,16 +52,16 @@ final class AdminOrderReportController extends AbstractController
     #[Route('/{id}/resolve', name: 'resolve', methods: ['POST'])]
     public function resolve(OrderReport $report, Request $request): JsonResponse
     {
-        return $this->finish($report, $request, OrderReportStatus::RESOLVED);
+        return $this->finish($report, $request, OrderReport::STATUS_RESOLVED);
     }
 
     #[Route('/{id}/reject', name: 'reject', methods: ['POST'])]
     public function reject(OrderReport $report, Request $request): JsonResponse
     {
-        return $this->finish($report, $request, OrderReportStatus::REJECTED);
+        return $this->finish($report, $request, OrderReport::STATUS_REJECTED);
     }
 
-    private function finish(OrderReport $report, Request $request, OrderReportStatus $status): JsonResponse
+    private function finish(OrderReport $report, Request $request, string $status): JsonResponse
     {
         try {
             $data = $request->toArray();
@@ -82,8 +80,8 @@ final class AdminOrderReportController extends AbstractController
         $now = new \DateTimeImmutable();
         $report->setStatus($status)->setResolution($resolution)->setResolvedByAdmin($adminUser->getAdmin())
             ->setResolvedAt($now)->setUpdatedAt($now);
-        $this->audit->record($adminUser, 'order_report.'.$status->value, 'order_report', (string) $report->getId(), [
-            'status' => ['from' => $before->value, 'to' => $status->value],
+        $this->audit->record($adminUser, 'order_report.'.$status, 'order_report', (string) $report->getId(), [
+            'status' => ['from' => $before, 'to' => $status],
             'resolution' => $resolution,
         ]);
         $this->entityManager->flush();
@@ -98,10 +96,10 @@ final class AdminOrderReportController extends AbstractController
             'id' => $report->getId(),
             'order' => ['id' => $report->getOrder()->getId(), 'order_number' => $report->getOrder()->getOrderNumber()],
             'reported_by' => ['id' => $report->getReportedBy()->getId(), 'name' => $report->getReportedBy()->getName()],
-            'against' => $report->getAgainst()->value,
-            'type' => $report->getType()->value,
+            'against' => $report->getAgainst(),
+            'type' => $report->getType(),
             'description' => $report->getDescription(),
-            'status' => $report->getStatus()->value,
+            'status' => $report->getStatus(),
             'resolution' => $report->getResolution(),
             'resolved_by_admin_id' => $report->getResolvedByAdmin()?->getId(),
             'resolved_at' => $report->getResolvedAt()?->format(\DateTimeInterface::ATOM),

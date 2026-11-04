@@ -11,14 +11,6 @@ use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -55,9 +47,9 @@ final class AdminOrderControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $payload = $this->payload()['order'] ?? [];
-        self::assertSame(OrderStatus::CANCELLED_BY_ADMIN->value, $payload['status'] ?? null);
-        self::assertSame(OrderActor::ADMIN->value, $payload['cancelled_by'] ?? null);
-        self::assertSame(PaymentStatus::REFUNDED->value, $payload['payment_status'] ?? null);
+        self::assertSame(Order::STATUS_CANCELLED_BY_ADMIN, $payload['status'] ?? null);
+        self::assertSame(Order::ACTOR_ADMIN, $payload['cancelled_by'] ?? null);
+        self::assertSame(Payment::STATUS_REFUNDED, $payload['payment_status'] ?? null);
 
         $order = $this->reload();
         self::assertSame('Manual fraud review cancellation', $order->getCancellationReason());
@@ -76,7 +68,7 @@ final class AdminOrderControllerTest extends WebTestCase
         $this->client->jsonRequest('POST', '/api/admin/orders/'.$this->orderId.'/cancel', [], server: $this->auth($this->login()));
 
         self::assertResponseStatusCodeSame(422);
-        self::assertSame(OrderStatus::RIDER_ASSIGNED, $this->reload()->getStatus());
+        self::assertSame(Order::STATUS_RIDER_ASSIGNED, $this->reload()->getStatus());
     }
 
     public function testAdminCanFilterOrdersAndOpenFullDetail(): void
@@ -102,9 +94,9 @@ final class AdminOrderControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $adminUser = $this->user(self::ADMIN_EMAIL, '+639186300001', UserRole::ADMIN, $now);
+        $adminUser = $this->user(self::ADMIN_EMAIL, '+639186300001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186300002', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186300002', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -114,7 +106,7 @@ final class AdminOrderControllerTest extends WebTestCase
             ->setLongitude('120.9850000')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186300003', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186300003', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Admin Cancel Test Restaurant')
@@ -122,8 +114,8 @@ final class AdminOrderControllerTest extends WebTestCase
             ->setAddress('Test restaurant')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $order = (new Order())
@@ -131,18 +123,18 @@ final class AdminOrderControllerTest extends WebTestCase
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
             ->setCustomerAddress($address)
-            ->setStatus(OrderStatus::RIDER_ASSIGNED)
+            ->setStatus(Order::STATUS_RIDER_ASSIGNED)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
-            ->setPaymentMethod(PaymentMethod::GCASH)
+            ->setPaymentMethod(Payment::METHOD_GCASH)
             ->setPlacedAt($now)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $payment = (new Payment())
             ->setOrder($order)
-            ->setMethod(PaymentMethod::GCASH)
-            ->setStatus(PaymentStatus::PAID)
+            ->setMethod(Payment::METHOD_GCASH)
+            ->setStatus(Payment::STATUS_PAID)
             ->setAmount('135.00')
             ->setPaidAt($now)
             ->setTransactionReference('SIMULATED-ADMIN-CANCEL')
@@ -157,7 +149,7 @@ final class AdminOrderControllerTest extends WebTestCase
         return $order;
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Admin Order Test')
@@ -165,7 +157,7 @@ final class AdminOrderControllerTest extends WebTestCase
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

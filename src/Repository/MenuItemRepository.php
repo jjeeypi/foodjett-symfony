@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\MenuItem;
 use App\Entity\Restaurant;
-use App\Enum\ApprovalStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -30,7 +29,7 @@ class MenuItemRepository extends ServiceEntityRepository
             ->innerJoin('item.menuCategory', 'category')->addSelect('category')
             ->innerJoin('category.restaurant', 'restaurant')->addSelect('restaurant')
             ->andWhere('item.isAvailable = true')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
             ->getQuery()->getResult();
     }
 

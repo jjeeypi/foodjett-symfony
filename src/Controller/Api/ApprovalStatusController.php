@@ -24,7 +24,7 @@ final class ApprovalStatusController extends AbstractController
         }
 
         return $this->json([
-            'approval_status' => $restaurant->getApprovalStatus()->value,
+            'approval_status' => $restaurant->getApprovalStatus(),
             'rejection_reason' => $restaurant->getRejectionReason(),
         ]);
     }
@@ -41,7 +41,7 @@ final class ApprovalStatusController extends AbstractController
         }
 
         return $this->json([
-            'approval_status' => $rider->getApprovalStatus()->value,
+            'approval_status' => $rider->getApprovalStatus(),
             'rejection_reason' => $rider->getRejectionReason(),
         ]);
     }

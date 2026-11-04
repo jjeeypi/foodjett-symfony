@@ -7,9 +7,9 @@ namespace App\Controller\Api;
 use App\Dto\Auth\CustomerRegistrationRequest;
 use App\Dto\Auth\RestaurantRegistrationRequest;
 use App\Dto\Auth\RiderRegistrationRequest;
+use App\Entity\RestaurantDocument;
+use App\Entity\RiderDocument;
 use App\Entity\User;
-use App\Enum\RestaurantDocumentType;
-use App\Enum\RiderDocumentType;
 use App\Service\RegistrationService;
 use App\Service\UploadStorage;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -77,7 +77,7 @@ final class RegistrationController extends AbstractController
             cuisineType: $this->string($data, 'cuisine_type'),
         );
 
-        $documentFiles = $this->requiredDocumentFiles($request, RestaurantDocumentType::cases());
+        $documentFiles = $this->requiredDocumentFiles($request, RestaurantDocument::TYPES);
         if ($response = $this->validationResponse($dto, $documentFiles['errors'])) {
             return $response;
         }
@@ -116,7 +116,7 @@ final class RegistrationController extends AbstractController
             plateNumber: $plateNumber,
         );
 
-        $documentFiles = $this->requiredDocumentFiles($request, RiderDocumentType::cases());
+        $documentFiles = $this->requiredDocumentFiles($request, RiderDocument::TYPES);
         if ($response = $this->validationResponse($dto, $documentFiles['errors'])) {
             return $response;
         }
@@ -191,8 +191,8 @@ final class RegistrationController extends AbstractController
 
     private function registeredResponse(User $user): JsonResponse
     {
-        $approvalStatus = $user->getRestaurant()?->getApprovalStatus()->value
-            ?? $user->getRider()?->getApprovalStatus()->value;
+        $approvalStatus = $user->getRestaurant()?->getApprovalStatus()
+            ?? $user->getRider()?->getApprovalStatus();
 
         return $this->json([
             'token' => $this->jwt->create($user),
@@ -201,8 +201,8 @@ final class RegistrationController extends AbstractController
                 'name' => $user->getName(),
                 'email' => $user->getEmail(),
                 'phone' => $user->getPhone(),
-                'role' => $user->getRole()->value,
-                'status' => $user->getStatus()->value,
+                'role' => $user->getRole(),
+                'status' => $user->getStatus(),
                 'approval_status' => $approvalStatus,
             ],
         ], 201);
@@ -210,8 +210,8 @@ final class RegistrationController extends AbstractController
 
     private function pendingApplicationResponse(User $user): JsonResponse
     {
-        $approvalStatus = $user->getRestaurant()?->getApprovalStatus()->value
-            ?? $user->getRider()?->getApprovalStatus()->value;
+        $approvalStatus = $user->getRestaurant()?->getApprovalStatus()
+            ?? $user->getRider()?->getApprovalStatus();
 
         return $this->json([
             'message' => 'Your application was submitted and is under review.',
@@ -220,16 +220,15 @@ final class RegistrationController extends AbstractController
                 'name' => $user->getName(),
                 'email' => $user->getEmail(),
                 'phone' => $user->getPhone(),
-                'role' => $user->getRole()->value,
-                'status' => $user->getStatus()->value,
+                'role' => $user->getRole(),
+                'status' => $user->getStatus(),
                 'approval_status' => $approvalStatus,
             ],
         ], 201);
     }
 
     /**
-     * @template T of \BackedEnum
-     * @param list<T> $types
+     * @param list<string> $types document type values, one upload field each
      * @return array{files: array<string, UploadedFile>, errors: array<string, list<string>>}
      */
     private function requiredDocumentFiles(Request $request, array $types): array
@@ -237,12 +236,12 @@ final class RegistrationController extends AbstractController
         $files = [];
         $errors = [];
         foreach ($types as $type) {
-            $file = $request->files->get($type->value);
+            $file = $request->files->get($type);
             if (!$file instanceof UploadedFile) {
-                $errors[$type->value][] = 'This document is required.';
+                $errors[$type][] = 'This document is required.';
                 continue;
             }
-            $files[$type->value] = $file;
+            $files[$type] = $file;
         }
 
         return ['files' => $files, 'errors' => $errors];

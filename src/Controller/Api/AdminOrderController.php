@@ -7,11 +7,9 @@ namespace App\Controller\Api;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderItemAddon;
+use App\Entity\Payment;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentActor;
 use App\Repository\AuditLogRepository;
 use App\Repository\OrderRepository;
 use App\Service\ApiPaginator;
@@ -44,7 +42,7 @@ final class AdminOrderController extends AbstractController
     {
         $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
-            $status = OrderStatus::tryFrom($statusValue);
+            $status = (in_array($statusValue, Order::STATUSES, true) ? $statusValue : null);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid status.'], 422);
             }
@@ -91,7 +89,7 @@ final class AdminOrderController extends AbstractController
                     'restaurant_name' => $order->getRestaurant()->getName(),
                     'searching_minutes' => (int) floor($seconds / 60),
                     'rider_search_started_at' => $startedAt?->format(\DateTimeInterface::ATOM),
-                    'escalation_stage' => $order->getRiderPoolOffer()?->getEscalationStage()->value,
+                    'escalation_stage' => $order->getRiderPoolOffer()?->getEscalationStage(),
                     'search_radius_km' => $order->getRiderPoolOffer()?->getSearchRadiusKm(),
                     'incentive_amount' => $order->getRiderPoolOffer()?->getIncentiveAmount(),
                 ];
@@ -104,7 +102,7 @@ final class AdminOrderController extends AbstractController
     #[Route('/{id}/assign-rider', name: 'assign_rider', methods: ['POST'])]
     public function assignRider(Order $order, Request $request): JsonResponse
     {
-        if (OrderStatus::FINDING_RIDER !== $order->getStatus() || null !== $order->getRider()) {
+        if (Order::STATUS_FINDING_RIDER !== $order->getStatus() || null !== $order->getRider()) {
             return $this->json(['message' => 'This order was just taken by another rider.'], 409);
         }
         try {
@@ -139,7 +137,7 @@ final class AdminOrderController extends AbstractController
             'order' => [
                 'id' => $order->getId(),
                 'order_number' => $order->getOrderNumber(),
-                'status' => $order->getStatus()->value,
+                'status' => $order->getStatus(),
                 'rider_id' => $order->getRider()?->getId(),
                 'admin_assigned' => $order->getRiderPoolOffer()?->isAdminAssigned(),
                 'rider_assigned_at' => $order->getRiderAssignedAt()?->format(\DateTimeInterface::ATOM),
@@ -159,25 +157,25 @@ final class AdminOrderController extends AbstractController
         if ('' === $reason || mb_strlen($reason) > 2000) {
             return $this->json(['message' => 'A cancellation reason of at most 2000 characters is required.'], 422);
         }
-        if ($order->getStatus()->isTerminal()) {
+        if (Order::isTerminalStatus($order->getStatus())) {
             return $this->json(['message' => 'A terminal order cannot be cancelled.'], 409);
         }
 
         try {
             $order = $this->transitions->transition(
                 $order,
-                OrderStatus::CANCELLED_BY_ADMIN,
-                OrderActor::ADMIN,
+                Order::STATUS_CANCELLED_BY_ADMIN,
+                Order::ACTOR_ADMIN,
                 $reason,
                 function (Order $locked, \DateTimeImmutable $now) use ($reason): void {
                     $locked
                         ->setCancellationReason($reason)
-                        ->setCancelledBy(OrderActor::ADMIN);
+                        ->setCancelledBy(Order::ACTOR_ADMIN);
                     if (null !== $locked->getPayment()) {
-                        $this->payments->cancelOrRefund($locked->getPayment(), PaymentActor::ADMIN, $reason, $now);
+                        $this->payments->cancelOrRefund($locked->getPayment(), Payment::ACTOR_ADMIN, $reason, $now);
                     }
                     $this->audit->record($this->admin(), 'order.cancelled', 'order', (string) $locked->getId(), [
-                        'status' => ['from' => $locked->getStatus()->value, 'to' => OrderStatus::CANCELLED_BY_ADMIN->value],
+                        'status' => ['from' => $locked->getStatus(), 'to' => Order::STATUS_CANCELLED_BY_ADMIN],
                         'reason' => $reason,
                     ]);
                 },
@@ -190,10 +188,10 @@ final class AdminOrderController extends AbstractController
             'order' => [
                 'id' => $order->getId(),
                 'order_number' => $order->getOrderNumber(),
-                'status' => $order->getStatus()->value,
+                'status' => $order->getStatus(),
                 'cancellation_reason' => $order->getCancellationReason(),
-                'cancelled_by' => $order->getCancelledBy()?->value,
-                'payment_status' => $order->getPayment()?->getStatus()->value,
+                'cancelled_by' => $order->getCancelledBy(),
+                'payment_status' => $order->getPayment()?->getStatus(),
             ],
         ]);
     }
@@ -207,9 +205,9 @@ final class AdminOrderController extends AbstractController
             'restaurant' => ['id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName()],
             'customer' => ['id' => $order->getCustomer()->getId(), 'name' => $order->getCustomer()->getUser()->getName()],
             'rider' => null === $order->getRider() ? null : ['id' => $order->getRider()?->getId(), 'name' => $order->getRider()?->getUser()->getName()],
-            'status' => $order->getStatus()->value,
+            'status' => $order->getStatus(),
             'total_amount' => $order->getTotalAmount(),
-            'payment_method' => $order->getPaymentMethod()->value,
+            'payment_method' => $order->getPaymentMethod(),
             'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
@@ -227,7 +225,7 @@ final class AdminOrderController extends AbstractController
             'customer_notes' => $order->getCustomerNotes(),
             'rejection_reason' => $order->getRejectionReason(),
             'cancellation_reason' => $order->getCancellationReason(),
-            'cancelled_by' => $order->getCancelledBy()?->value,
+            'cancelled_by' => $order->getCancelledBy(),
             'accepted_at' => $order->getAcceptedAt()?->format(\DateTimeInterface::ATOM),
             'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
             'ready_at' => $order->getReadyAt()?->format(\DateTimeInterface::ATOM),
@@ -265,15 +263,15 @@ final class AdminOrderController extends AbstractController
         $data['status_history'] = array_map(static fn ($history): array => [
             'id' => $history->getId(),
             'status' => $history->getStatus(),
-            'changed_by' => $history->getChangedBy()->value,
+            'changed_by' => $history->getChangedBy(),
             'note' => $history->getNote(),
             'created_at' => $history->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], $order->getStatusHistory()->toArray());
         $payment = $order->getPayment();
         $data['payment'] = null === $payment ? null : [
             'id' => $payment->getId(),
-            'method' => $payment->getMethod()->value,
-            'status' => $payment->getStatus()->value,
+            'method' => $payment->getMethod(),
+            'status' => $payment->getStatus(),
             'amount' => $payment->getAmount(),
             'refunded_amount' => $payment->getRefundedAmount(),
             'transaction_reference' => $payment->getTransactionReference(),
@@ -285,7 +283,7 @@ final class AdminOrderController extends AbstractController
             'id' => $offer->getId(),
             'search_radius_km' => $offer->getSearchRadiusKm(),
             'incentive_amount' => $offer->getIncentiveAmount(),
-            'escalation_stage' => $offer->getEscalationStage()->value,
+            'escalation_stage' => $offer->getEscalationStage(),
             'admin_assigned' => $offer->isAdminAssigned(),
         ];
 

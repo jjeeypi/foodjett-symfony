@@ -11,12 +11,6 @@ use App\Entity\Payment;
 use App\Entity\Rider;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPoolOffer;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\RiderPoolEscalationStage;
 use App\Repository\DeliveryZoneRepository;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -24,7 +18,7 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
 {
     public function testActiveOrderIsScopedToAuthenticatedRiderAndInvalidJumpIsRejected(): void
     {
-        $foreign = $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->otherRider);
+        $foreign = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->otherRider);
         $this->entityManager->flush();
 
         $this->client->request('GET', '/api/rider/active-order', server: $this->auth());
@@ -38,8 +32,8 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
 
     public function testRiderCanProgressFromAssignmentToCustomerArrivalWithPickupCode(): void
     {
-        $order = $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->rider)->setPickupCode('4321');
-        $this->rider->setAvailabilityStatus(RiderAvailabilityStatus::BUSY);
+        $order = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider)->setPickupCode('4321');
+        $this->rider->setAvailabilityStatus(Rider::AVAILABILITY_BUSY);
         $this->entityManager->flush();
 
         $this->client->request('POST', '/api/rider/active-order/start-delivery', server: $this->auth());
@@ -75,12 +69,12 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
     public function testCodDeliveryRequiresCashConfirmationAndCreatesPaymentCashAndEarning(): void
     {
         $now = new \DateTimeImmutable();
-        $order = $this->createOrder(OrderStatus::ARRIVED, $this->rider, PaymentMethod::COD)
+        $order = $this->createOrder(Order::STATUS_ARRIVED, $this->rider, Payment::METHOD_COD)
             ->setRiderArrivedRestaurantAt($now->modify('-12 minutes'))->setPickedUpAt($now->modify('-2 minutes'));
-        $this->rider->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)->setCashOnHand('100.00');
+        $this->rider->setAvailabilityStatus(Rider::AVAILABILITY_BUSY)->setCashOnHand('100.00');
         $offer = (new RiderPoolOffer())->setOrder($order)->setSearchRadiusKm('3.0')->setIncentiveAmount('20.00')
             ->setAcceptedPickupDistanceKm('2.5000')
-            ->setEscalationStage(RiderPoolEscalationStage::INCENTIVIZED)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setEscalationStage(RiderPoolOffer::STAGE_INCENTIVIZED)->setCreatedAt($now)->setUpdatedAt($now);
         $order->setRiderPoolOffer($offer);
         $this->persist($offer);
         $this->entityManager->flush();
@@ -112,18 +106,18 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
         $savedRider = $this->entityManager->find(Rider::class, $riderId);
         self::assertInstanceOf(Order::class, $savedOrder);
         self::assertInstanceOf(Rider::class, $savedRider);
-        self::assertSame(PaymentStatus::PAID, $savedOrder->getPayment()?->getStatus());
+        self::assertSame(Payment::STATUS_PAID, $savedOrder->getPayment()?->getStatus());
         self::assertSame('245.00', $savedRider->getCashOnHand());
-        self::assertSame(RiderAvailabilityStatus::AVAILABLE, $savedRider->getAvailabilityStatus());
+        self::assertSame(Rider::AVAILABILITY_AVAILABLE, $savedRider->getAvailabilityStatus());
         self::assertInstanceOf(RiderEarning::class, $savedOrder->getRiderEarning());
         self::assertCount(1, $savedOrder->getPayment()?->getStatusHistory());
     }
 
     public function testDeliveryDoesNotSilentlyUnderpayWhenAcceptedPickupDistanceIsMissing(): void
     {
-        $order = $this->createOrder(OrderStatus::ARRIVED, $this->rider);
+        $order = $this->createOrder(Order::STATUS_ARRIVED, $this->rider);
         $offer = (new RiderPoolOffer())->setOrder($order)->setSearchRadiusKm('3.0')->setIncentiveAmount('0.00')
-            ->setEscalationStage(RiderPoolEscalationStage::INITIAL)->setCreatedAt(new \DateTimeImmutable())->setUpdatedAt(new \DateTimeImmutable());
+            ->setEscalationStage(RiderPoolOffer::STAGE_INITIAL)->setCreatedAt(new \DateTimeImmutable())->setUpdatedAt(new \DateTimeImmutable());
         $order->setRiderPoolOffer($offer);
         $this->persist($offer);
         $this->entityManager->flush();
@@ -132,17 +126,17 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
 
         self::assertResponseStatusCodeSame(409);
         self::assertStringContainsString('pickup distance is missing', $this->payload()['message']);
-        self::assertSame(OrderStatus::ARRIVED, $order->getStatus());
+        self::assertSame(Order::STATUS_ARRIVED, $order->getStatus());
         self::assertNull($order->getRiderEarning());
     }
 
     public function testCustomerUnreachableHonorsWaitAndLeavesCodPaymentPending(): void
     {
-        $order = $this->createOrder(OrderStatus::ARRIVED, $this->rider, PaymentMethod::COD);
-        $arrival = (new OrderStatusHistory())->setOrder($order)->setStatus(OrderStatus::ARRIVED->value)->setChangedBy(OrderActor::RIDER)
+        $order = $this->createOrder(Order::STATUS_ARRIVED, $this->rider, Payment::METHOD_COD);
+        $arrival = (new OrderStatusHistory())->setOrder($order)->setStatus(Order::STATUS_ARRIVED)->setChangedBy(Order::ACTOR_RIDER)
             ->setCreatedAt(new \DateTimeImmutable('-6 minutes'));
         $order->addStatusHistory($arrival);
-        $this->rider->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)->setCashOnHand('50.00');
+        $this->rider->setAvailabilityStatus(Rider::AVAILABILITY_BUSY)->setCashOnHand('50.00');
         $this->persist($arrival);
         $this->entityManager->flush();
 
@@ -153,15 +147,15 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
         $this->entityManager->clear();
         $saved = $this->entityManager->find(Order::class, $order->getId());
         self::assertInstanceOf(Order::class, $saved);
-        self::assertSame(PaymentStatus::PENDING, $saved->getPayment()?->getStatus());
+        self::assertSame(Payment::STATUS_PENDING, $saved->getPayment()?->getStatus());
         self::assertSame('50.00', $saved->getRider()?->getCashOnHand());
         self::assertNull($saved->getRiderEarning());
     }
 
     public function testCustomerUnreachableRejectsBeforeConfiguredWait(): void
     {
-        $order = $this->createOrder(OrderStatus::ARRIVED, $this->rider);
-        $arrival = (new OrderStatusHistory())->setOrder($order)->setStatus(OrderStatus::ARRIVED->value)->setChangedBy(OrderActor::RIDER)
+        $order = $this->createOrder(Order::STATUS_ARRIVED, $this->rider);
+        $arrival = (new OrderStatusHistory())->setOrder($order)->setStatus(Order::STATUS_ARRIVED)->setChangedBy(Order::ACTOR_RIDER)
             ->setCreatedAt(new \DateTimeImmutable('-1 minute'));
         $order->addStatusHistory($arrival);
         $this->persist($arrival);
@@ -174,7 +168,7 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
 
     public function testCancellationAndIssueReportingRespectStatusAndOwnership(): void
     {
-        $order = $this->createOrder(OrderStatus::AT_RESTAURANT, $this->rider);
+        $order = $this->createOrder(Order::STATUS_AT_RESTAURANT, $this->rider);
         $this->entityManager->flush();
 
         $this->client->jsonRequest('POST', '/api/rider/active-order/report-issue', ['type' => 'wrong_item', 'description' => 'Restaurant supplied the wrong package.'], server: $this->auth());
@@ -192,7 +186,7 @@ final class RiderActiveOrderControllerTest extends RiderApiTestCase
 
     public function testCancellationAfterPickupIsRejected(): void
     {
-        $this->createOrder(OrderStatus::PICKED_UP, $this->rider);
+        $this->createOrder(Order::STATUS_PICKED_UP, $this->rider);
         $this->entityManager->flush();
         $this->client->jsonRequest('POST', '/api/rider/active-order/cancel', ['reason' => 'Too late'], server: $this->auth());
         self::assertResponseStatusCodeSame(409);

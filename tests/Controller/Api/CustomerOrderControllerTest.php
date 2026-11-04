@@ -4,22 +4,21 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderReport;
 use App\Entity\OrderStatusHistory;
 use App\Entity\RestaurantReview;
 use App\Entity\RiderReview;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
 
 final class CustomerOrderControllerTest extends CustomerApiTestCase
 {
     public function testIndexFiltersOrdersAndShowReturnsOwnedDetailAndHistory(): void
     {
-        $active = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::PLACED, new \DateTimeImmutable('-1 minute'));
-        $past = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-2 days'), new \DateTimeImmutable('-1 day'));
+        $active = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_PLACED, new \DateTimeImmutable('-1 minute'));
+        $past = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_DELIVERED, new \DateTimeImmutable('-2 days'), new \DateTimeImmutable('-1 day'));
         $foreign = $this->createOrder($this->otherCustomer, $this->otherRestaurant, $this->otherAddress);
-        $history = (new OrderStatusHistory())->setOrder($active)->setStatus(OrderStatus::PLACED->value)->setChangedBy(OrderActor::SYSTEM)
+        $history = (new OrderStatusHistory())->setOrder($active)->setStatus(Order::STATUS_PLACED)->setChangedBy(Order::ACTOR_SYSTEM)
             ->setNote('Placed by checkout')->setCreatedAt(new \DateTimeImmutable('-1 minute'));
         $active->addStatusHistory($history);
         $this->persist($history);
@@ -58,7 +57,7 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
         $rider->setCurrentLatitude('14.6012345')
             ->setCurrentLongitude('120.9876543')
             ->setLastLocationAt($locationAt);
-        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::RIDER_ASSIGNED)
+        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_RIDER_ASSIGNED)
             ->setRider($rider)
             ->setAcceptedAt(new \DateTimeImmutable('-20 minutes'))
             ->setRiderAssignedAt(new \DateTimeImmutable('-2 minutes'));
@@ -88,7 +87,7 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
             $this->customer,
             $this->restaurant,
             $this->address,
-            OrderStatus::DELIVERED,
+            Order::STATUS_DELIVERED,
             new \DateTimeImmutable('-1 hour'),
             new \DateTimeImmutable('-1 minute'),
         )->setRider($rider);
@@ -108,7 +107,7 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
     {
         $category = $this->createCategory($this->restaurant);
         $menuItem = $this->createItem($category, price: '175.50');
-        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-2 days'), new \DateTimeImmutable('-1 day'));
+        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_DELIVERED, new \DateTimeImmutable('-2 days'), new \DateTimeImmutable('-1 day'));
         $orderItem = (new OrderItem())->setOrder($order)->setMenuItem($menuItem)->setQuantity(2)->setUnitPrice('99.00')
             ->setSpecialInstructions('Less salt')->setCreatedAt(new \DateTimeImmutable('-2 days'))->setUpdatedAt(new \DateTimeImmutable('-2 days'));
         $order->addItem($orderItem);
@@ -138,9 +137,9 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
     {
         $rider = $this->createRider();
         $deliveredAt = new \DateTimeImmutable('-1 day');
-        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-2 days'), $deliveredAt)
+        $order = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_DELIVERED, new \DateTimeImmutable('-2 days'), $deliveredAt)
             ->setRider($rider);
-        $oldOrder = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-31 days'), new \DateTimeImmutable('-30 days'));
+        $oldOrder = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_DELIVERED, new \DateTimeImmutable('-31 days'), new \DateTimeImmutable('-30 days'));
         $this->entityManager->flush();
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/reviews', [
@@ -165,8 +164,8 @@ final class CustomerOrderControllerTest extends CustomerApiTestCase
     public function testReportsAllowActiveAndRecentlyDeliveredOrdersButRejectOldDeliveries(): void
     {
         $order = $this->createOrder($this->customer, $this->restaurant, $this->address, placedAt: new \DateTimeImmutable('-60 days'));
-        $recentlyDelivered = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-6 days'), new \DateTimeImmutable('-5 days'));
-        $oldDelivery = $this->createOrder($this->customer, $this->restaurant, $this->address, OrderStatus::DELIVERED, new \DateTimeImmutable('-11 days'), new \DateTimeImmutable('-10 days'));
+        $recentlyDelivered = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_DELIVERED, new \DateTimeImmutable('-6 days'), new \DateTimeImmutable('-5 days'));
+        $oldDelivery = $this->createOrder($this->customer, $this->restaurant, $this->address, Order::STATUS_DELIVERED, new \DateTimeImmutable('-11 days'), new \DateTimeImmutable('-10 days'));
         $foreign = $this->createOrder($this->otherCustomer, $this->otherRestaurant, $this->otherAddress);
         $this->entityManager->flush();
 

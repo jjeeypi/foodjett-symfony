@@ -7,15 +7,9 @@ namespace App\Tests\Service;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use App\Message\OrderStatusChanged;
 use App\Repository\DeliveryZoneRepository;
 use App\Repository\OrderRepository;
@@ -72,8 +66,8 @@ final class OrderTransitionServiceTest extends KernelTestCase
 
         $updated = $service->transitionSequence(
             $order,
-            [OrderStatus::ACCEPTED, OrderStatus::PREPARING, OrderStatus::FINDING_RIDER],
-            OrderActor::RESTAURANT,
+            [Order::STATUS_ACCEPTED, Order::STATUS_PREPARING, Order::STATUS_FINDING_RIDER],
+            Order::ACTOR_RESTAURANT,
             ['Accepted by restaurant', 'Food preparation started', 'Rider search started'],
             static function (Order $locked, \DateTimeImmutable $now): void {
                 $locked
@@ -83,15 +77,15 @@ final class OrderTransitionServiceTest extends KernelTestCase
             },
         );
 
-        self::assertSame(OrderStatus::FINDING_RIDER, $updated->getStatus());
+        self::assertSame(Order::STATUS_FINDING_RIDER, $updated->getStatus());
         self::assertNotNull($updated->getRiderSearchStartedAt());
         self::assertSame(20, $updated->getEstimatedPrepMinutes());
         self::assertSame('3.0', $updated->getRiderPoolOffer()?->getSearchRadiusKm());
         self::assertSame(3, $updated->getStatusHistory()->count());
         self::assertCount(3, $events);
         self::assertSame(
-            [OrderStatus::ACCEPTED, OrderStatus::PREPARING, OrderStatus::FINDING_RIDER],
-            array_map(static fn (OrderStatusChanged $event): OrderStatus => $event->currentStatus, $events),
+            [Order::STATUS_ACCEPTED, Order::STATUS_PREPARING, Order::STATUS_FINDING_RIDER],
+            array_map(static fn (OrderStatusChanged $event): string => $event->currentStatus, $events),
         );
         self::assertSame([false, false, false], $transactionStates);
     }
@@ -111,7 +105,7 @@ final class OrderTransitionServiceTest extends KernelTestCase
         );
 
         try {
-            $service->transition($order, OrderStatus::DELIVERED, OrderActor::SYSTEM);
+            $service->transition($order, Order::STATUS_DELIVERED, Order::ACTOR_SYSTEM);
             self::fail('An invalid transition should throw.');
         } catch (\DomainException $exception) {
             self::assertSame('Order cannot transition from "placed" to "delivered".', $exception->getMessage());
@@ -119,37 +113,37 @@ final class OrderTransitionServiceTest extends KernelTestCase
 
         $fresh = $this->entityManager->getRepository(Order::class)->findOneBy(['orderNumber' => $order->getOrderNumber()]);
         self::assertInstanceOf(Order::class, $fresh);
-        self::assertSame(OrderStatus::PLACED, $fresh->getStatus());
+        self::assertSame(Order::STATUS_PLACED, $fresh->getStatus());
         self::assertCount(0, $fresh->getStatusHistory());
     }
 
     #[DataProvider('terminalStatuses')]
-    public function testTerminalStatusesCannotTransition(OrderStatus $status): void
+    public function testTerminalStatusesCannotTransition(string $status): void
     {
-        self::assertTrue($status->isTerminal());
-        self::assertSame([], $status->allowedTransitions());
+        self::assertTrue(Order::isTerminalStatus($status));
+        self::assertSame([], Order::allowedTransitions($status));
     }
 
-    /** @return iterable<string, array{OrderStatus}> */
+    /** @return iterable<string, array{string}> */
     public static function terminalStatuses(): iterable
     {
         foreach ([
-            OrderStatus::DELIVERED,
-            OrderStatus::REJECTED_BY_RESTAURANT,
-            OrderStatus::CANCELLED_BY_CUSTOMER,
-            OrderStatus::CANCELLED_BY_RESTAURANT,
-            OrderStatus::CANCELLED_NO_RIDER,
-            OrderStatus::CANCELLED_BY_ADMIN,
-            OrderStatus::FAILED_DELIVERY,
+            Order::STATUS_DELIVERED,
+            Order::STATUS_REJECTED_BY_RESTAURANT,
+            Order::STATUS_CANCELLED_BY_CUSTOMER,
+            Order::STATUS_CANCELLED_BY_RESTAURANT,
+            Order::STATUS_CANCELLED_NO_RIDER,
+            Order::STATUS_CANCELLED_BY_ADMIN,
+            Order::STATUS_FAILED_DELIVERY,
         ] as $status) {
-            yield $status->value => [$status];
+            yield $status => [$status];
         }
     }
 
     private function createOrder(): Order
     {
         $now = new \DateTimeImmutable();
-        $restaurantUser = $this->user('transition-restaurant@foodjett.test', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user('transition-restaurant@foodjett.test', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Transition Kitchen')
@@ -157,12 +151,12 @@ final class OrderTransitionServiceTest extends KernelTestCase
             ->setAddress('Restaurant address')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
 
-        $customerUser = $this->user('transition-customer@foodjett.test', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user('transition-customer@foodjett.test', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -178,11 +172,11 @@ final class OrderTransitionServiceTest extends KernelTestCase
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
             ->setCustomerAddress($address)
-            ->setStatus(OrderStatus::PLACED)
+            ->setStatus(Order::STATUS_PLACED)
             ->setSubtotal('100.00')
             ->setDeliveryFee('35.00')
             ->setTotalAmount('135.00')
-            ->setPaymentMethod(PaymentMethod::COD)
+            ->setPaymentMethod(Payment::METHOD_COD)
             ->setPlacedAt($now)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
@@ -195,14 +189,14 @@ final class OrderTransitionServiceTest extends KernelTestCase
         return $order;
     }
 
-    private function user(string $email, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Transition Test')
             ->setEmail($email)
             ->setPassword('not-used')
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }
