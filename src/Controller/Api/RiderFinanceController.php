@@ -79,9 +79,9 @@ final class RiderFinanceController extends AbstractRiderController
 
         return $this->json(['cash_status' => [
             'cash_on_hand' => $rider->getCashOnHand(), 'cash_remit_limit' => $rider->getCashRemitLimit(),
-            'pending_remittances' => $this->money($pending),
-            'available_to_remit' => $this->money(max(0.0, (float) $rider->getCashOnHand() - $pending)),
-            'at_limit' => (float) $rider->getCashOnHand() >= (float) $rider->getCashRemitLimit(),
+            'pending_remittances' => $pending,
+            'available_to_remit' => $this->atLeastZero(bcsub($rider->getCashOnHand(), $pending, 2)),
+            'at_limit' => -1 !== bccomp($rider->getCashOnHand(), $rider->getCashRemitLimit(), 2),
         ]]);
     }
 
@@ -98,10 +98,10 @@ final class RiderFinanceController extends AbstractRiderController
     {
         $data = $this->body($request);
         if ($data instanceof JsonResponse) { return $data; }
-        if (!is_numeric($data['amount'] ?? null) || (float) $data['amount'] <= 0) {
+        $amount = $this->plainAmount($data['amount'] ?? null);
+        if (null === $amount || 1 !== bccomp($amount, '0', 2)) {
             return $this->json(['message' => 'amount must be greater than zero.'], 422);
         }
-        $amount = round((float) $data['amount'], 2);
         $reference = trim((string) ($data['reference_note'] ?? ''));
         if (mb_strlen($reference) > 255) {
             return $this->json(['message' => 'reference_note cannot exceed 255 characters.'], 422);
@@ -111,12 +111,12 @@ final class RiderFinanceController extends AbstractRiderController
             $remittance = $this->entityManager->wrapInTransaction(function () use ($riderId, $amount, $reference): RiderCashRemittance {
                 $rider = $this->entityManager->find(Rider::class, $riderId, LockMode::PESSIMISTIC_WRITE);
                 if (!$rider instanceof Rider) { throw $this->createNotFoundException('Rider profile not found.'); }
-                $available = (float) $rider->getCashOnHand() - $this->pendingRemittanceTotal($rider);
-                if ($amount > $available + 0.0001) {
+                $available = bcsub($rider->getCashOnHand(), $this->pendingRemittanceTotal($rider), 2);
+                if (1 === bccomp($amount, $available, 2)) {
                     throw new \DomainException('The remittance amount exceeds cash available after pending requests.');
                 }
                 $now = new \DateTimeImmutable();
-                $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount($this->money($amount))
+                $remittance = (new RiderCashRemittance())->setRider($rider)->setAmount($amount)
                     ->setReferenceNote('' === $reference ? null : $reference)->setStatus(RemittanceStatus::PENDING)
                     ->setCreatedAt($now)->setUpdatedAt($now);
                 $this->entityManager->persist($remittance);
@@ -132,13 +132,12 @@ final class RiderFinanceController extends AbstractRiderController
 
     private function earningTotalSince(\DateTimeImmutable $since): string
     {
-        $value = $this->earnings->sumEarnedByRiderSince($this->rider(), $since);
-        return $this->money((float) $value);
+        return bcround($this->earnings->sumEarnedByRiderSince($this->rider(), $since), 2);
     }
 
-    private function pendingRemittanceTotal(Rider $rider): float
+    private function pendingRemittanceTotal(Rider $rider): string
     {
-        return (float) $this->remittances->sumPendingForRider($rider);
+        return bcround($this->remittances->sumPendingForRider($rider), 2);
     }
 
     /** @return array<string, mixed> */
@@ -158,5 +157,25 @@ final class RiderFinanceController extends AbstractRiderController
             'created_at' => $remittance->getCreatedAt()?->format(\DateTimeInterface::ATOM)];
     }
 
-    private function money(float $amount): string { return number_format(round($amount, 2), 2, '.', ''); }
+    private function atLeastZero(string $amount): string
+    {
+        return -1 === bccomp($amount, '0', 2) ? '0.00' : $amount;
+    }
+
+    /**
+     * Accepts a plain positive or zero decimal (no exponent, sign or spaces) and returns it
+     * rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function plainAmount(mixed $value): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        if (!is_string($value) || 1 !== preg_match('/^\d{1,8}(\.\d+)?$/', trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
+    }
+
 }

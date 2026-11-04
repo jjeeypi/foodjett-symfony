@@ -58,16 +58,16 @@ final class RestaurantEarningsController extends AbstractRestaurantController
     private function period(\DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
         $orders = $this->orders->findDeliveredForRestaurantBetween($this->restaurant(), $start, $end);
-        $gross = 0.0;
-        $commission = 0.0;
+        $gross = '0.00';
+        $commission = '0.00';
         foreach ($orders as $order) {
-            $gross += (float) $order->getSubtotal();
-            $commission += (float) ($order->getCommissionAmount() ?? '0.00');
+            $gross = bcadd($gross, $order->getSubtotal(), 2);
+            $commission = bcadd($commission, $order->getCommissionAmount() ?? '0.00', 2);
         }
 
         return [
-            'order_count' => count($orders), 'gross_revenue' => number_format($gross, 2, '.', ''),
-            'commission' => number_format($commission, 2, '.', ''), 'net_revenue' => number_format($gross - $commission, 2, '.', ''),
+            'order_count' => count($orders), 'gross_revenue' => $gross,
+            'commission' => $commission, 'net_revenue' => bcsub($gross, $commission, 2),
         ];
     }
 }

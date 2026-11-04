@@ -49,7 +49,7 @@ final class AdminCustomerController extends AbstractController
         return $this->json(['customer' => $this->normalize($customer) + [
             'order_summary' => [
                 'order_count' => (int) $summary['order_count'],
-                'lifetime_spend' => number_format((float) $summary['lifetime_spend'], 2, '.', ''),
+                'lifetime_spend' => bcround((string) $summary['lifetime_spend'], 2),
             ],
             'recent_orders' => array_map(static fn (Order $order): array => [
                 'id' => $order->getId(),

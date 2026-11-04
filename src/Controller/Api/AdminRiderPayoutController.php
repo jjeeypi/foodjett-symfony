@@ -56,12 +56,12 @@ final class AdminRiderPayoutController extends AbstractController
         /** @var array{created: list<RiderPayout>, skipped: int} $result */
         $result = $this->entityManager->wrapInTransaction(function () use ($periodStart, $periodEnd, $startAt, $endAt, $admin): array {
             $earnings = $this->earnings->findForOrdersDeliveredBetween($startAt, $endAt);
-            /** @var array<string, array{rider: \App\Entity\Rider, total: float}> $totals */
+            /** @var array<string, array{rider: \App\Entity\Rider, total: string}> $totals */
             $totals = [];
             foreach ($earnings as $earning) {
                 $id = (string) $earning->getRider()->getId();
-                $totals[$id] ??= ['rider' => $earning->getRider(), 'total' => 0.0];
-                $totals[$id]['total'] += (float) $earning->getTotalEarned();
+                $totals[$id] ??= ['rider' => $earning->getRider(), 'total' => '0.00'];
+                $totals[$id]['total'] = bcadd($totals[$id]['total'], $earning->getTotalEarned(), 2);
             }
             $created = [];
             $skipped = 0;
@@ -70,7 +70,7 @@ final class AdminRiderPayoutController extends AbstractController
                 $overlap = $this->payouts->countOverlapping($total['rider'], $periodStart, $periodEnd);
                 if ((int) $overlap > 0) { ++$skipped; continue; }
                 $payout = (new RiderPayout())->setRider($total['rider'])->setPeriodStart($periodStart)->setPeriodEnd($periodEnd)
-                    ->setTotalAmount(number_format(round($total['total'], 2), 2, '.', ''))->setStatus(PayoutStatus::PENDING)
+                    ->setTotalAmount($total['total'])->setStatus(PayoutStatus::PENDING)
                     ->setCreatedAt($now)->setUpdatedAt($now);
                 $this->entityManager->persist($payout);
                 $created[] = $payout;

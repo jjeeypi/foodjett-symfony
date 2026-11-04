@@ -28,13 +28,13 @@ final class RestaurantDashboardController extends AbstractRestaurantController
         $start = new \DateTimeImmutable('today');
         $end = $start->modify('+1 day');
         $todayCount = $this->orders->countPlacedForRestaurantBetween($restaurant, $start, $end);
-        $revenue = (float) $this->orders->sumDeliveredTotalForRestaurantBetween($restaurant, $start, $end);
+        $revenue = $this->orders->sumDeliveredTotalForRestaurantBetween($restaurant, $start, $end);
         $pending = $this->orders->countForRestaurantWithStatus($restaurant, OrderStatus::PLACED);
         $recent = $this->orders->findRecentForRestaurant($restaurant);
 
         return $this->json([
             'today_order_count' => $todayCount,
-            'today_revenue' => number_format($revenue, 2, '.', ''),
+            'today_revenue' => bcround($revenue, 2),
             'pending_orders_count' => $pending,
             'recent_orders' => array_map(static fn (Order $order): array => [
                 'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus()->value,

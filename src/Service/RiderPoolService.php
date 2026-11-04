@@ -93,7 +93,7 @@ final readonly class RiderPoolService
 
     public function hasReachedCashLimit(Rider $rider): bool
     {
-        return $this->moneyToCents($rider->getCashOnHand()) >= $this->moneyToCents($rider->getCashRemitLimit());
+        return -1 !== bccomp($rider->getCashOnHand(), $rider->getCashRemitLimit(), 2);
     }
 
     /** @return array{code: string, message: string}|null */
@@ -265,10 +265,5 @@ final readonly class RiderPoolService
     private function distance(float $kilometres): string
     {
         return number_format(round($kilometres, 2), 2, '.', '');
-    }
-
-    private function moneyToCents(string $amount): int
-    {
-        return (int) round((float) $amount * 100);
     }
 }
