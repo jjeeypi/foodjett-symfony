@@ -44,8 +44,7 @@ class ResetPasswordController extends AbstractController
             /** @var string $email */
             $email = $form->get('email')->getData();
 
-            return $this->processSendingPasswordResetEmail($email, $mailer, $translator
-);
+            return $this->processSendingPasswordResetEmail($email, $mailer, $translator);
         }
 
         return $this->render('reset_password/request.html.twig', [
@@ -119,6 +118,7 @@ class ResetPasswordController extends AbstractController
 
             // The session is cleaned up after the password has been changed.
             $this->cleanSessionAfterReset();
+            $this->addFlash('success', 'Your password was changed. You can log in with it now.');
 
             return $this->redirectToRoute('app_login');
         }
@@ -130,8 +130,9 @@ class ResetPasswordController extends AbstractController
 
     private function processSendingPasswordResetEmail(string $emailFormData, MailerInterface $mailer, TranslatorInterface $translator): RedirectResponse
     {
+        // Emails are stored lower-cased (see User::setEmail()).
         $user = $this->entityManager->getRepository(User::class)->findOneBy([
-            'email' => $emailFormData,
+            'email' => mb_strtolower(trim($emailFormData)),
         ]);
 
         // Do not reveal whether a user account was found or not.
