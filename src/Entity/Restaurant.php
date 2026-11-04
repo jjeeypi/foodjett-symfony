@@ -69,6 +69,7 @@ class Restaurant
     #[ORM\Column(length: 255, unique: true)]
     private string $slug;
 
+    #[Assert\Length(max: 5000)]
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $description = null;
 
@@ -98,9 +99,11 @@ class Restaurant
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $longitude;
 
+    #[Assert\Range(min: 1, max: 240, notInRangeMessage: 'Preparation time must be between 1 and 240 minutes.')]
     #[ORM\Column(type: Types::INTEGER, options: ['unsigned' => true, 'default' => 15])]
     private int $defaultPrepTimeMinutes = 15;
 
+    #[Assert\Regex(pattern: '/^\d{1,8}(\.\d{1,2})?$/', message: 'Enter an amount of zero or more, like 150 or 99.50.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $minOrderAmount = '0.00';
 

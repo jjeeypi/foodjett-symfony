@@ -1,20 +1,33 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RestaurantDocumentController!{% endblock %}
+{% block title %}Documents | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
+    <h1>Documents</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <table>
+        <thead><tr><th>Document</th><th>Status</th><th>Note from the admin</th><th>File</th></tr></thead>
+        <tbody>
+            {% for type in types %}
+                {% set document = documents[type] ?? null %}
+                <tr id="document-{{ type }}">
+                    <td>{{ type|replace({'_': ' '})|capitalize }}</td>
+                    <td>{{ document ? document.status : 'missing' }}</td>
+                    <td>{{ document ? document.rejectionReason }}</td>
+                    <td>{% if document %}<a href="{{ path('app_restaurant_document_file', {id: document.id}) }}">view</a>{% endif %}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RestaurantDocumentController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/restaurant_document/index.html.twig</code></li>
-    </ul>
-</div>
+    {% if form %}
+        <h2>Upload a document</h2>
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <button type="submit">Upload</button>
+        {{ form_end(form) }}
+    {% else %}
+        <p>All documents are submitted.</p>
+    {% endif %}
 {% endblock %}

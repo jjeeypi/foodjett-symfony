@@ -13,8 +13,19 @@
             {% else %}
                 <p>An admin is reviewing your documents. You can set up your restaurant once it is approved.</p>
             {% endif %}
+            <p><a href="{{ path('app_restaurant_documents') }}">Your documents</a></p>
         </section>
     {% else %}
+        <form method="post" action="{{ path('app_restaurant_status') }}" id="operating-status">
+            <input type="hidden" name="_token" value="{{ csrf_token('operating-status') }}">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                {% for value in ['open', 'closed', 'temporarily_closed'] %}
+                    <option value="{{ value }}" {{ restaurant.operatingStatus == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Change status</button>
+        </form>
         <p>
             You are {{ restaurant.openNow ? 'open' : 'closed' }} for orders.
             <a href="{{ path('app_restaurant_orders', {status: 'placed'}) }}">{{ stats.waiting }} waiting for you</a>.
@@ -39,6 +50,9 @@
         <p>
             <a href="{{ path('app_restaurant_orders') }}">All orders</a>
             | <a href="{{ path('app_menu_item_index') }}">Menu</a>
+            | <a href="{{ path('app_restaurant_profile') }}">Profile</a>
+            | <a href="{{ path('app_restaurant_hours') }}">Hours</a>
+            | <a href="{{ path('app_restaurant_documents') }}">Documents</a>
         </p>
     {% endif %}
 {% endblock %}
