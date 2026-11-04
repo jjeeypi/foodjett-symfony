@@ -1,93 +1,143 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}{{ restaurant.name }} | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_restaurants') }}">All restaurants</a></p>
+    <a class="back-link" href="{{ path('app_restaurants') }}">{{ icon('back', 'icon-sm') }} All restaurants</a>
 
-    {% if restaurant.coverPhotoPath %}<p><img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="640" height="360"></p>{% endif %}
-    <h1>{{ restaurant.name }}</h1>
-    <p>
-        {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}
-        · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }} reviews)
-        · {{ restaurant.openNow ? 'Open now' : 'Closed' }}
-    </p>
-    {% if restaurant.description %}<p>{{ restaurant.description }}</p>{% endif %}
-    <p>{{ restaurant.address }}</p>
-    <p>
-        Prep time about {{ restaurant.defaultPrepTimeMinutes }} minutes.
-        {% if restaurant.minOrderAmount > 0 %}Minimum order PHP {{ restaurant.minOrderAmount }}.{% endif %}
-    </p>
+    <section class="store-hero">
+        {% if restaurant.coverPhotoPath %}<img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="1024" height="576">{% endif %}
+        <div class="store-hero-copy">
+            <div class="eyebrow" style="color: #e3efd2">{{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}</div>
+            <h1>{{ restaurant.name }}</h1>
+            {% if restaurant.description %}<p>{{ restaurant.description }}</p>{% endif %}
+            <div class="store-facts">
+                <span>{{ icon('star', 'icon-sm') }} {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }} reviews)</span>
+                <span><i class="dot{{ restaurant.openNow ? '' : ' dot-off' }}"></i> {{ restaurant.openNow ? 'Open now' : 'Closed' }}</span>
+                <span>{{ icon('clock', 'icon-sm') }} Prep time about {{ restaurant.defaultPrepTimeMinutes }} minutes</span>
+                <span>{{ icon('bag', 'icon-sm') }} {{ restaurant.minOrderAmount > 0 ? 'Minimum order ₱' ~ restaurant.minOrderAmount : 'No minimum order' }}</span>
+            </div>
+        </div>
+    </section>
 
-    {% if restaurant.operatingHours is not empty %}
-        <h2>Hours</h2>
-        <ul>
-            {% for hours in restaurant.operatingHours %}
-                <li>{{ days[hours.dayOfWeek] }}: {{ hours.opensAt|date('H:i') }} to {{ hours.closesAt|date('H:i') }}</li>
+    <div class="split">
+        <div>
+            {% set categories = restaurant.menuCategories|filter(c => c.items is not empty) %}
+            {% if categories is not empty %}
+                <nav class="menu-nav" aria-label="Menu categories">
+                    {% for category in categories %}
+                        <a class="chip" href="#category-{{ category.id }}">{{ category.name }}</a>
+                    {% endfor %}
+                </nav>
+            {% endif %}
+
+            {% for category in restaurant.menuCategories %}
+                <section class="menu-section" id="category-{{ category.id }}">
+                    <h2>{{ category.name }}</h2>
+                    <div class="menu-grid">
+                        {% for item in category.items %}
+                            <div class="dish{{ item.orderableNow ? '' : ' dish-unavailable' }}" id="item-{{ item.id }}">
+                                <div class="dish-photo">
+                                    {% if item.photoPath %}<img src="{{ asset(item.photoPath) }}" alt="{{ item.name }}" width="120" height="120" loading="lazy">{% endif %}
+                                </div>
+                                <div class="dish-body">
+                                    <h3>{{ item.name }}</h3>
+                                    {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+                                    {% if not item.orderableNow %}<p><span class="badge">Not available right now</span></p>{% endif %}
+                                    {% if is_granted('ROLE_CUSTOMER') and item.orderableNow %}
+                                        <form method="post" action="{{ path('app_cart_add', {id: item.id}) }}" name="add-{{ item.id }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                                            {% set addons = item.addons|filter(a => a.available) %}
+                                            <details>
+                                                <summary>{{ item.variants is not empty or addons is not empty ? 'Options, add-ons and notes' : 'Quantity and notes' }}</summary>
+                                                {% if item.variants is not empty %}
+                                                    <label for="variant-{{ item.id }}">Option</label>
+                                                    <select id="variant-{{ item.id }}" name="variant">
+                                                        {% for variant in item.variants %}
+                                                            <option value="{{ variant.id }}">{{ variant.name }}{% if variant.priceDelta != 0 %} ({{ variant.priceDelta > 0 ? '+' : '' }}₱{{ variant.priceDelta }}){% endif %}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                {% endif %}
+                                                {% if addons is not empty %}
+                                                    <p class="subtle" style="margin: 8px 0 4px">Add-ons</p>
+                                                    {% for addon in addons %}
+                                                        <div><input type="checkbox" id="addon-{{ addon.id }}" name="addons[]" value="{{ addon.id }}"><label for="addon-{{ addon.id }}">{{ addon.name }} (+₱{{ addon.price }})</label></div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                                <div class="form-grid" style="margin-top: 8px">
+                                                    <div><label for="quantity-{{ item.id }}">Qty</label><input type="number" id="quantity-{{ item.id }}" name="quantity" value="1" min="1" max="99"></div>
+                                                    <div><label for="instructions-{{ item.id }}">Note</label><input type="text" id="instructions-{{ item.id }}" name="instructions" maxlength="1000" placeholder="No onions…"></div>
+                                                </div>
+                                            </details>
+                                            <span class="dish-price">₱{{ item.basePrice }}</span>
+                                            <button class="btn-sm btn-green" type="submit" style="margin-left: auto">{{ icon('plus', 'icon-sm') }} Add to cart</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="dish-price" style="margin-top: auto">₱{{ item.basePrice }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="subtle">No items yet.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% else %}
+                <div class="empty">{{ icon('menu-book') }}<h2>No menu yet</h2><p>This restaurant has not published a menu yet.</p></div>
             {% endfor %}
-        </ul>
-    {% endif %}
+        </div>
 
-    <h2>Menu</h2>
-    {% for category in restaurant.menuCategories %}
-        <section>
-            <h3>{{ category.name }}</h3>
-            <ul>
-                {% for item in category.items %}
-                    <li id="item-{{ item.id }}">
-                        {% if item.photoPath %}<img src="{{ asset(item.photoPath) }}" alt="{{ item.name }}" width="120" height="120" loading="lazy"><br>{% endif %}
-                        <strong>{{ item.name }}</strong> · PHP {{ item.basePrice }}
-                        {% if not item.orderableNow %}<em>(not available right now)</em>{% endif %}
-                        {% if item.description %}<br>{{ item.description }}{% endif %}
-                        {% if item.variants is not empty %}
-                            <br>Options:
-                            {{ item.variants|map(v => v.name ~ ' (' ~ (v.priceDelta >= 0 ? '+' : '') ~ v.priceDelta ~ ')')|join(', ') }}
-                        {% endif %}
-                        {% if item.addons is not empty %}
-                            <br>Add-ons:
-                            {{ item.addons|filter(a => a.available)|map(a => a.name ~ ' (+' ~ a.price ~ ')')|join(', ') }}
-                        {% endif %}
-                        {% if is_granted('ROLE_CUSTOMER') and item.orderableNow %}
-                            <form method="post" action="{{ path('app_cart_add', {id: item.id}) }}" name="add-{{ item.id }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
-                                {% if item.variants is not empty %}
-                                    <label for="variant-{{ item.id }}">Option</label>
-                                    <select id="variant-{{ item.id }}" name="variant">
-                                        {% for variant in item.variants %}
-                                            <option value="{{ variant.id }}">{{ variant.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                {% endif %}
-                                {% for addon in item.addons|filter(a => a.available) %}
-                                    <input type="checkbox" id="addon-{{ addon.id }}" name="addons[]" value="{{ addon.id }}">
-                                    <label for="addon-{{ addon.id }}">{{ addon.name }}</label>
-                                {% endfor %}
-                                <label for="quantity-{{ item.id }}">Qty</label>
-                                <input type="number" id="quantity-{{ item.id }}" name="quantity" value="1" min="1" max="99">
-                                <label for="instructions-{{ item.id }}">Note</label>
-                                <input type="text" id="instructions-{{ item.id }}" name="instructions" maxlength="1000">
-                                <button type="submit">Add to cart</button>
-                            </form>
-                        {% endif %}
-                    </li>
+        <aside class="stack">
+            {% if is_granted('ROLE_CUSTOMER') and app.user.customer %}
+                {% set lines = app.user.customer.cartItems %}
+                <div class="panel">
+                    <div class="panel-head"><h2>Your cart</h2><span class="badge badge-green">{{ lines|reduce((sum, l) => sum + l.quantity, 0) }} items</span></div>
+                    {% for line in lines|slice(0, 6) %}
+                        <div class="line"><span class="grow">{{ line.quantity }} × {{ line.menuItem.name }}{% if line.variant %} <small class="subtle">({{ line.variant.name }})</small>{% endif %}</span></div>
+                    {% else %}
+                        <p class="subtle">Your cart is empty. Find something delicious to get started.</p>
+                    {% endfor %}
+                    {% if lines is not empty %}
+                        <a class="btn btn-block" href="{{ path('app_cart') }}" style="margin-top: 14px">Review your cart {{ icon('arrow', 'icon-sm') }}</a>
+                    {% endif %}
+                </div>
+            {% elseif not app.user %}
+                <div class="panel">
+                    <h2>Hungry?</h2>
+                    <p class="subtle">Log in or create an account to order from {{ restaurant.name }}.</p>
+                    <div class="button-row"><a class="btn" href="{{ path('app_login') }}">Log in</a><a class="btn btn-light" href="{{ path('app_register') }}">Sign up</a></div>
+                </div>
+            {% endif %}
+
+            <div class="panel">
+                <h2>About</h2>
+                <p class="subtle" style="display: flex; gap: 8px">{{ icon('pin', 'icon-sm') }} {{ restaurant.address }}</p>
+                {% if restaurant.operatingHours is not empty %}
+                    <h2>Hours</h2>
+                    <ul>
+                        {% for hours in restaurant.operatingHours %}
+                            <li>{{ days[hours.dayOfWeek] }}: {{ hours.opensAt|date('H:i') }} to {{ hours.closesAt|date('H:i') }}</li>
+                        {% endfor %}
+                    </ul>
                 {% else %}
-                    <li>No items yet.</li>
-                {% endfor %}
-            </ul>
-        </section>
-    {% else %}
-        <p>This restaurant has not published a menu yet.</p>
-    {% endfor %}
+                    <p class="subtle">{{ icon('clock', 'icon-sm') }} Takes orders whenever it is open.</p>
+                {% endif %}
+            </div>
 
-    <h2>Reviews</h2>
-    {% for review in reviews %}
-        <article>
-            <p><strong>{{ review.rating }} ★</strong> by {{ review.customer.user.name }} on {{ review.createdAt|date('M j, Y') }}</p>
-            {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
-            {% if review.restaurantReply %}<p>Reply from {{ restaurant.name }}: {{ review.restaurantReply }}</p>{% endif %}
-        </article>
-    {% else %}
-        <p>No reviews yet.</p>
-    {% endfor %}
-    {{ knp_pagination_render(reviews) }}
+            <div class="panel">
+                <h2>Reviews</h2>
+                {% for review in reviews %}
+                    <article class="line" style="display: block">
+                        <p style="margin: 0"><strong>{{ review.rating }} ★</strong> <span class="subtle">by {{ review.customer.user.name }} · {{ review.createdAt|date('M j, Y') }}</span></p>
+                        {% if review.comment %}<p style="margin: 6px 0 0">{{ review.comment }}</p>{% endif %}
+                        {% if review.restaurantReply %}<p class="note-box" style="margin: 8px 0 0">Reply from {{ restaurant.name }}: {{ review.restaurantReply }}</p>{% endif %}
+                    </article>
+                {% else %}
+                    <p class="subtle">No reviews yet.</p>
+                {% endfor %}
+                {{ knp_pagination_render(reviews) }}
+            </div>
+        </aside>
+    </div>
 {% endblock %}
