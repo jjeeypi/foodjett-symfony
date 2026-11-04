@@ -164,6 +164,9 @@ class Restaurant
     #[ORM\OneToMany(mappedBy: 'restaurant', targetEntity: RestaurantReview::class, cascade: ['persist'])]
     private Collection $reviews;
 
+    #[ORM\Column(length: 32)]
+    private ?string $kind = null;
+
     public function __construct()
     {
         $this->documents = new ArrayCollection();
@@ -570,5 +573,17 @@ class Restaurant
         }
 
         return round($sum / $count, 2);
+    }
+
+    public function getKind(): ?string
+    {
+        return $this->kind;
+    }
+
+    public function setKind(string $kind): static
+    {
+        $this->kind = $kind;
+
+        return $this;
     }
 }
