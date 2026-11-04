@@ -1,21 +1,42 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Your rider account | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a> | <a href="{{ path('app_rider_documents') }}">Documents</a></p>
-    <h1>Your rider account</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Ready for the road</div>
+            <h1>Your rider <span>account.</span></h1>
+            <p>Profile, vehicle and payout details.</p>
+        </div>
+        <a class="btn btn-light" href="{{ path('app_rider_documents') }}">{{ icon('file', 'icon-sm') }} Documents</a>
+    </div>
 
-    {% if rider.user.avatarPath %}<p><img src="{{ asset(rider.user.avatarPath) }}" alt="Profile photo" width="96"></p>{% endif %}
-    {{ form_start(form) }}
-        {{ form_widget(form) }}
-        <button type="submit">Save profile</button>
-    {{ form_end(form) }}
+    <div class="split">
+        <section class="panel">
+            <div class="panel-head" style="justify-content: flex-start; gap: 16px">
+                <span class="avatar avatar-lg">
+                    {%- if rider.user.avatarPath %}<img src="{{ asset(rider.user.avatarPath) }}" alt="Profile photo">{% else %}{{ rider.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}{% endif -%}
+                </span>
+                <div>
+                    <h2>{{ rider.user.name }}</h2>
+                    <p class="subtle" style="margin: 0">{{ rider.vehicleType|capitalize }}{% if rider.plateNumber %} · {{ rider.plateNumber }}{% endif %} · <span class="badge {{ rider.approvalStatus == 'approved' ? 'badge-green' : 'badge-warn' }}">{{ rider.approvalStatus }}</span></p>
+                </div>
+            </div>
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+                <button type="submit">Save profile</button>
+            {{ form_end(form) }}
+        </section>
 
-    <h2>Delete account</h2>
-    <p>Your details and documents are removed and you cannot sign in again. Past deliveries stay on record.</p>
-    <form method="post" action="{{ path('app_rider_account_delete') }}" onsubmit="return confirm('Delete your rider account for good?');">
-        <input type="hidden" name="_token" value="{{ csrf_token('delete-rider-account') }}">
-        <button type="submit">Delete my account</button>
-    </form>
+        <aside class="panel">
+            <h2>Delete account</h2>
+            <p class="subtle">Your details and documents are removed and you cannot sign in again. Past deliveries stay on record.</p>
+            <form method="post" action="{{ path('app_rider_account_delete') }}" onsubmit="return confirm('Delete your rider account for good?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete-rider-account') }}">
+                <button type="submit">Delete my account</button>
+            </form>
+        </aside>
+    </div>
 {% endblock %}

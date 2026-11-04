@@ -1,56 +1,78 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Rider | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {% if active_order %}{{ turbo_stream_listen('orders/' ~ active_order.id ~ '/status', null, {withCredentials: true}) }}{% endif %} hidden></div>
-    <h1>Hi, {{ rider.user.name }}</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Rider workspace</div>
+            <h1>Hi, {{ rider.user.name }}</h1>
+            <p>Ready for the road? Set your status and share where you are.</p>
+        </div>
+    </div>
 
     {% if not approved %}
-        <section id="approval">
-            <h2>Application status: {{ rider.approvalStatus }}</h2>
+        <section id="approval" class="panel">
+            <span class="badge {{ rider.approvalStatus == 'rejected' ? 'badge-danger' : 'badge-warn' }}">{{ rider.approvalStatus }}</span>
+            <h2 style="margin-top: 12px">Application status: {{ rider.approvalStatus }}</h2>
             {% if rider.approvalStatus == 'rejected' %}
-                <p>Your application was not approved.{% if rider.rejectionReason %} Reason: {{ rider.rejectionReason }}{% endif %}</p>
+                <p class="subtle">Your application was not approved.{% if rider.rejectionReason %} Reason: {{ rider.rejectionReason }}{% endif %}</p>
             {% else %}
-                <p>An admin is reviewing your documents. You can take orders once you are approved.</p>
+                <p class="subtle">An admin is reviewing your documents. You can take orders once you are approved.</p>
             {% endif %}
-            <p><a href="{{ path('app_rider_documents') }}">Your documents</a></p>
+            <a class="btn btn-light" href="{{ path('app_rider_documents') }}">{{ icon('file', 'icon-sm') }} Your documents</a>
         </section>
     {% else %}
-        <p id="availability">
-            You are <strong>{{ rider.availabilityStatus }}</strong>.
-            {% if not active_order %}
-                <form method="post" action="{{ path('app_rider_availability') }}">
-                    <input type="hidden" name="_token" value="{{ csrf_token('availability') }}">
-                    <button type="submit">{{ rider.availabilityStatus == 'offline' ? 'Go online' : 'Go offline' }}</button>
-                </form>
-            {% endif %}
-        </p>
+        <div class="split">
+            <div class="stack">
+                <section class="panel" id="availability">
+                    <div class="panel-head">
+                        <div>
+                            <h2>You are <strong>{{ rider.availabilityStatus }}</strong>.</h2>
+                            <p class="subtle" style="margin: 4px 0 0">{{ rider.availabilityStatus == 'offline' ? 'A little break? You’ve earned it.' : 'Nearby offers show up in the order pool.' }}</p>
+                        </div>
+                        {% if not active_order %}
+                            <form method="post" action="{{ path('app_rider_availability') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('availability') }}">
+                                <button class="{{ rider.availabilityStatus == 'offline' ? 'btn-green' : 'btn-light' }}" type="submit">{{ rider.availabilityStatus == 'offline' ? 'Go online' : 'Go offline' }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
 
-        {% if active_order %}
-            <p id="active-order">
-                Delivering order {{ active_order.orderNumber }} ({{ active_order.status|replace({'_': ' '}) }}).
-                <a href="{{ path('app_rider_delivery') }}">Open delivery</a>
-            </p>
-        {% else %}
-            <p><a href="{{ path('app_rider_pool') }}">Find orders</a></p>
-        {% endif %}
+                    {% if active_order %}
+                        <p id="active-order" class="callout" style="margin: 0">
+                            {{ icon('bike') }}
+                            <span>Delivering order {{ active_order.orderNumber }} ({{ active_order.status|replace({'_': ' '}) }}).
+                            <a href="{{ path('app_rider_delivery') }}"><strong>Open delivery</strong></a></span>
+                        </p>
+                    {% else %}
+                        <a class="btn" href="{{ path('app_rider_pool') }}">{{ icon('bag', 'icon-sm') }} Find orders</a>
+                    {% endif %}
+                </section>
 
-        <h2>Your location</h2>
-        <p>
-            {% if rider.lastLocationAt %}Last shared {{ rider.lastLocationAt|date('M j, g:i:s A') }}.{% else %}Not shared yet; the pool needs it.{% endif %}
-        </p>
-        {# Shares the position automatically while this page is open; the pin is the fallback when location access is blocked. #}
-        {{ form_start(location_form, {attr: {id: 'rider-location-picker', 'data-turbo-permanent': '', 'data-controller': 'location-picker', 'data-location-picker-live-value': 'true'}}) }}
-            {{ form_widget(location_form) }}
-            <button type="submit">Share location</button>
-        {{ form_end(location_form) }}
+                <section class="panel">
+                    <h2>Your location</h2>
+                    <p class="subtle">
+                        {% if rider.lastLocationAt %}Last shared {{ rider.lastLocationAt|date('M j, g:i:s A') }}.{% else %}Not shared yet; the pool needs it.{% endif %}
+                        This page keeps sharing your position while it is open.
+                    </p>
+                    {# Shares the position automatically while this page is open; the pin is the fallback when location access is blocked. #}
+                    {{ form_start(location_form, {attr: {id: 'rider-location-picker', 'data-turbo-permanent': '', 'data-controller': 'location-picker', 'data-location-picker-live-value': 'true'}}) }}
+                        {{ form_widget(location_form) }}
+                        <button type="submit">{{ icon('pin', 'icon-sm') }} Share location</button>
+                    {{ form_end(location_form) }}
+                </section>
+            </div>
 
-        <p>
-            <a href="{{ path('app_messages') }}">Messages</a>
-            | <a href="{{ path('app_rider_finance') }}">Earnings and cash</a>
-            | <a href="{{ path('app_rider_account') }}">Account</a>
-            | <a href="{{ path('app_rider_documents') }}">Documents</a>
-        </p>
+            <aside class="panel">
+                <h2>Shortcuts</h2>
+                <a class="line" href="{{ path('app_messages') }}"><span class="pin-box">{{ icon('message') }}</span><span class="grow"><strong>Messages</strong><div class="subtle">Chat with customers</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_rider_finance') }}"><span class="pin-box">{{ icon('wallet') }}</span><span class="grow"><strong>Earnings and cash</strong><div class="subtle">Every little win</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_rider_account') }}"><span class="pin-box">{{ icon('user') }}</span><span class="grow"><strong>Account</strong><div class="subtle">Profile and payout details</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_rider_documents') }}"><span class="pin-box">{{ icon('file') }}</span><span class="grow"><strong>Documents</strong><div class="subtle">License, ID and clearances</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+            </aside>
+        </div>
     {% endif %}
 {% endblock %}

@@ -1,71 +1,124 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Delivery {{ order.orderNumber }} | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('orders/' ~ order.id ~ '/status', null, {withCredentials: true}) }} hidden></div>
-    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
-    <h1>Delivery {{ order.orderNumber }}</h1>
-    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
+    {% set reached = {rider_assigned: 1, at_restaurant: 2, picked_up: 3, on_the_way: 4, arrived: 5, delivered: 6}[order.status] ?? 1 %}
+    {% set titles = {rider_assigned: 'Head to the restaurant', at_restaurant: 'Confirm your pickup', picked_up: 'Ready to hit the road?', on_the_way: 'Head to your customer', arrived: 'Complete your delivery'} %}
 
-    <h2>Pick up</h2>
-    <p>{{ order.restaurant.name }}, {{ order.restaurant.address }} ({{ order.restaurant.latitude }}, {{ order.restaurant.longitude }})
-        {% if order.estimatedReadyAt %}· ready about {{ order.estimatedReadyAt|date('g:i A') }}{% endif %}</p>
-    <ul>
-        {% for item in order.items %}
-            <li>{{ item.quantity }} × {{ item.menuItem.name }}{% if item.specialInstructions %} · {{ item.specialInstructions }}{% endif %}</li>
-        {% endfor %}
-    </ul>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">One stop closer to a good day</div>
+            <h1>Delivery {{ order.orderNumber }}</h1>
+            <p id="status">Status: <strong class="badge badge-warn">{{ order.status|replace({'_': ' '}) }}</strong></p>
+        </div>
+    </div>
 
-    <h2>Deliver to</h2>
-    <p>
-        {{ order.customer.user.name }} · {{ order.customer.user.phone }}<br>
-        {{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} (near {{ order.customerAddress.landmark }}){% endif %}
-        ({{ order.customerAddress.latitude }}, {{ order.customerAddress.longitude }})
-        {% if order.customerAddress.deliveryInstructions %}<br>Instructions: {{ order.customerAddress.deliveryInstructions }}{% endif %}
-        {% if order.customerNotes %}<br>Notes: {{ order.customerNotes }}{% endif %}
-    </p>
-    <p id="payment">{% if cash_to_collect %}Collect <strong>PHP {{ cash_to_collect }}</strong> in cash.{% else %}Already paid online.{% endif %}</p>
+    <div class="split">
+        <section class="panel">
+            <span class="badge badge-green">{{ order.restaurant.name }}</span>
+            <h2 style="margin-top: 14px; font-size: 24px">{{ titles[order.status] ?? 'Your delivery' }}</h2>
+            <div class="progress-steps">
+                {% for label in ['Assigned', 'At pickup', 'Picked up', 'On the way', 'Arrived', 'Delivered'] %}
+                    <span class="{{ loop.index <= reached ? 'done' }}"><b>{{ loop.index }}</b>{{ label }}</span>
+                {% endfor %}
+            </div>
 
-    <h2>Next step</h2>
-    {% if step %}
-        <form method="post" action="{{ path('app_rider_delivery_step', {action: step}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('delivery' ~ order.id) }}">
-            <button type="submit">{{ {'arrived-restaurant': 'I am at the restaurant', 'start': 'Start the delivery', 'arrived-customer': 'I have arrived'}[step] }}</button>
-        </form>
-    {% endif %}
+            <div class="line">
+                <span class="pin-box">{{ icon('store') }}</span>
+                <span class="grow">
+                    <small class="subtle">PICK UP</small>
+                    <h3>{{ order.restaurant.name }}</h3>
+                    <div class="subtle">{{ order.restaurant.address }} ({{ order.restaurant.latitude }}, {{ order.restaurant.longitude }})
+                        {% if order.estimatedReadyAt %}· ready about {{ order.estimatedReadyAt|date('g:i A') }}{% endif %}</div>
+                </span>
+                <a class="btn btn-light btn-sm" href="https://www.google.com/maps/dir/?api=1&amp;destination={{ order.restaurant.latitude }},{{ order.restaurant.longitude }}" target="_blank" rel="noopener">{{ icon('map', 'icon-sm') }} Directions</a>
+            </div>
+            <div class="line">
+                <span class="pin-box">{{ icon('pin') }}</span>
+                <span class="grow">
+                    <small class="subtle">DELIVER TO</small>
+                    <h3>{{ order.customer.user.name }} · <a href="tel:{{ order.customer.user.phone }}">{{ order.customer.user.phone }}</a></h3>
+                    <div class="subtle">
+                        {{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} (near {{ order.customerAddress.landmark }}){% endif %}
+                        ({{ order.customerAddress.latitude }}, {{ order.customerAddress.longitude }})
+                    </div>
+                </span>
+                <a class="btn btn-light btn-sm" href="https://www.google.com/maps/dir/?api=1&amp;destination={{ order.customerAddress.latitude }},{{ order.customerAddress.longitude }}" target="_blank" rel="noopener">{{ icon('map', 'icon-sm') }} Directions</a>
+            </div>
+            {% if order.customerAddress.deliveryInstructions or order.customerNotes %}
+                <p class="note-box">
+                    {% if order.customerAddress.deliveryInstructions %}Instructions: {{ order.customerAddress.deliveryInstructions }}{% endif %}
+                    {% if order.customerNotes %}<br>Notes: {{ order.customerNotes }}{% endif %}
+                </p>
+            {% endif %}
 
-    {% if pickup_form %}
-        {{ form_start(pickup_form, {action: path('app_rider_delivery_pickup')}) }}
-            {{ form_widget(pickup_form) }}
-            <button type="submit">Confirm pickup</button>
-        {{ form_end(pickup_form) }}
-    {% endif %}
+            <h3 style="margin-top: 20px">Order items</h3>
+            <ul style="padding-left: 18px; color: #6f7a63">
+                {% for item in order.items %}
+                    <li>{{ item.quantity }} × {{ item.menuItem.name }}{% if item.specialInstructions %} · {{ item.specialInstructions }}{% endif %}</li>
+                {% endfor %}
+            </ul>
 
-    {% if proof_form %}
-        {{ form_start(proof_form, {action: path('app_rider_delivery_complete')}) }}
-            {{ form_widget(proof_form) }}
-            <button type="submit">Complete delivery</button>
-        {{ form_end(proof_form) }}
+            <div id="payment" class="{{ cash_to_collect ? 'cash-box' : 'note-box' }}" style="margin: 18px 0">
+                {% if cash_to_collect %}<small>Cash on delivery</small>Collect <strong>₱{{ cash_to_collect }}</strong> in cash.{% else %}Already paid online.{% endif %}
+            </div>
 
-        <form method="post" action="{{ path('app_rider_delivery_unreachable') }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('delivery' ~ order.id) }}">
-            <button type="submit">Customer unreachable</button>
-            {% if unreachable_from %}<small>available from {{ unreachable_from|date('g:i:s A') }}</small>{% endif %}
-        </form>
-    {% endif %}
+            <h2>Next step</h2>
+            {% if step %}
+                <form method="post" action="{{ path('app_rider_delivery_step', {action: step}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delivery' ~ order.id) }}">
+                    <button class="btn-green btn-block" type="submit">{{ {'arrived-restaurant': 'I am at the restaurant', 'start': 'Start the delivery', 'arrived-customer': 'I have arrived'}[step] }} {{ icon('arrow', 'icon-sm') }}</button>
+                </form>
+            {% endif %}
 
-    {% if cancel_form %}
-        <h2>Cannot make it?</h2>
-        {{ form_start(cancel_form, {action: path('app_rider_delivery_cancel')}) }}
-            {{ form_widget(cancel_form) }}
-            <button type="submit">Cancel this delivery</button>
-        {{ form_end(cancel_form) }}
-    {% endif %}
+            {% if pickup_form %}
+                {{ form_start(pickup_form, {action: path('app_rider_delivery_pickup')}) }}
+                    {{ form_widget(pickup_form) }}
+                    <button class="btn-green btn-block" type="submit">Confirm pickup {{ icon('arrow', 'icon-sm') }}</button>
+                {{ form_end(pickup_form) }}
+            {% endif %}
 
-    <h2>Report a problem</h2>
-    {{ form_start(issue_form, {action: path('app_rider_delivery_issue')}) }}
-        {{ form_widget(issue_form) }}
-        <button type="submit">Send report</button>
-    {{ form_end(issue_form) }}
+            {% if proof_form %}
+                {{ form_start(proof_form, {action: path('app_rider_delivery_complete')}) }}
+                    {{ form_widget(proof_form) }}
+                    <button class="btn-green btn-block" type="submit">Complete delivery {{ icon('check', 'icon-sm') }}</button>
+                {{ form_end(proof_form) }}
+
+                <form method="post" action="{{ path('app_rider_delivery_unreachable') }}" style="margin-top: 10px">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delivery' ~ order.id) }}">
+                    <button class="btn-light" type="submit">Customer unreachable</button>
+                    {% if unreachable_from %}<small class="subtle">available from {{ unreachable_from|date('g:i:s A') }}</small>{% endif %}
+                </form>
+            {% endif %}
+        </section>
+
+        <aside class="stack">
+            <section class="panel">
+                <h2>Need to talk?</h2>
+                <p class="subtle">Chat with the customer about the drop-off.</p>
+                <a class="btn btn-light" href="{{ path('app_messages') }}">{{ icon('message', 'icon-sm') }} Messages</a>
+            </section>
+
+            {% if cancel_form %}
+                <section class="panel">
+                    <h2>Cannot make it?</h2>
+                    {{ form_start(cancel_form, {action: path('app_rider_delivery_cancel')}) }}
+                        {{ form_widget(cancel_form) }}
+                        <button class="btn-danger" type="submit">Cancel this delivery</button>
+                    {{ form_end(cancel_form) }}
+                </section>
+            {% endif %}
+
+            <section class="panel">
+                <h2>Report a problem</h2>
+                {{ form_start(issue_form, {action: path('app_rider_delivery_issue')}) }}
+                    {{ form_widget(issue_form) }}
+                    <button class="btn-light" type="submit">Send report</button>
+                {{ form_end(issue_form) }}
+            </section>
+        </aside>
+    </div>
 {% endblock %}

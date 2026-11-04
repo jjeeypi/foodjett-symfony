@@ -1,60 +1,84 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Earnings and cash | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
-    <h1>Earnings and cash</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Every delivery makes a difference</div>
+            <h1>Your hard work, <span>adding up.</span></h1>
+            <p>Earnings, cash on hand and payouts.</p>
+        </div>
+    </div>
 
-    <dl id="totals">
-        {% for label, total in totals %}<dt>{{ label }}</dt><dd>PHP {{ total }}</dd>{% endfor %}
+    <dl id="totals" class="stats">
+        {% for label, total in totals %}<div><dt>{{ label }}</dt><dd>₱{{ total }}</dd></div>{% endfor %}
     </dl>
 
-    <h2>Cash on hand</h2>
-    <dl id="cash">
-        <dt>Holding</dt><dd>PHP {{ rider.cashOnHand }} (limit PHP {{ rider.cashRemitLimit }})</dd>
-        <dt>Waiting for confirmation</dt><dd>PHP {{ cash.pending }}</dd>
-        <dt>Available to remit</dt><dd>PHP {{ cash.available }}</dd>
-    </dl>
-    {% if cash.at_limit %}<p class="error">You are at your cash limit. Remit cash before taking another cash-on-delivery order.</p>{% endif %}
+    <div class="split">
+        <div class="stack">
+            <section class="panel">
+                <h2>Deliveries</h2>
+                <p class="subtle">A clear view of every little win.</p>
+                <div class="table-wrap" style="margin-top: 12px">
+                    <table id="earnings">
+                        <thead><tr><th>Order</th><th>Base</th><th>Distance</th><th>Waiting</th><th>Incentive</th><th>Tip</th><th>Total</th></tr></thead>
+                        <tbody>
+                            {% for earning in earnings %}
+                                <tr>
+                                    <td><strong>{{ earning.order.orderNumber }}</strong><div class="subtle">{{ earning.order.restaurant.name }}</div></td>
+                                    <td>{{ earning.basePay }}</td><td>{{ earning.distancePay }}</td><td>{{ earning.waitingPay }}</td>
+                                    <td>{{ earning.incentivePay }}</td><td>{{ earning.tipAmount }}</td><td><strong style="color: #6b8a4d">₱{{ earning.totalEarned }}</strong></td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="7">No deliveries yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {{ knp_pagination_render(earnings) }}
+            </section>
 
-    {{ form_start(form) }}
-        {{ form_widget(form) }}
-        <button type="submit">Request remittance</button>
-    {{ form_end(form) }}
+            <section class="panel">
+                <h2>Payouts</h2>
+                <ul id="payouts">
+                    {% for payout in payouts %}
+                        <li>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }} · <strong>₱{{ payout.totalAmount }}</strong> · <span class="badge">{{ payout.status }}</span></li>
+                    {% else %}
+                        <li class="subtle">No payouts yet.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
 
-    <h3>Remittances</h3>
-    <ul id="remittances">
-        {% for remittance in remittances %}
-            <li>PHP {{ remittance.amount }} · {{ remittance.status }} · {{ remittance.createdAt|date('M j, g:i A') }}{% if remittance.referenceNote %} · {{ remittance.referenceNote }}{% endif %}</li>
-        {% else %}
-            <li>No remittances yet.</li>
-        {% endfor %}
-    </ul>
+        <aside class="stack">
+            <section class="panel">
+                <h2>Cash on hand</h2>
+                <dl id="cash" class="totals">
+                    <div><dt>Holding</dt><dd>₱{{ rider.cashOnHand }} (limit ₱{{ rider.cashRemitLimit }})</dd></div>
+                    <div><dt>Waiting for confirmation</dt><dd>₱{{ cash.pending }}</dd></div>
+                    <div class="grand"><dt>Available to remit</dt><dd>₱{{ cash.available }}</dd></div>
+                </dl>
+                {% if cash.at_limit %}<p class="error callout callout-danger" style="margin-top: 14px">You are at your cash limit. Remit cash before taking another cash-on-delivery order.</p>{% endif %}
+                <div style="margin-top: 16px">
+                    {{ form_start(form) }}
+                        {{ form_widget(form) }}
+                        <button class="btn-green" type="submit">Request remittance</button>
+                    {{ form_end(form) }}
+                </div>
+            </section>
 
-    <h2>Deliveries</h2>
-    <table id="earnings">
-        <thead><tr><th>Order</th><th>Base</th><th>Distance</th><th>Waiting</th><th>Incentive</th><th>Tip</th><th>Total</th></tr></thead>
-        <tbody>
-            {% for earning in earnings %}
-                <tr>
-                    <td>{{ earning.order.orderNumber }} · {{ earning.order.restaurant.name }}</td>
-                    <td>{{ earning.basePay }}</td><td>{{ earning.distancePay }}</td><td>{{ earning.waitingPay }}</td>
-                    <td>{{ earning.incentivePay }}</td><td>{{ earning.tipAmount }}</td><td>PHP {{ earning.totalEarned }}</td>
-                </tr>
-            {% else %}
-                <tr><td colspan="7">No deliveries yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {{ knp_pagination_render(earnings) }}
-
-    <h2>Payouts</h2>
-    <ul id="payouts">
-        {% for payout in payouts %}
-            <li>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }} · PHP {{ payout.totalAmount }} · {{ payout.status }}</li>
-        {% else %}
-            <li>No payouts yet.</li>
-        {% endfor %}
-    </ul>
+            <section class="panel">
+                <h3>Remittances</h3>
+                <ul id="remittances">
+                    {% for remittance in remittances %}
+                        <li>₱{{ remittance.amount }} · {{ remittance.status }} · {{ remittance.createdAt|date('M j, g:i A') }}{% if remittance.referenceNote %} · {{ remittance.referenceNote }}{% endif %}</li>
+                    {% else %}
+                        <li class="subtle">No remittances yet.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

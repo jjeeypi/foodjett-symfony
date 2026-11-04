@@ -121,12 +121,12 @@ class RiderAccountPagesTest extends RiderWebTestCase
 
         $crawler = $this->page('/rider/finance');
         $totals = array_combine($crawler->filter('#totals dt')->each(fn ($dt) => $dt->text()), $crawler->filter('#totals dd')->each(fn ($dd) => $dd->text()));
-        self::assertSame('PHP 50.00', $totals['Today']);
+        self::assertSame('₱50.00', $totals['Today']);
         $week = $earlier->getCreatedAt() >= $now->setTime(0, 0)->modify('monday this week') ? '120.00' : '50.00';
-        self::assertSame('PHP '.$week, $totals['This week']);
+        self::assertSame('₱'.$week, $totals['This week']);
         self::assertCount(2, $crawler->filter('#earnings tbody tr'));
         self::assertSelectorTextNotContains('#earnings', '999.00');
-        self::assertSelectorTextContains('#payouts', 'PHP 120.00');
+        self::assertSelectorTextContains('#payouts', '₱120.00');
         self::assertSelectorTextNotContains('#payouts', '999.00');
     }
 
@@ -143,7 +143,7 @@ class RiderAccountPagesTest extends RiderWebTestCase
         $this->entityManager->flush();
 
         $crawler = $this->page('/rider/finance');
-        self::assertSame('PHP 400.00', $crawler->filter('#cash dt:contains("Available to remit") + dd')->text());
+        self::assertSame('₱400.00', $crawler->filter('#cash dt:contains("Available to remit") + dd')->text());
 
         $this->submit('/rider/finance', 'Request remittance', ['remittance_form[amount]' => '450', 'remittance_form[referenceNote]' => 'Too much']);
         $this->client->followRedirect();
@@ -153,7 +153,7 @@ class RiderAccountPagesTest extends RiderWebTestCase
         $this->client->followRedirect();
         self::assertSelectorTextContains('.flash-success', 'Remittance request sent.');
         self::assertCount(2, $this->client->getCrawler()->filter('#remittances li'));
-        self::assertSelectorTextNotContains('#remittances', 'PHP 50.00');
+        self::assertSelectorTextNotContains('#remittances', '₱50.00');
     }
 
     private function earning(Rider $rider, string $total, \DateTimeImmutable $at): RiderEarning
