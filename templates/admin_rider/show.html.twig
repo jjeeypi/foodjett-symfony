@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rider{% endblock %}
+
+{% block body %}
+    <h1>Rider</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ rider.id }}</td>
+            </tr>
+            <tr>
+                <th>VehicleType</th>
+                <td>{{ rider.vehicleType }}</td>
+            </tr>
+            <tr>
+                <th>PlateNumber</th>
+                <td>{{ rider.plateNumber }}</td>
+            </tr>
+            <tr>
+                <th>ApprovalStatus</th>
+                <td>{{ rider.approvalStatus }}</td>
+            </tr>
+            <tr>
+                <th>RejectionReason</th>
+                <td>{{ rider.rejectionReason }}</td>
+            </tr>
+            <tr>
+                <th>AvailabilityStatus</th>
+                <td>{{ rider.availabilityStatus }}</td>
+            </tr>
+            <tr>
+                <th>CurrentLatitude</th>
+                <td>{{ rider.currentLatitude }}</td>
+            </tr>
+            <tr>
+                <th>CurrentLongitude</th>
+                <td>{{ rider.currentLongitude }}</td>
+            </tr>
+            <tr>
+                <th>LastLocationAt</th>
+                <td>{{ rider.lastLocationAt ? rider.lastLocationAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>CashOnHand</th>
+                <td>{{ rider.cashOnHand }}</td>
+            </tr>
+            <tr>
+                <th>CashRemitLimit</th>
+                <td>{{ rider.cashRemitLimit }}</td>
+            </tr>
+            <tr>
+                <th>PayoutMethod</th>
+                <td>{{ rider.payoutMethod }}</td>
+            </tr>
+            <tr>
+                <th>EncryptedPayoutAccountDetails</th>
+                <td>{{ rider.encryptedPayoutAccountDetails }}</td>
+            </tr>
+            <tr>
+                <th>CreatedAt</th>
+                <td>{{ rider.createdAt ? rider.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>UpdatedAt</th>
+                <td>{{ rider.updatedAt ? rider.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_rider_index') }}">back to list</a>
+
+    <a href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">edit</a>
+
+    {{ include('admin_rider/_delete_form.html.twig') }}
+{% endblock %}

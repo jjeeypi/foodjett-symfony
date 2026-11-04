@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rider index{% endblock %}
+
+{% block body %}
+    <h1>Rider index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>VehicleType</th>
+                <th>PlateNumber</th>
+                <th>ApprovalStatus</th>
+                <th>RejectionReason</th>
+                <th>AvailabilityStatus</th>
+                <th>CurrentLatitude</th>
+                <th>CurrentLongitude</th>
+                <th>LastLocationAt</th>
+                <th>CashOnHand</th>
+                <th>CashRemitLimit</th>
+                <th>PayoutMethod</th>
+                <th>EncryptedPayoutAccountDetails</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for rider in riders %}
+            <tr>
+                <td>{{ rider.id }}</td>
+                <td>{{ rider.vehicleType }}</td>
+                <td>{{ rider.plateNumber }}</td>
+                <td>{{ rider.approvalStatus }}</td>
+                <td>{{ rider.rejectionReason }}</td>
+                <td>{{ rider.availabilityStatus }}</td>
+                <td>{{ rider.currentLatitude }}</td>
+                <td>{{ rider.currentLongitude }}</td>
+                <td>{{ rider.lastLocationAt ? rider.lastLocationAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ rider.cashOnHand }}</td>
+                <td>{{ rider.cashRemitLimit }}</td>
+                <td>{{ rider.payoutMethod }}</td>
+                <td>{{ rider.encryptedPayoutAccountDetails }}</td>
+                <td>{{ rider.createdAt ? rider.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ rider.updatedAt ? rider.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">show</a>
+                    <a href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="16">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_rider_new') }}">Create new</a>
+{% endblock %}

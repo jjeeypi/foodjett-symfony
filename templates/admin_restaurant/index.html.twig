@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Restaurant index{% endblock %}
+
+{% block body %}
+    <h1>Restaurant index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Description</th>
+                <th>LogoPath</th>
+                <th>CoverPhotoPath</th>
+                <th>CuisineType</th>
+                <th>Address</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>DefaultPrepTimeMinutes</th>
+                <th>MinOrderAmount</th>
+                <th>CommissionRate</th>
+                <th>ApprovalStatus</th>
+                <th>RejectionReason</th>
+                <th>OperatingStatus</th>
+                <th>PayoutMethod</th>
+                <th>PayoutAccountDetails</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for restaurant in restaurants %}
+            <tr>
+                <td>{{ restaurant.id }}</td>
+                <td>{{ restaurant.name }}</td>
+                <td>{{ restaurant.slug }}</td>
+                <td>{{ restaurant.description }}</td>
+                <td>{{ restaurant.logoPath }}</td>
+                <td>{{ restaurant.coverPhotoPath }}</td>
+                <td>{{ restaurant.cuisineType }}</td>
+                <td>{{ restaurant.address }}</td>
+                <td>{{ restaurant.latitude }}</td>
+                <td>{{ restaurant.longitude }}</td>
+                <td>{{ restaurant.defaultPrepTimeMinutes }}</td>
+                <td>{{ restaurant.minOrderAmount }}</td>
+                <td>{{ restaurant.commissionRate }}</td>
+                <td>{{ restaurant.approvalStatus }}</td>
+                <td>{{ restaurant.rejectionReason }}</td>
+                <td>{{ restaurant.operatingStatus }}</td>
+                <td>{{ restaurant.payoutMethod }}</td>
+                <td>{{ restaurant.payoutAccountDetails ? restaurant.payoutAccountDetails|json_encode : '' }}</td>
+                <td>{{ restaurant.createdAt ? restaurant.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ restaurant.updatedAt ? restaurant.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">show</a>
+                    <a href="{{ path('app_admin_restaurant_edit', {'id': restaurant.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="21">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_restaurant_new') }}">Create new</a>
+{% endblock %}
