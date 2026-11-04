@@ -15,7 +15,8 @@ final class HealthController extends AbstractController
     public function __invoke(Connection $connection): JsonResponse
     {
         try {
-            $connection->executeQuery('SELECT 1')->fetchOne();
+            // Opening the connection proves the database is reachable without issuing application SQL.
+            $connection->getServerVersion();
         } catch (\Throwable) {
             return $this->json([
                 'status' => 'unavailable',

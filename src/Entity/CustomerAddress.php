@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\CustomerAddressRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: CustomerAddressRepository::class)]
 #[ORM\Table(name: 'customer_addresses')]
 #[ORM\Index(name: 'customer_addresses_customer_id_foreign', columns: ['customer_id'])]
 class CustomerAddress

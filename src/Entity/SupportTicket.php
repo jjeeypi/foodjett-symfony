@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\SupportTicketStatus;
+use App\Repository\SupportTicketRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: SupportTicketRepository::class)]
 #[ORM\Table(name: 'support_tickets')]
 #[ORM\Index(name: 'support_tickets_user_id_foreign', columns: ['user_id'])]
 class SupportTicket

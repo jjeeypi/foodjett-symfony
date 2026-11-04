@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\Conversation;
-use App\Entity\Order;
-use App\Entity\Restaurant;
-use App\Enum\ApprovalStatus;
-use App\Enum\ConversationType;
-use App\Enum\OrderStatus;
-use App\Enum\UserRole;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Enum\ApprovalStatus;
+use App\Enum\UserRole;
+use App\Repository\ConversationRepository;
+use App\Repository\OrderRepository;
+use App\Repository\RestaurantRepository;
 
 final readonly class MercureTopicResolver
 {
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private OrderRepository $orders,
+        private ConversationRepository $conversations,
+        private RestaurantRepository $restaurants,
+    ) {
     }
 
     /** @return list<string> */
@@ -54,15 +54,8 @@ final readonly class MercureTopicResolver
             return [];
         }
 
-        $orderIds = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->select('orders.id')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
-            ->getQuery()->getSingleColumnResult();
-        $conversationIds = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->select('conversation.id')
-            ->innerJoin('conversation.order', 'orders')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
-            ->getQuery()->getSingleColumnResult();
+        $orderIds = $this->orders->findIdsForCustomer($customer);
+        $conversationIds = $this->conversations->findIdsForCustomer($customer);
 
         return [
             ...array_map(static fn (mixed $id): string => sprintf('orders/%s/status', $id), $orderIds),
@@ -79,21 +72,8 @@ final readonly class MercureTopicResolver
             return [];
         }
 
-        $terminalStatuses = array_map(
-            static fn (OrderStatus $status): string => $status->value,
-            array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal()),
-        );
-        $orderIds = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->select('orders.id')
-            ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('orders.status NOT IN (:terminalStatuses)')->setParameter('terminalStatuses', $terminalStatuses)
-            ->getQuery()->getSingleColumnResult();
-        $conversationIds = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->select('conversation.id')
-            ->innerJoin('conversation.order', 'orders')
-            ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('conversation.type = :type')->setParameter('type', ConversationType::CUSTOMER_RIDER)
-            ->getQuery()->getSingleColumnResult();
+        $orderIds = $this->orders->findActiveIdsForRider($rider);
+        $conversationIds = $this->conversations->findCustomerRiderIdsForRider($rider);
 
         $topics = [
             ...array_map(static fn (mixed $id): string => sprintf('orders/%s/status', $id), $orderIds),
@@ -111,12 +91,9 @@ final readonly class MercureTopicResolver
     /** @return list<string> */
     private function adminTopics(): array
     {
-        $restaurantIds = $this->entityManager->getRepository(Restaurant::class)->createQueryBuilder('restaurant')
-            ->select('restaurant.id')->getQuery()->getSingleColumnResult();
-        $orderIds = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->select('orders.id')->getQuery()->getSingleColumnResult();
-        $conversationIds = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->select('conversation.id')->getQuery()->getSingleColumnResult();
+        $restaurantIds = $this->restaurants->findAllIds();
+        $orderIds = $this->orders->findAllIds();
+        $conversationIds = $this->conversations->findAllIds();
 
         return [
             'orders/pool',

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\Order;
 use App\Entity\RestaurantPayout;
-use App\Enum\OrderStatus;
+use App\Repository\OrderRepository;
+use App\Repository\RestaurantPayoutRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,8 +19,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your restaurant account is awaiting approval.')]
 final class RestaurantEarningsController extends AbstractRestaurantController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator)
-    {
+    public function __construct(
+        private readonly ApiPaginator $paginator,
+        private readonly RestaurantPayoutRepository $payouts,
+        private readonly OrderRepository $orders,
+    ) {
     }
 
     #[Route('/earnings/summary', name: 'summary', methods: ['GET'])]
@@ -42,9 +44,7 @@ final class RestaurantEarningsController extends AbstractRestaurantController
     #[Route('/payouts', name: 'payouts', methods: ['GET'])]
     public function payouts(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RestaurantPayout::class)->createQueryBuilder('payout')
-            ->andWhere('payout.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->orderBy('payout.periodEnd', 'DESC');
+        $query = $this->payouts->createForRestaurantQuery($this->restaurant());
 
         return $this->json($this->paginator->paginate($query, $request, static fn (RestaurantPayout $payout): array => [
             'id' => $payout->getId(), 'period_start' => $payout->getPeriodStart()->format('Y-m-d'),
@@ -57,12 +57,7 @@ final class RestaurantEarningsController extends AbstractRestaurantController
     /** @return array{order_count: int, gross_revenue: string, commission: string, net_revenue: string} */
     private function period(\DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
-        /** @var list<Order> $orders */
-        $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
-            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt <= :end')->setParameter('start', $start)->setParameter('end', $end)
-            ->getQuery()->getResult();
+        $orders = $this->orders->findDeliveredForRestaurantBetween($this->restaurant(), $start, $end);
         $gross = 0.0;
         $commission = 0.0;
         foreach ($orders as $order) {

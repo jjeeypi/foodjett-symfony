@@ -30,6 +30,7 @@ use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
 use App\Exception\CheckoutValidationException;
 use App\Event\OrderStatusChangedEvent;
+use App\Repository\VoucherRedemptionRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -41,6 +42,7 @@ final readonly class CheckoutService
         private PlatformSettingService $settings,
         private DeliveryZoneService $deliveryZones,
         private EventDispatcherInterface $eventDispatcher,
+        private VoucherRedemptionRepository $voucherRedemptions,
     ) {
     }
 
@@ -524,22 +526,11 @@ final readonly class CheckoutService
             throw new CheckoutValidationException('Voucher does not apply to this restaurant.');
         }
 
-        $repository = $this->entityManager->getRepository(VoucherRedemption::class);
-        $totalUses = (int) $repository->createQueryBuilder('redemption')
-            ->select('COUNT(redemption.id)')
-            ->andWhere('redemption.voucher = :voucher')
-            ->setParameter('voucher', $voucher)
-            ->getQuery()->getSingleScalarResult();
+        $totalUses = $this->voucherRedemptions->countForVoucher($voucher);
         if (null !== $voucher->getUsageLimitTotal() && $totalUses >= $voucher->getUsageLimitTotal()) {
             throw new CheckoutValidationException('Voucher usage limit has been reached.');
         }
-        $customerUses = (int) $repository->createQueryBuilder('redemption')
-            ->select('COUNT(redemption.id)')
-            ->andWhere('redemption.voucher = :voucher')
-            ->andWhere('redemption.customer = :customer')
-            ->setParameter('voucher', $voucher)
-            ->setParameter('customer', $customer)
-            ->getQuery()->getSingleScalarResult();
+        $customerUses = $this->voucherRedemptions->countForVoucherAndCustomer($voucher, $customer);
         if ($customerUses >= $voucher->getUsageLimitPerCustomer()) {
             throw new CheckoutValidationException('You have already reached this voucher usage limit.');
         }

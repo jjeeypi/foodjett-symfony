@@ -8,6 +8,8 @@ use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\User;
 use App\Enum\UserStatus;
+use App\Repository\CustomerRepository;
+use App\Repository\OrderRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,19 +27,15 @@ final class AdminCustomerController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly CustomerRepository $customers,
+        private readonly OrderRepository $orders,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Customer::class)->createQueryBuilder('customer')
-            ->innerJoin('customer.user', 'account')->addSelect('account')
-            ->orderBy('customer.createdAt', 'DESC');
-        if ('' !== ($search = trim((string) $request->query->get('search', '')))) {
-            $query->andWhere('LOWER(account.name) LIKE :search OR LOWER(COALESCE(account.email, \'\')) LIKE :search OR COALESCE(account.phone, \'\') LIKE :search')
-                ->setParameter('search', '%'.mb_strtolower($search).'%');
-        }
+        $query = $this->customers->createAdminListQuery(trim((string) $request->query->get('search', '')));
 
         return $this->json($this->paginator->paginate($query, $request, fn (Customer $customer): array => $this->normalize($customer)));
     }
@@ -45,15 +43,8 @@ final class AdminCustomerController extends AbstractController
     #[Route('/{id}', name: 'show', methods: ['GET'], priority: -10)]
     public function show(Customer $customer): JsonResponse
     {
-        $summary = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->select('COUNT(orders.id) AS order_count, COALESCE(SUM(orders.totalAmount), 0) AS lifetime_spend')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
-            ->getQuery()->getSingleResult();
-        /** @var list<Order> $recent */
-        $recent = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
-            ->orderBy('orders.placedAt', 'DESC')->setMaxResults(10)->getQuery()->getResult();
+        $summary = $this->orders->summarizeForCustomer($customer);
+        $recent = $this->orders->findRecentForCustomer($customer);
 
         return $this->json(['customer' => $this->normalize($customer) + [
             'order_summary' => [

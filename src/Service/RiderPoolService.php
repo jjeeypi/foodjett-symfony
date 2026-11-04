@@ -15,6 +15,7 @@ use App\Enum\PaymentMethod;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\RiderPoolDeclineAction;
 use App\Exception\RiderPoolException;
+use App\Repository\OrderRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -24,6 +25,7 @@ final readonly class RiderPoolService
         private EntityManagerInterface $entityManager,
         private RiderPayCalculator $payCalculator,
         private OrderTransitionService $transitions,
+        private OrderRepository $orders,
     ) {
     }
 
@@ -38,21 +40,7 @@ final readonly class RiderPoolService
             return [];
         }
 
-        /** @var list<Order> $orders */
-        $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->innerJoin('orders.riderPoolOffer', 'offer')
-            ->addSelect('offer')
-            ->innerJoin('orders.restaurant', 'restaurant')
-            ->addSelect('restaurant')
-            ->innerJoin('orders.customerAddress', 'address')
-            ->addSelect('address')
-            ->andWhere('orders.status = :status')
-            ->andWhere('orders.rider IS NULL')
-            ->setParameter('status', OrderStatus::FINDING_RIDER)
-            ->orderBy('orders.riderSearchStartedAt', 'ASC')
-            ->setMaxResults(100)
-            ->getQuery()
-            ->getResult();
+        $orders = $this->orders->findAwaitingRiderForPool();
 
         $visible = [];
         foreach ($orders as $order) {
@@ -111,13 +99,7 @@ final readonly class RiderPoolService
     /** @return array{code: string, message: string}|null */
     public function emptyPoolReason(Rider $rider): ?array
     {
-        /** @var list<Order> $orders */
-        $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->innerJoin('orders.riderPoolOffer', 'offer')->addSelect('offer')
-            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::FINDING_RIDER)
-            ->andWhere('orders.rider IS NULL')
-            ->getQuery()->getResult();
+        $orders = $this->orders->findAwaitingRiderWithRestaurant();
 
         $nearest = null;
         $radius = null;
@@ -258,7 +240,7 @@ final readonly class RiderPoolService
         if ($distance > (float) $offer->getSearchRadiusKm()) {
             throw new RiderPoolException('This order is outside the current search radius.');
         }
-        if ($checkActiveOrder && $this->hasActiveOrder($rider, $order)) {
+        if ($checkActiveOrder && $this->orders->riderHasOtherActiveOrder($rider, $order->getId())) {
             throw new RiderPoolException('Finish your current delivery before accepting another order.');
         }
         if ($checkCodLimit && PaymentMethod::COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
@@ -269,25 +251,6 @@ final readonly class RiderPoolService
         }
 
         return $distance;
-    }
-
-    private function hasActiveOrder(Rider $rider, Order $candidate): bool
-    {
-        $terminal = array_map(
-            static fn (OrderStatus $status): string => $status->value,
-            array_values(array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal())),
-        );
-        $builder = $this->entityManager->getRepository(Order::class)->createQueryBuilder('active')
-            ->select('COUNT(active.id)')
-            ->andWhere('active.rider = :rider')
-            ->andWhere('active.status NOT IN (:terminal)')
-            ->setParameter('rider', $rider)
-            ->setParameter('terminal', $terminal);
-        if (null !== $candidate->getId()) {
-            $builder->andWhere('active.id != :candidate')->setParameter('candidate', $candidate->getId());
-        }
-
-        return (int) $builder->getQuery()->getSingleScalarResult() > 0;
     }
 
     private function wasSkipped(Order $order, Rider $rider): bool

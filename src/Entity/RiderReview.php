@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\RiderReviewRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderReviewRepository::class)]
 #[ORM\Table(name: 'rider_reviews')]
 #[ORM\UniqueConstraint(name: 'rider_reviews_order_id_unique', columns: ['order_id'])]
 #[ORM\Index(name: 'rider_reviews_customer_id_foreign', columns: ['customer_id'])]

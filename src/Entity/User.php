@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -13,7 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
 #[ORM\UniqueConstraint(name: 'users_email_unique', columns: ['email'])]
 #[ORM\UniqueConstraint(name: 'users_phone_unique', columns: ['phone'])]

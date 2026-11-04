@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\PayoutStatus;
+use App\Repository\RiderPayoutRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderPayoutRepository::class)]
 #[ORM\Table(name: 'rider_payouts')]
 #[ORM\UniqueConstraint(name: 'rider_payout_period_unique', columns: ['rider_id', 'period_start', 'period_end'])]
 class RiderPayout

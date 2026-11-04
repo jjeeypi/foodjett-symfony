@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\CustomerAddress;
+use App\Repository\CustomerAddressRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,16 +16,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_CUSTOMER')]
 final class CustomerAddressController extends AbstractCustomerController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly CustomerAddressRepository $addresses,
+    ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(): JsonResponse
     {
-        $addresses = $this->entityManager->getRepository(CustomerAddress::class)->createQueryBuilder('address')
-            ->andWhere('address.customer = :customer')->setParameter('customer', $this->customer())
-            ->orderBy('address.isDefault', 'DESC')->addOrderBy('address.createdAt', 'DESC')->getQuery()->getResult();
+        $addresses = $this->addresses->findForCustomer($this->customer());
 
         return $this->json(['addresses' => array_map($this->serialize(...), $addresses)]);
     }
@@ -101,9 +102,7 @@ final class CustomerAddressController extends AbstractCustomerController
             $this->entityManager->remove($address);
             $this->entityManager->flush();
             if ($wasDefault) {
-                $replacement = $this->entityManager->getRepository(CustomerAddress::class)->createQueryBuilder('candidate')
-                    ->andWhere('candidate.customer = :customer')->setParameter('customer', $customer)
-                    ->orderBy('candidate.createdAt', 'DESC')->setMaxResults(1)->getQuery()->getOneOrNullResult();
+                $replacement = $this->addresses->findLatestForCustomer($customer);
                 if ($replacement instanceof CustomerAddress) {
                     $replacement->setIsDefault(true)->setUpdatedAt(new \DateTimeImmutable());
                     $this->entityManager->flush();
@@ -116,10 +115,7 @@ final class CustomerAddressController extends AbstractCustomerController
 
     private function ownedAddress(string $id): CustomerAddress
     {
-        $address = $this->entityManager->getRepository(CustomerAddress::class)->createQueryBuilder('address')
-            ->andWhere('address.id = :id')->setParameter('id', $id)
-            ->andWhere('address.customer = :customer')->setParameter('customer', $this->customer())
-            ->getQuery()->getOneOrNullResult();
+        $address = $this->addresses->findOneForCustomer($id, $this->customer());
         if (!$address instanceof CustomerAddress) {
             throw $this->createNotFoundException('Address not found.');
         }
@@ -129,9 +125,7 @@ final class CustomerAddressController extends AbstractCustomerController
 
     private function unsetDefaults(?string $customerId): void
     {
-        $this->entityManager->createQueryBuilder()->update(CustomerAddress::class, 'address')->set('address.isDefault', ':false')
-            ->andWhere('IDENTITY(address.customer) = :customer')->setParameter('false', false)->setParameter('customer', $customerId)
-            ->getQuery()->execute();
+        $this->addresses->clearDefaultForCustomer($customerId);
     }
 
     /** @param array<string, mixed> $data */

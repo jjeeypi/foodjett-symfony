@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\MenuItem;
 use App\Entity\MenuItemAddon;
 use App\Entity\MenuItemVariant;
+use App\Repository\MenuItemRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,8 +20,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your restaurant account is awaiting approval.')]
 final class RestaurantMenuOptionController extends AbstractRestaurantController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly MenuItemRepository $menuItems,
+    ) {
     }
 
     #[Route('/variants', name: 'variant_store', methods: ['POST'])]
@@ -147,11 +150,7 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
 
     private function ownedItem(string $id): MenuItem
     {
-        $item = $this->entityManager->getRepository(MenuItem::class)->createQueryBuilder('item')
-            ->innerJoin('item.menuCategory', 'category')
-            ->andWhere('item.id = :id')->setParameter('id', $id)
-            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        $item = $this->menuItems->findOneForRestaurant($id, $this->restaurant());
         if (!$item instanceof MenuItem) {
             throw $this->createNotFoundException('Menu item not found.');
         }

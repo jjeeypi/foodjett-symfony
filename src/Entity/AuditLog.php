@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\AuditLogRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AuditLogRepository::class)]
 #[ORM\Table(name: 'audit_logs')]
 #[ORM\Index(name: 'audit_logs_subject_type_subject_id_index', columns: ['subject_type', 'subject_id'])]
 #[ORM\Index(name: 'audit_logs_user_id_foreign', columns: ['user_id'])]

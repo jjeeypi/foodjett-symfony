@@ -12,12 +12,12 @@ use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Exception\InvalidOrderTransitionException;
+use App\Repository\OrderRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\OrderVoter;
 use App\Service\ApiPaginator;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -29,31 +29,25 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class RestaurantOrderController extends AbstractRestaurantController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly OrderTransitionService $transitions,
         private readonly PaymentTransitionService $payments,
         private readonly ApiPaginator $paginator,
+        private readonly OrderRepository $orders,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $builder = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->orderBy('orders.placedAt', 'DESC');
-
         $statusValue = $request->query->getString('status');
+        $status = null;
         if ('' !== $statusValue) {
             $status = OrderStatus::tryFrom($statusValue);
             if (null === $status) {
                 return $this->json(['message' => 'Unknown order status filter.'], 422);
             }
-            $builder->andWhere('orders.status = :status')->setParameter('status', $status->value);
         }
-        if ('' !== ($search = trim($request->query->getString('search')))) {
-            $builder->andWhere('LOWER(orders.orderNumber) LIKE :search')->setParameter('search', '%'.mb_strtolower($search).'%');
-        }
+        $builder = $this->orders->createForRestaurantQuery($this->restaurant(), $status, trim($request->query->getString('search')));
 
         $result = $this->paginator->paginate($builder, $request, $this->serializeSummary(...));
 
@@ -195,10 +189,7 @@ final class RestaurantOrderController extends AbstractRestaurantController
 
     private function ownedOrder(string $id): Order
     {
-        $order = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.id = :id')->setParameter('id', $id)
-            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        $order = $this->orders->findOneForRestaurant($id, $this->restaurant());
         if (!$order instanceof Order) {
             throw $this->createNotFoundException('Order not found.');
         }

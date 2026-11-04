@@ -10,12 +10,12 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Enum\RiderPoolEscalationStage;
 use App\Exception\InvalidOrderTransitionException;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\OrderRepository;
 
 final readonly class RiderPoolEscalationService
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private OrderRepository $orders,
         private PlatformSettingService $settings,
         private OrderTransitionService $transitions,
         private PaymentTransitionService $payments,
@@ -24,17 +24,7 @@ final readonly class RiderPoolEscalationService
 
     public function processPendingOrders(?\DateTimeImmutable $now = null): int
     {
-        /** @var list<Order> $orders */
-        $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->innerJoin('orders.riderPoolOffer', 'offer')
-            ->addSelect('offer')
-            ->andWhere('orders.status = :status')
-            ->andWhere('orders.rider IS NULL')
-            ->setParameter('status', OrderStatus::FINDING_RIDER)
-            ->orderBy('orders.riderSearchStartedAt', 'ASC')
-            ->setMaxResults(500)
-            ->getQuery()
-            ->getResult();
+        $orders = $this->orders->findAwaitingRiderForEscalation();
 
         $processed = 0;
         foreach ($orders as $order) {

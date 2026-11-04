@@ -6,6 +6,7 @@ namespace App\Controller\Api;
 
 use App\Entity\DeliveryZone;
 use App\Entity\User;
+use App\Repository\DeliveryZoneRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,14 +20,18 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminDeliveryZoneController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator, private readonly AuditLogger $audit)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ApiPaginator $paginator,
+        private readonly AuditLogger $audit,
+        private readonly DeliveryZoneRepository $zones,
+    ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(DeliveryZone::class)->createQueryBuilder('zone')->orderBy('zone.name', 'ASC');
+        $query = $this->zones->createListQuery();
         return $this->json($this->paginator->paginate($query, $request, fn (DeliveryZone $zone): array => $this->normalize($zone)));
     }
 

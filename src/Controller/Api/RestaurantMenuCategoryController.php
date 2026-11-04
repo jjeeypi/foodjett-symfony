@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\MenuCategory;
+use App\Repository\MenuCategoryRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,15 +22,14 @@ final class RestaurantMenuCategoryController extends AbstractRestaurantControlle
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
+        private readonly MenuCategoryRepository $menuCategories,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(MenuCategory::class)->createQueryBuilder('category')
-            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->orderBy('category.sortOrder', 'ASC')->addOrderBy('category.name', 'ASC');
+        $query = $this->menuCategories->createForRestaurantQuery($this->restaurant());
 
         return $this->json($this->paginator->paginate($query, $request, $this->serialize(...)));
     }
@@ -97,10 +97,7 @@ final class RestaurantMenuCategoryController extends AbstractRestaurantControlle
 
     private function ownedCategory(string $id): MenuCategory
     {
-        $category = $this->entityManager->getRepository(MenuCategory::class)->createQueryBuilder('category')
-            ->andWhere('category.id = :id')->setParameter('id', $id)
-            ->andWhere('category.restaurant = :restaurant')->setParameter('restaurant', $this->restaurant())
-            ->getQuery()->getOneOrNullResult();
+        $category = $this->menuCategories->findOneForRestaurant($id, $this->restaurant());
         if (!$category instanceof MenuCategory) {
             throw $this->createNotFoundException('Menu category not found.');
         }

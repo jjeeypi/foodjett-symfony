@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\SupportTicket;
 use App\Entity\User;
 use App\Enum\SupportTicketStatus;
+use App\Repository\SupportTicketRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,20 +21,23 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminSupportTicketController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator, private readonly AuditLogger $audit)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ApiPaginator $paginator,
+        private readonly AuditLogger $audit,
+        private readonly SupportTicketRepository $tickets,
+    ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(SupportTicket::class)->createQueryBuilder('ticket')
-            ->innerJoin('ticket.user', 'account')->addSelect('account')->orderBy('ticket.createdAt', 'DESC');
+        $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
             $status = SupportTicketStatus::tryFrom($statusValue);
             if (null === $status) { return $this->json(['message' => 'Invalid status.'], 422); }
-            $query->andWhere('ticket.status = :status')->setParameter('status', $status->value);
         }
+        $query = $this->tickets->createAdminListQuery($status);
         return $this->json($this->paginator->paginate($query, $request, fn (SupportTicket $ticket): array => $this->normalize($ticket)));
     }
 

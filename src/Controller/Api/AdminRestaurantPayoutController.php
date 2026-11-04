@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\Order;
 use App\Entity\RestaurantPayout;
 use App\Entity\User;
-use App\Enum\OrderStatus;
 use App\Enum\PayoutStatus;
+use App\Repository\OrderRepository;
+use App\Repository\RestaurantPayoutRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\DBAL\LockMode;
@@ -27,25 +27,22 @@ final class AdminRestaurantPayoutController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly RestaurantPayoutRepository $payouts,
+        private readonly OrderRepository $orders,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RestaurantPayout::class)->createQueryBuilder('payout')
-            ->innerJoin('payout.restaurant', 'restaurant')->addSelect('restaurant')
-            ->orderBy('payout.periodEnd', 'DESC')->addOrderBy('payout.id', 'DESC');
+        $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
             $status = PayoutStatus::tryFrom($statusValue);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid status.'], 422);
             }
-            $query->andWhere('payout.status = :status')->setParameter('status', $status->value);
         }
-        if ('' !== ($restaurantId = trim((string) $request->query->get('restaurant_id', '')))) {
-            $query->andWhere('restaurant.id = :restaurantId')->setParameter('restaurantId', $restaurantId);
-        }
+        $query = $this->payouts->createAdminListQuery($status, trim((string) $request->query->get('restaurant_id', '')));
 
         return $this->json($this->paginator->paginate($query, $request, fn (RestaurantPayout $payout): array => $this->normalize($payout)));
     }
@@ -62,12 +59,7 @@ final class AdminRestaurantPayoutController extends AbstractController
 
         /** @var array{created: list<RestaurantPayout>, skipped: int} $result */
         $result = $this->entityManager->wrapInTransaction(function () use ($periodStart, $periodEnd, $startAt, $endAt, $admin): array {
-            /** @var list<Order> $orders */
-            $orders = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-                ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-                ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
-                ->andWhere('orders.deliveredAt BETWEEN :startAt AND :endAt')->setParameter('startAt', $startAt)->setParameter('endAt', $endAt)
-                ->getQuery()->getResult();
+            $orders = $this->orders->findDeliveredBetween($startAt, $endAt);
             /** @var array<string, array{restaurant: \App\Entity\Restaurant, gross: float, commission: float}> $totals */
             $totals = [];
             foreach ($orders as $order) {
@@ -80,10 +72,7 @@ final class AdminRestaurantPayoutController extends AbstractController
             $skipped = 0;
             $now = new \DateTimeImmutable();
             foreach ($totals as $total) {
-                $overlap = $this->entityManager->getRepository(RestaurantPayout::class)->createQueryBuilder('existing')
-                    ->select('COUNT(existing.id)')->andWhere('existing.restaurant = :restaurant')->setParameter('restaurant', $total['restaurant'])
-                    ->andWhere('existing.periodStart <= :end AND existing.periodEnd >= :start')->setParameter('start', $periodStart)->setParameter('end', $periodEnd)
-                    ->getQuery()->getSingleScalarResult();
+                $overlap = $this->payouts->countOverlapping($total['restaurant'], $periodStart, $periodEnd);
                 if ((int) $overlap > 0) {
                     ++$skipped;
                     continue;

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\RiderPoolDeclineAction;
+use App\Repository\RiderPoolDeclineRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderPoolDeclineRepository::class)]
 #[ORM\Table(name: 'rider_pool_declines')]
 #[ORM\UniqueConstraint(name: 'rider_pool_declines_order_rider_unique', columns: ['order_id', 'rider_id'])]
 #[ORM\Index(name: 'rider_pool_declines_order_id_foreign', columns: ['order_id'])]

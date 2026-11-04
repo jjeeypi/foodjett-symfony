@@ -8,6 +8,8 @@ use App\Entity\SupportTicket;
 use App\Entity\User;
 use App\Enum\SupportTicketStatus;
 use App\Enum\UserStatus;
+use App\Repository\SupportTicketRepository;
+use App\Repository\UserRepository;
 use App\Service\ApiPaginator;
 use App\Service\UploadStorage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,6 +28,8 @@ final class CustomerAccountController extends AbstractCustomerController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly UploadStorage $uploads,
+        private readonly SupportTicketRepository $supportTickets,
+        private readonly UserRepository $users,
     ) {
     }
 
@@ -87,9 +91,7 @@ final class CustomerAccountController extends AbstractCustomerController
     #[Route('/support-tickets', name: 'support_index', methods: ['GET'])]
     public function supportTickets(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(SupportTicket::class)->createQueryBuilder('ticket')
-            ->andWhere('ticket.user = :user')->setParameter('user', $this->customerUser())
-            ->orderBy('ticket.createdAt', 'DESC');
+        $query = $this->supportTickets->createForUserQuery($this->customerUser());
 
         return $this->json($this->paginator->paginate($query, $request, $this->ticketData(...)));
     }
@@ -136,10 +138,7 @@ final class CustomerAccountController extends AbstractCustomerController
 
     private function identifierExists(string $field, string $value, User $current): bool
     {
-        return null !== $this->entityManager->getRepository(User::class)->createQueryBuilder('account')
-            ->select('account.id')->andWhere(sprintf('account.%s = :value', $field))->setParameter('value', $value)
-            ->andWhere('account.id != :current')->setParameter('current', $current->getId())
-            ->setMaxResults(1)->getQuery()->getOneOrNullResult();
+        return $this->users->isIdentifierTakenByAnother($field, $value, $current);
     }
 
     /** @return array<string, mixed> */

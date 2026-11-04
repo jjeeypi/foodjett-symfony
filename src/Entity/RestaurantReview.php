@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\RestaurantReviewRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RestaurantReviewRepository::class)]
 #[ORM\Table(name: 'restaurant_reviews')]
 #[ORM\UniqueConstraint(name: 'restaurant_reviews_order_id_unique', columns: ['order_id'])]
 #[ORM\Index(name: 'restaurant_reviews_customer_id_foreign', columns: ['customer_id'])]

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\MenuItemRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: MenuItemRepository::class)]
 #[ORM\Table(name: 'menu_items')]
 #[ORM\Index(name: 'menu_items_is_available_index', columns: ['is_available'])]
 #[ORM\Index(name: 'menu_items_menu_category_id_foreign', columns: ['menu_category_id'])]

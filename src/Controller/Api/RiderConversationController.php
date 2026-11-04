@@ -6,8 +6,9 @@ namespace App\Controller\Api;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Enum\ConversationType;
 use App\Event\MessageSentEvent;
+use App\Repository\ConversationRepository;
+use App\Repository\MessageRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\ConversationVoter;
 use App\Service\ApiPaginator;
@@ -27,6 +28,8 @@ final class RiderConversationController extends AbstractRiderController
         EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly ConversationRepository $conversations,
+        private readonly MessageRepository $messages,
     ) {
         parent::__construct($entityManager);
     }
@@ -34,11 +37,7 @@ final class RiderConversationController extends AbstractRiderController
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->innerJoin('conversation.order', 'orders')
-            ->andWhere('orders.rider = :rider')->setParameter('rider', $this->rider())
-            ->andWhere('conversation.type = :type')->setParameter('type', ConversationType::CUSTOMER_RIDER->value)
-            ->orderBy('conversation.updatedAt', 'DESC')->addOrderBy('conversation.createdAt', 'DESC');
+        $query = $this->conversations->createCustomerRiderForRiderQuery($this->rider());
 
         return $this->json($this->paginator->paginate($query, $request, $this->conversationData(...)));
     }
@@ -48,9 +47,7 @@ final class RiderConversationController extends AbstractRiderController
     {
         $conversation = $this->ownedConversation($id);
         $this->denyAccessUnlessGranted(ConversationVoter::VIEW, $conversation);
-        $query = $this->entityManager->getRepository(Message::class)->createQueryBuilder('message')
-            ->andWhere('message.conversation = :conversation')->setParameter('conversation', $conversation)
-            ->orderBy('message.createdAt', 'ASC')->addOrderBy('message.id', 'ASC');
+        $query = $this->messages->createForConversationQuery($conversation);
 
         $result = $this->paginator->paginate($query, $request, $this->messageData(...));
         $result['conversation'] = $this->conversationData($conversation);
@@ -74,11 +71,7 @@ final class RiderConversationController extends AbstractRiderController
         if ('' === $body || mb_strlen($body) > 1000) {
             return $this->json(['message' => 'body must be between 1 and 1000 characters.'], 422);
         }
-        $sentRecently = (int) $this->entityManager->getRepository(Message::class)->createQueryBuilder('message')
-            ->select('COUNT(message.id)')
-            ->andWhere('message.sender = :sender')->setParameter('sender', $this->riderUser())
-            ->andWhere('message.createdAt >= :since')->setParameter('since', new \DateTimeImmutable('-1 minute'))
-            ->getQuery()->getSingleScalarResult();
+        $sentRecently = $this->messages->countSentBySince($this->riderUser(), new \DateTimeImmutable('-1 minute'));
         if ($sentRecently >= 20) {
             return $this->json(['message' => 'Too many messages. Please wait before sending another.'], 429);
         }
@@ -107,11 +100,7 @@ final class RiderConversationController extends AbstractRiderController
         $conversation = $this->ownedConversation($id);
         $this->denyAccessUnlessGranted(ConversationVoter::VIEW, $conversation);
         $now = new \DateTimeImmutable();
-        $updated = $this->entityManager->createQueryBuilder()->update(Message::class, 'message')
-            ->set('message.readAt', ':now')->setParameter('now', $now)
-            ->andWhere('message.conversation = :conversation')->setParameter('conversation', $conversation)
-            ->andWhere('message.sender != :user')->setParameter('user', $this->riderUser())
-            ->andWhere('message.readAt IS NULL')->getQuery()->execute();
+        $updated = $this->messages->markReadFor($conversation, $this->riderUser(), $now);
 
         return $this->json([
             'message' => 'Conversation marked as read.',
@@ -122,12 +111,7 @@ final class RiderConversationController extends AbstractRiderController
 
     private function ownedConversation(string $id): Conversation
     {
-        $conversation = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->innerJoin('conversation.order', 'orders')
-            ->andWhere('conversation.id = :id')->setParameter('id', $id)
-            ->andWhere('orders.rider = :rider')->setParameter('rider', $this->rider())
-            ->andWhere('conversation.type = :type')->setParameter('type', ConversationType::CUSTOMER_RIDER->value)
-            ->getQuery()->getOneOrNullResult();
+        $conversation = $this->conversations->findOneCustomerRiderForRider($id, $this->rider());
         if (!$conversation instanceof Conversation) {
             throw $this->createNotFoundException('Conversation not found.');
         }
@@ -142,11 +126,7 @@ final class RiderConversationController extends AbstractRiderController
             ['conversation' => $conversation],
             ['createdAt' => 'DESC', 'id' => 'DESC'],
         );
-        $unreadCount = (int) $this->entityManager->getRepository(Message::class)->createQueryBuilder('message')
-            ->select('COUNT(message.id)')
-            ->andWhere('message.conversation = :conversation')->setParameter('conversation', $conversation)
-            ->andWhere('message.sender != :user')->setParameter('user', $this->riderUser())
-            ->andWhere('message.readAt IS NULL')->getQuery()->getSingleScalarResult();
+        $unreadCount = $this->messages->countUnreadInConversationFor($conversation, $this->riderUser());
         $order = $conversation->getOrder();
         $customerUser = $order->getCustomer()->getUser();
 

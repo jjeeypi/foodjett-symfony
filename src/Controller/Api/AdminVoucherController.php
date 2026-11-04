@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Entity\Voucher;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
+use App\Repository\VoucherRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,16 +22,18 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminVoucherController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator, private readonly AuditLogger $audit)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ApiPaginator $paginator,
+        private readonly AuditLogger $audit,
+        private readonly VoucherRepository $vouchers,
+    ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Voucher::class)->createQueryBuilder('voucher')
-            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::PLATFORM->value)
-            ->orderBy('voucher.createdAt', 'DESC');
+        $query = $this->vouchers->createPlatformListQuery();
         return $this->json($this->paginator->paginate($query, $request, fn (Voucher $voucher): array => $this->normalize($voucher)));
     }
 

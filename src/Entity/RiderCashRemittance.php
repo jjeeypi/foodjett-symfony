@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\RemittanceStatus;
+use App\Repository\RiderCashRemittanceRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderCashRemittanceRepository::class)]
 #[ORM\Table(name: 'rider_cash_remittances')]
 #[ORM\Index(name: 'rider_cash_remittances_rider_id_foreign', columns: ['rider_id'])]
 #[ORM\Index(name: 'rider_cash_remittances_confirmed_by_admin_id_foreign', columns: ['confirmed_by_admin_id'])]

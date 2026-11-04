@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
 use App\Entity\User;
-use App\Enum\OrderStatus;
 use App\Enum\PayoutStatus;
+use App\Repository\RiderEarningRepository;
+use App\Repository\RiderPayoutRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\DBAL\LockMode;
@@ -27,23 +27,20 @@ final class AdminRiderPayoutController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly RiderPayoutRepository $payouts,
+        private readonly RiderEarningRepository $earnings,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RiderPayout::class)->createQueryBuilder('payout')
-            ->innerJoin('payout.rider', 'rider')->addSelect('rider')->innerJoin('rider.user', 'riderUser')->addSelect('riderUser')
-            ->orderBy('payout.periodEnd', 'DESC')->addOrderBy('payout.id', 'DESC');
+        $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
             $status = PayoutStatus::tryFrom($statusValue);
             if (null === $status) { return $this->json(['message' => 'Invalid status.'], 422); }
-            $query->andWhere('payout.status = :status')->setParameter('status', $status->value);
         }
-        if ('' !== ($riderId = trim((string) $request->query->get('rider_id', '')))) {
-            $query->andWhere('rider.id = :riderId')->setParameter('riderId', $riderId);
-        }
+        $query = $this->payouts->createAdminListQuery($status, trim((string) $request->query->get('rider_id', '')));
 
         return $this->json($this->paginator->paginate($query, $request, fn (RiderPayout $payout): array => $this->normalize($payout)));
     }
@@ -58,13 +55,7 @@ final class AdminRiderPayoutController extends AbstractController
 
         /** @var array{created: list<RiderPayout>, skipped: int} $result */
         $result = $this->entityManager->wrapInTransaction(function () use ($periodStart, $periodEnd, $startAt, $endAt, $admin): array {
-            /** @var list<RiderEarning> $earnings */
-            $earnings = $this->entityManager->getRepository(RiderEarning::class)->createQueryBuilder('earning')
-                ->innerJoin('earning.rider', 'rider')->addSelect('rider')->innerJoin('rider.user', 'riderUser')->addSelect('riderUser')
-                ->innerJoin('earning.order', 'orders')->addSelect('orders')
-                ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
-                ->andWhere('orders.deliveredAt BETWEEN :startAt AND :endAt')->setParameter('startAt', $startAt)->setParameter('endAt', $endAt)
-                ->getQuery()->getResult();
+            $earnings = $this->earnings->findForOrdersDeliveredBetween($startAt, $endAt);
             /** @var array<string, array{rider: \App\Entity\Rider, total: float}> $totals */
             $totals = [];
             foreach ($earnings as $earning) {
@@ -76,10 +67,7 @@ final class AdminRiderPayoutController extends AbstractController
             $skipped = 0;
             $now = new \DateTimeImmutable();
             foreach ($totals as $total) {
-                $overlap = $this->entityManager->getRepository(RiderPayout::class)->createQueryBuilder('existing')
-                    ->select('COUNT(existing.id)')->andWhere('existing.rider = :rider')->setParameter('rider', $total['rider'])
-                    ->andWhere('existing.periodStart <= :end AND existing.periodEnd >= :start')->setParameter('start', $periodStart)->setParameter('end', $periodEnd)
-                    ->getQuery()->getSingleScalarResult();
+                $overlap = $this->payouts->countOverlapping($total['rider'], $periodStart, $periodEnd);
                 if ((int) $overlap > 0) { ++$skipped; continue; }
                 $payout = (new RiderPayout())->setRider($total['rider'])->setPeriodStart($periodStart)->setPeriodEnd($periodEnd)
                     ->setTotalAmount(number_format(round($total['total'], 2), 2, '.', ''))->setStatus(PayoutStatus::PENDING)

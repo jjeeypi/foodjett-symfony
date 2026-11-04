@@ -12,14 +12,14 @@ use App\Entity\User;
 use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
-use App\Enum\RiderPoolEscalationStage;
 use App\Exception\InvalidOrderTransitionException;
 use App\Exception\RiderPoolException;
+use App\Repository\OrderRepository;
+use App\Service\ApiPaginator;
+use App\Service\AuditLogger;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
 use App\Service\RiderPoolService;
-use App\Service\ApiPaginator;
-use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -38,40 +38,37 @@ final class AdminOrderController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly OrderRepository $orders,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-            ->innerJoin('orders.customer', 'customer')->addSelect('customer')
-            ->innerJoin('customer.user', 'customerUser')->addSelect('customerUser')
-            ->leftJoin('orders.rider', 'rider')->addSelect('rider')
-            ->leftJoin('rider.user', 'riderUser')->addSelect('riderUser')
-            ->orderBy('orders.placedAt', 'DESC');
+        $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
             $status = OrderStatus::tryFrom($statusValue);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid status.'], 422);
             }
-            $query->andWhere('orders.status = :status')->setParameter('status', $status->value);
         }
-        if ('' !== ($restaurantId = trim((string) $request->query->get('restaurant_id', '')))) {
-            $query->andWhere('restaurant.id = :restaurantId')->setParameter('restaurantId', $restaurantId);
-        }
-        foreach (['date_from' => '>=', 'date_to' => '<='] as $parameter => $operator) {
+        $dates = ['date_from' => null, 'date_to' => null];
+        foreach (array_keys($dates) as $parameter) {
             if ('' === ($value = trim((string) $request->query->get($parameter, '')))) {
                 continue;
             }
             try {
-                $date = new \DateTimeImmutable($value.('date_to' === $parameter && 10 === strlen($value) ? ' 23:59:59' : ''));
+                $dates[$parameter] = new \DateTimeImmutable($value.('date_to' === $parameter && 10 === strlen($value) ? ' 23:59:59' : ''));
             } catch (\Throwable) {
                 return $this->json(['message' => $parameter.' must be a valid date.'], 422);
             }
-            $query->andWhere('orders.placedAt '.$operator.' :'.$parameter)->setParameter($parameter, $date);
         }
+        $query = $this->orders->createAdminListQuery(
+            $status,
+            trim((string) $request->query->get('restaurant_id', '')),
+            $dates['date_from'],
+            $dates['date_to'],
+        );
 
         return $this->json($this->paginator->paginate($query, $request, fn (Order $order): array => $this->summary($order)));
     }
@@ -85,21 +82,7 @@ final class AdminOrderController extends AbstractController
     #[Route('/unassigned', name: 'unassigned', methods: ['GET'])]
     public function unassigned(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->innerJoin('orders.riderPoolOffer', 'offer')
-            ->addSelect('offer')
-            ->innerJoin('orders.restaurant', 'restaurant')
-            ->addSelect('restaurant')
-            ->andWhere('orders.status = :status')
-            ->andWhere('orders.rider IS NULL')
-            ->andWhere('offer.escalationStage IN (:stages)')
-            ->setParameter('status', OrderStatus::FINDING_RIDER)
-            ->setParameter('stages', [
-                RiderPoolEscalationStage::ADMIN_ALERTED->value,
-                RiderPoolEscalationStage::CUSTOMER_NOTIFIED->value,
-                RiderPoolEscalationStage::AUTO_CANCELLED->value,
-            ])
-            ->orderBy('orders.riderSearchStartedAt', 'ASC');
+        $query = $this->orders->createEscalatedRiderSearchQuery();
         $now = new \DateTimeImmutable();
         $page = $this->paginator->paginate($query, $request, static function (Order $order) use ($now): array {
                 $startedAt = $order->getRiderSearchStartedAt();

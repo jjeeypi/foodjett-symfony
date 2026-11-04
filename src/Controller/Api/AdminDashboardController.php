@@ -4,22 +4,18 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\Customer;
-use App\Entity\Order;
-use App\Entity\OrderStatusHistory;
-use App\Entity\Restaurant;
-use App\Entity\Rider;
-use App\Entity\RiderCashRemittance;
-use App\Entity\SupportTicket;
-use App\Entity\Voucher;
-use App\Entity\VoucherRedemption;
 use App\Enum\ApprovalStatus;
 use App\Enum\OrderStatus;
-use App\Enum\RemittanceStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
 use App\Enum\SupportTicketStatus;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\CustomerRepository;
+use App\Repository\OrderRepository;
+use App\Repository\OrderStatusHistoryRepository;
+use App\Repository\RestaurantRepository;
+use App\Repository\RiderCashRemittanceRepository;
+use App\Repository\RiderRepository;
+use App\Repository\SupportTicketRepository;
+use App\Repository\VoucherRedemptionRepository;
+use App\Repository\VoucherRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -29,8 +25,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class AdminDashboardController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly OrderRepository $orders,
+        private readonly OrderStatusHistoryRepository $statusHistory,
+        private readonly RestaurantRepository $restaurants,
+        private readonly RiderRepository $riders,
+        private readonly CustomerRepository $customers,
+        private readonly SupportTicketRepository $supportTickets,
+        private readonly RiderCashRemittanceRepository $remittances,
+        private readonly VoucherRepository $vouchers,
+        private readonly VoucherRedemptionRepository $voucherRedemptions,
+    ) {
     }
 
     public function __invoke(): JsonResponse
@@ -63,92 +68,29 @@ final class AdminDashboardController extends AbstractController
             OrderStatus::FAILED_DELIVERY->value,
         ];
 
-        $orders = $this->entityManager->getRepository(Order::class);
-        $todayOrders = (int) $orders->createQueryBuilder('orders')
-            ->select('COUNT(orders.id)')
-            ->andWhere('orders.placedAt >= :start AND orders.placedAt < :end')
-            ->setParameter('start', $todayStart)->setParameter('end', $tomorrow)
-            ->getQuery()->getSingleScalarResult();
+        $todayOrders = $this->orders->countPlacedBetween($todayStart, $tomorrow);
         $todayRevenue = $this->deliveredRevenue($todayStart, $tomorrow);
-        $inProgress = (int) $orders->createQueryBuilder('orders')
-            ->select('COUNT(orders.id)')
-            ->andWhere('orders.status IN (:statuses)')
-            ->setParameter('statuses', array_map(static fn (OrderStatus $status): string => $status->value, $inProgressStatuses))
-            ->getQuery()->getSingleScalarResult();
-        $completedToday = (int) $orders->createQueryBuilder('orders')
-            ->select('COUNT(orders.id)')
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
-            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')
-            ->setParameter('start', $todayStart)->setParameter('end', $tomorrow)
-            ->getQuery()->getSingleScalarResult();
-        $cancelledToday = (int) $this->entityManager->getRepository(OrderStatusHistory::class)->createQueryBuilder('history')
-            ->select('COUNT(DISTINCT IDENTITY(history.order))')
-            ->andWhere('history.status IN (:statuses)')->setParameter('statuses', $cancelledStatuses)
-            ->andWhere('history.createdAt >= :start AND history.createdAt < :end')
-            ->setParameter('start', $todayStart)->setParameter('end', $tomorrow)
-            ->getQuery()->getSingleScalarResult();
+        $inProgress = $this->orders->countWithStatuses($inProgressStatuses);
+        $completedToday = $this->orders->countDeliveredBetween($todayStart, $tomorrow);
+        $cancelledToday = $this->statusHistory->countOrdersEnteringStatusesBetween($cancelledStatuses, $todayStart, $tomorrow);
 
-        $restaurants = $this->entityManager->getRepository(Restaurant::class);
-        $openRestaurants = (int) $restaurants->createQueryBuilder('restaurant')
-            ->select('COUNT(restaurant.id)')
-            ->innerJoin('restaurant.user', 'account')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->andWhere('restaurant.operatingStatus = :open')->setParameter('open', RestaurantOperatingStatus::OPEN->value)
-            ->andWhere('account.status = :active')->setParameter('active', 'active')
-            ->getQuery()->getSingleScalarResult();
-        $pendingRestaurants = (int) $restaurants->createQueryBuilder('restaurant')
-            ->select('COUNT(restaurant.id)')
-            ->andWhere('restaurant.approvalStatus = :pending')->setParameter('pending', ApprovalStatus::PENDING->value)
-            ->getQuery()->getSingleScalarResult();
-        $approvedRestaurants = (int) $restaurants->createQueryBuilder('restaurant')
-            ->select('COUNT(restaurant.id)')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->getQuery()->getSingleScalarResult();
+        $openRestaurants = $this->restaurants->countOpenAndActive();
+        $pendingRestaurants = $this->restaurants->countWithApprovalStatus(ApprovalStatus::PENDING);
+        $approvedRestaurants = $this->restaurants->countWithApprovalStatus(ApprovalStatus::APPROVED);
 
-        $riders = $this->entityManager->getRepository(Rider::class);
-        $onlineRiders = (int) $riders->createQueryBuilder('rider')
-            ->select('COUNT(rider.id)')
-            ->innerJoin('rider.user', 'account')
-            ->andWhere('rider.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->andWhere('rider.availabilityStatus IN (:online)')->setParameter('online', [RiderAvailabilityStatus::AVAILABLE->value, RiderAvailabilityStatus::BUSY->value])
-            ->andWhere('account.status = :active')->setParameter('active', 'active')
-            ->getQuery()->getSingleScalarResult();
-        $pendingRiders = (int) $riders->createQueryBuilder('rider')
-            ->select('COUNT(rider.id)')
-            ->andWhere('rider.approvalStatus = :pending')->setParameter('pending', ApprovalStatus::PENDING->value)
-            ->getQuery()->getSingleScalarResult();
-        $approvedRiders = (int) $riders->createQueryBuilder('rider')
-            ->select('COUNT(rider.id)')
-            ->andWhere('rider.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->getQuery()->getSingleScalarResult();
+        $onlineRiders = $this->riders->countOnline();
+        $pendingRiders = $this->riders->countWithApprovalStatus(ApprovalStatus::PENDING);
+        $approvedRiders = $this->riders->countWithApprovalStatus(ApprovalStatus::APPROVED);
 
-        $openSupportTickets = (int) $this->entityManager->getRepository(SupportTicket::class)->createQueryBuilder('ticket')
-            ->select('COUNT(ticket.id)')
-            ->andWhere('ticket.status IN (:statuses)')
-            ->setParameter('statuses', [SupportTicketStatus::OPEN->value, SupportTicketStatus::IN_PROGRESS->value])
-            ->getQuery()->getSingleScalarResult();
-        $pendingRemittances = (float) $this->entityManager->getRepository(RiderCashRemittance::class)->createQueryBuilder('remittance')
-            ->select('COALESCE(SUM(remittance.amount), 0)')
-            ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
-            ->getQuery()->getSingleScalarResult();
-        $activeVouchers = (int) $this->entityManager->getRepository(Voucher::class)->createQueryBuilder('voucher')
-            ->select('COUNT(voucher.id)')
-            ->andWhere('voucher.isActive = :active')->setParameter('active', true)
-            ->andWhere('(voucher.startsAt IS NULL OR voucher.startsAt <= :now)')
-            ->andWhere('(voucher.endsAt IS NULL OR voucher.endsAt >= :now)')
-            ->setParameter('now', $now)
-            ->getQuery()->getSingleScalarResult();
-        $voucherRedemptions = (int) $this->entityManager->getRepository(VoucherRedemption::class)->createQueryBuilder('redemption')
-            ->select('COUNT(redemption.id)')
-            ->andWhere('redemption.createdAt >= :start AND redemption.createdAt < :end')
-            ->setParameter('start', $monthStart)->setParameter('end', $nextMonth)
-            ->getQuery()->getSingleScalarResult();
+        $openSupportTickets = $this->supportTickets->countWithStatuses([SupportTicketStatus::OPEN, SupportTicketStatus::IN_PROGRESS]);
+        $pendingRemittances = (float) $this->remittances->sumPending();
+        $activeVouchers = $this->vouchers->countActiveAt($now);
+        $voucherRedemptions = $this->voucherRedemptions->countBetween($monthStart, $nextMonth);
 
-        $customers = $this->entityManager->getRepository(Customer::class);
-        $totalCustomers = (int) $customers->createQueryBuilder('customer')->select('COUNT(customer.id)')->getQuery()->getSingleScalarResult();
-        $newCustomers = $this->countCreatedSince(Customer::class, 'customer', $weekStart, $now);
-        $newRestaurants = $this->countCreatedSince(Restaurant::class, 'restaurant', $weekStart, $now);
-        $newRiders = $this->countCreatedSince(Rider::class, 'rider', $weekStart, $now);
+        $totalCustomers = $this->customers->count([]);
+        $newCustomers = $this->customers->countCreatedBetween($weekStart, $now);
+        $newRestaurants = $this->restaurants->countCreatedBetween($weekStart, $now);
+        $newRiders = $this->riders->countCreatedBetween($weekStart, $now);
 
         return $this->json([
             'generated_at' => $now->format(\DateTimeInterface::ATOM),
@@ -191,22 +133,7 @@ final class AdminDashboardController extends AbstractController
 
     private function deliveredRevenue(\DateTimeImmutable $start, \DateTimeImmutable $end): float
     {
-        return (float) $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->select('COALESCE(SUM(orders.totalAmount), 0)')
-            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
-            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')
-            ->setParameter('start', $start)->setParameter('end', $end)
-            ->getQuery()->getSingleScalarResult();
-    }
-
-    /** @param class-string $entityClass */
-    private function countCreatedSince(string $entityClass, string $alias, \DateTimeImmutable $start, \DateTimeImmutable $end): int
-    {
-        return (int) $this->entityManager->getRepository($entityClass)->createQueryBuilder($alias)
-            ->select(sprintf('COUNT(%s.id)', $alias))
-            ->andWhere(sprintf('%s.createdAt >= :start AND %s.createdAt <= :end', $alias, $alias))
-            ->setParameter('start', $start)->setParameter('end', $end)
-            ->getQuery()->getSingleScalarResult();
+        return (float) $this->orders->sumDeliveredTotalBetween($start, $end);
     }
 
     private function money(float $amount): string

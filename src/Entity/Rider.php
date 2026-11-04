@@ -8,12 +8,13 @@ use App\Enum\ApprovalStatus;
 use App\Enum\PayoutMethod;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\VehicleType;
+use App\Repository\RiderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderRepository::class)]
 #[ORM\Table(name: 'riders')]
 #[ORM\Index(name: 'riders_availability_status_approval_status_index', columns: ['availability_status', 'approval_status'])]
 #[ORM\UniqueConstraint(name: 'riders_user_id_unique', columns: ['user_id'])]

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\RestaurantOperatingHourRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RestaurantOperatingHourRepository::class)]
 #[ORM\Table(name: 'restaurant_operating_hours')]
 #[ORM\UniqueConstraint(name: 'restaurant_operating_hours_restaurant_day_unique', columns: ['restaurant_id', 'day_of_week'])]
 #[ORM\Index(name: 'restaurant_operating_hours_restaurant_id_foreign', columns: ['restaurant_id'])]

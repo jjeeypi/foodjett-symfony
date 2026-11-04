@@ -6,10 +6,11 @@ namespace App\Entity;
 
 use App\Enum\DocumentStatus;
 use App\Enum\RiderDocumentType;
+use App\Repository\RiderDocumentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderDocumentRepository::class)]
 #[ORM\Table(name: 'rider_documents')]
 #[ORM\UniqueConstraint(name: 'rider_documents_rider_type_unique', columns: ['rider_id', 'type'])]
 #[ORM\Index(name: 'rider_documents_rider_id_foreign', columns: ['rider_id'])]

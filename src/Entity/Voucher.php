@@ -6,12 +6,13 @@ namespace App\Entity;
 
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
+use App\Repository\VoucherRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: VoucherRepository::class)]
 #[ORM\Table(name: 'vouchers')]
 #[ORM\UniqueConstraint(name: 'vouchers_code_unique', columns: ['code'])]
 #[ORM\Index(name: 'vouchers_restaurant_id_foreign', columns: ['restaurant_id'])]

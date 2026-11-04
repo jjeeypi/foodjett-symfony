@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\OrderItemAddonRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: OrderItemAddonRepository::class)]
 #[ORM\Table(name: 'order_item_addons')]
 #[ORM\Index(name: 'order_item_addons_order_item_id_foreign', columns: ['order_item_id'])]
 #[ORM\Index(name: 'order_item_addons_menu_item_addon_id_foreign', columns: ['menu_item_addon_id'])]

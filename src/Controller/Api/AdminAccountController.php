@@ -8,6 +8,7 @@ use App\Entity\Admin;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use App\Repository\AdminRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,14 +28,14 @@ final class AdminAccountController extends AbstractController
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly AdminRepository $admins,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Admin::class)->createQueryBuilder('admin')
-            ->innerJoin('admin.user', 'account')->addSelect('account')->orderBy('account.name', 'ASC');
+        $query = $this->admins->createListQuery();
         return $this->json($this->paginator->paginate($query, $request, fn (Admin $admin): array => $this->normalize($admin)));
     }
 

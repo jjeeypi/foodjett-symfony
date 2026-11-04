@@ -6,12 +6,13 @@ namespace App\Entity;
 
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
+use App\Repository\PaymentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PaymentRepository::class)]
 #[ORM\Table(name: 'payments')]
 #[ORM\UniqueConstraint(name: 'payments_order_id_unique', columns: ['order_id'])]
 class Payment

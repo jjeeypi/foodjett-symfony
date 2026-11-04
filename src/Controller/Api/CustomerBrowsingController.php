@@ -7,11 +7,12 @@ namespace App\Controller\Api;
 use App\Entity\MenuItem;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
-use App\Enum\ApprovalStatus;
 use App\Enum\RestaurantOperatingStatus;
+use App\Repository\MenuItemRepository;
+use App\Repository\RestaurantRepository;
+use App\Repository\RestaurantReviewRepository;
 use App\Service\ApiPaginator;
 use App\Service\DeliveryZoneService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,8 +22,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_CUSTOMER')]
 final class CustomerBrowsingController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator)
-    {
+    public function __construct(
+        private readonly ApiPaginator $paginator,
+        private readonly RestaurantRepository $restaurants,
+        private readonly RestaurantReviewRepository $restaurantReviews,
+        private readonly MenuItemRepository $menuItems,
+    ) {
     }
 
     #[Route('/api/restaurants', name: 'api_customer_restaurants_index', methods: ['GET'])]
@@ -96,9 +101,7 @@ final class CustomerBrowsingController extends AbstractController
     public function reviews(string $id, Request $request): JsonResponse
     {
         $restaurant = $this->approvedRestaurant($id);
-        $query = $this->entityManager->getRepository(RestaurantReview::class)->createQueryBuilder('review')
-            ->andWhere('review.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
-            ->orderBy('review.createdAt', 'DESC');
+        $query = $this->restaurantReviews->createForRestaurantQuery($restaurant);
 
         return $this->json($this->paginator->paginate($query, $request, static fn (RestaurantReview $review): array => [
             'id' => $review->getId(), 'rating' => $review->getRating(), 'comment' => $review->getComment(),
@@ -144,17 +147,12 @@ final class CustomerBrowsingController extends AbstractController
     /** @return list<Restaurant> */
     private function approvedRestaurants(): array
     {
-        return $this->entityManager->getRepository(Restaurant::class)->createQueryBuilder('restaurant')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->orderBy('restaurant.name', 'ASC')->getQuery()->getResult();
+        return $this->restaurants->findApproved();
     }
 
     private function approvedRestaurant(string $id): Restaurant
     {
-        $restaurant = $this->entityManager->getRepository(Restaurant::class)->createQueryBuilder('restaurant')
-            ->andWhere('restaurant.id = :id')->setParameter('id', $id)
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->getQuery()->getOneOrNullResult();
+        $restaurant = $this->restaurants->findOneApproved($id);
         if (!$restaurant instanceof Restaurant) {
             throw $this->createNotFoundException('Restaurant not found.');
         }
@@ -175,13 +173,7 @@ final class CustomerBrowsingController extends AbstractController
         }
         $category = mb_strtolower(trim($request->query->getString('category')));
         $search = mb_strtolower(trim($request->query->getString('q')));
-        /** @var list<MenuItem> $items */
-        $items = $this->entityManager->getRepository(MenuItem::class)->createQueryBuilder('item')
-            ->innerJoin('item.menuCategory', 'category')->addSelect('category')
-            ->innerJoin('category.restaurant', 'restaurant')->addSelect('restaurant')
-            ->andWhere('item.isAvailable = true')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->getQuery()->getResult();
+        $items = $this->menuItems->findAvailableFromApprovedRestaurants();
         $rows = [];
         foreach ($items as $item) {
             $restaurant = $item->getMenuCategory()->getRestaurant();
