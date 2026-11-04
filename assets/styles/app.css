@@ -170,7 +170,7 @@ button.link-button { background: none; border: 0; padding: 0; color: var(--green
 .split { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 .stack > * + * { margin-top: 20px; }
 .empty { text-align: center; padding: 56px 24px; border: 1px dashed #d7dfcb; border-radius: 14px; background: var(--surface); color: #859475; }
-.empty .icon { width: 40px; height: 40px; margin: 0 auto 14px; color: #8da76e; display: block; }
+.empty > .icon { width: 40px; height: 40px; margin: 0 auto 14px; color: #8da76e; display: block; }
 .empty h2, .empty h3 { margin-bottom: 8px; }
 .empty p { color: var(--muted); }
 
@@ -533,3 +533,4 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
 .dish form > details { order: 3; }
 .dish details[open] { background: #fafbf7; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
 .store-hero::after { background: linear-gradient(180deg, #1b241622 0%, #1b241655 40%, #1b2416dd 100%); }
+.totals dt, .totals dd { margin: 0; }

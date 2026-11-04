@@ -1,55 +1,68 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Your cart | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Your cart</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your Foodjett</div>
+            <h1>Your little bag <span>of happiness.</span></h1>
+            {% if lines is not empty %}<p>From <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a> · prices are checked again at checkout.</p>{% endif %}
+        </div>
+    </div>
 
     {% if lines is empty %}
-        <p>Your cart is empty. <a href="{{ path('app_restaurants') }}">Find something to eat</a>.</p>
+        <div class="empty">
+            {{ icon('bag') }}
+            <h2>Your cart is empty</h2>
+            <p>Find something delicious to get started.</p>
+            <a class="btn" href="{{ path('app_restaurants') }}">Find something to eat {{ icon('arrow', 'icon-sm') }}</a>
+        </div>
     {% else %}
-        <p>From <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a></p>
-
-        <table>
-            <thead>
-                <tr><th>Item</th><th>Each</th><th>Quantity</th><th>Total</th><th></th></tr>
-            </thead>
-            <tbody>
+        <div class="split">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>{{ lines|reduce((sum, l) => sum + l.quantity, 0) }} items</h2>
+                    <a class="btn btn-light btn-sm" href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ icon('plus', 'icon-sm') }} Add more</a>
+                </div>
                 {% for line in lines %}
-                    <tr id="line-{{ line.id }}">
-                        <td>
-                            {{ line.menuItem.name }}
-                            {% if line.variant %}({{ line.variant.name }}){% endif %}
-                            {% for addon in line.chosenAddons %}<br>+ {{ addon.name }}{% endfor %}
-                            {% if line.specialInstructions %}<br>Note: {{ line.specialInstructions }}{% endif %}
-                        </td>
-                        <td>PHP {{ line.unitPrice }}</td>
-                        <td>
-                            <form method="post" action="{{ path('app_cart_quantity', {id: line.id}) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
-                                <input type="number" name="quantity" value="{{ line.quantity }}" min="1" max="99" aria-label="Quantity">
-                                <button type="submit">Update</button>
-                            </form>
-                        </td>
-                        <td>PHP {{ line.lineTotal }}</td>
-                        <td>
-                            <form method="post" action="{{ path('app_cart_remove', {id: line.id}) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
-                                <button type="submit">Remove</button>
-                            </form>
-                        </td>
-                    </tr>
+                    <div class="line" id="line-{{ line.id }}">
+                        <div class="dish-photo" style="width: 64px; height: 64px">
+                            {% if line.menuItem.photoPath %}<img src="{{ asset(line.menuItem.photoPath) }}" alt="" width="64" height="64">{% endif %}
+                        </div>
+                        <div class="grow">
+                            <strong>{{ line.menuItem.name }}</strong>{% if line.variant %} <span class="subtle">({{ line.variant.name }})</span>{% endif %}
+                            {% for addon in line.chosenAddons %}<div class="subtle">+ {{ addon.name }}</div>{% endfor %}
+                            {% if line.specialInstructions %}<div class="subtle">Note: {{ line.specialInstructions }}</div>{% endif %}
+                            <div class="subtle">₱{{ line.unitPrice }} each</div>
+                        </div>
+                        <form class="qty" method="post" action="{{ path('app_cart_quantity', {id: line.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                            <input type="number" name="quantity" value="{{ line.quantity }}" min="1" max="99" aria-label="Quantity">
+                            <button class="btn-sm btn-light" type="submit">Update</button>
+                        </form>
+                        <span class="amount">₱{{ line.lineTotal }}</span>
+                        <form method="post" action="{{ path('app_cart_remove', {id: line.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                            <button class="favorite" type="submit" aria-label="Remove {{ line.menuItem.name }}" title="Remove">{{ icon('trash', 'icon-sm') }}</button>
+                        </form>
+                    </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </section>
 
-        <p>Subtotal: <strong id="subtotal">PHP {{ subtotal }}</strong> (fees, discounts and the final total are shown at checkout)</p>
-
-        <p><a href="{{ path('app_checkout') }}">Go to checkout</a></p>
-
-        <form method="post" action="{{ path('app_cart_clear') }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
-            <button type="submit">Empty cart</button>
-        </form>
+            <aside class="panel">
+                <h2>Summary</h2>
+                <div class="totals">
+                    <div><span>Subtotal</span><strong id="subtotal">₱{{ subtotal }}</strong></div>
+                    <div class="subtle"><span>Delivery fee, service fee and vouchers</span><span>at checkout</span></div>
+                </div>
+                <a class="btn btn-green btn-block" href="{{ path('app_checkout') }}" style="margin-top: 20px">Go to checkout {{ icon('arrow', 'icon-sm') }}</a>
+                <form method="post" action="{{ path('app_cart_clear') }}" style="margin-top: 10px">
+                    <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                    <button class="btn-light btn-block" type="submit">Empty cart</button>
+                </form>
+            </aside>
+        </div>
     {% endif %}
 {% endblock %}

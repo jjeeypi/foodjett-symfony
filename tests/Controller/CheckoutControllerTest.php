@@ -93,7 +93,7 @@ class CheckoutControllerTest extends WebTestCase
         $this->client->submit($crawler->selectButton('Place order')->form());
         self::assertResponseRedirects();
         $order = $this->onlyOrder();
-        self::assertSame('PHP '.$order->getTotalAmount(), $previewTotal);
+        self::assertSame('₱'.$order->getTotalAmount(), $previewTotal);
         self::assertSame(Payment::STATUS_PAID, $order->getPayment()?->getStatus());
     }
 

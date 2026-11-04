@@ -1,53 +1,73 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Checkout | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Checkout</h1>
-    <p><a href="{{ path('app_cart') }}">Back to cart</a></p>
+    <a class="back-link" href="{{ path('app_cart') }}">{{ icon('back', 'icon-sm') }} Back to cart</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Almost there</div>
+            <h1>Checkout</h1>
+            <p>Good food starts with the right address.</p>
+        </div>
+    </div>
 
     {% if form is null %}
-        <p>Add a delivery address to your account before checking out. <a href="{{ path('app_customer_address_new') }}">Add an address</a></p>
+        <div class="empty">
+            {{ icon('pin') }}
+            <h2>Where should we deliver?</h2>
+            <p>Add a delivery address to your account before checking out.</p>
+            <a class="btn" href="{{ path('app_customer_address_new') }}">Add an address {{ icon('arrow', 'icon-sm') }}</a>
+        </div>
     {% else %}
         {% if error %}
-            <p class="error" role="alert">{{ error }}</p>
+            <p class="error callout callout-danger" role="alert">{{ error }}</p>
         {% endif %}
 
-        {% if quote %}
-            <h2>Order summary</h2>
-            <table>
-                <tbody>
+        <div class="split">
+            <section class="panel">
+                {{ form_start(form) }}
+                    {{ form_row(form.address) }}
+                    <p class="help-text" style="margin-top: -8px"><a href="{{ path('app_customer_address_new') }}">{{ icon('plus', 'icon-sm') }} Add another address</a></p>
+                    {{ form_row(form.paymentMethod) }}
+                    <div class="form-grid">
+                        <div>{{ form_row(form.tipAmount) }}</div>
+                        <div>{{ form_row(form.voucherCode) }}</div>
+                    </div>
+                    {{ form_row(form.notes) }}
+                    {{ form_row(form.checkoutToken) }}
+                    <div class="button-row">
+                        {{ form_widget(form.preview, {attr: {class: 'btn-light'}}) }}
+                        {{ form_widget(form.place, {attr: {class: 'btn-green'}}) }}
+                    </div>
+                {{ form_end(form) }}
+            </section>
+
+            {% if quote %}
+                <aside class="panel">
+                    <h2>Order summary</h2>
                     {% for item in quote.items %}
-                        <tr>
-                            <td>
+                        <div class="line">
+                            <span class="grow">
                                 {{ item.quantity }} × {{ item.name }}
-                                {% if item.variant %}({{ item.variant.name }}){% endif %}
-                                {% for addon in item.addons %}<br>+ {{ addon.name }}{% endfor %}
-                            </td>
-                            <td>PHP {{ item.line_total }}</td>
-                        </tr>
+                                {% if item.variant %}<span class="subtle">({{ item.variant.name }})</span>{% endif %}
+                                {% for addon in item.addons %}<div class="subtle">+ {{ addon.name }}</div>{% endfor %}
+                            </span>
+                            <span class="amount">₱{{ item.line_total }}</span>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
-            <dl id="totals">
-                <dt>Subtotal</dt><dd>PHP {{ quote.subtotal }}</dd>
-                <dt>Delivery fee</dt><dd>PHP {{ quote.delivery_fee }}</dd>
-                <dt>Service fee</dt><dd>PHP {{ quote.service_fee }}</dd>
-                {% if quote.discount_amount > 0 %}<dt>Discount</dt><dd>- PHP {{ quote.discount_amount }}</dd>{% endif %}
-                {% if quote.tip_amount > 0 %}<dt>Rider tip</dt><dd>PHP {{ quote.tip_amount }}</dd>{% endif %}
-                <dt>Total</dt><dd><strong>PHP {{ quote.total_amount }}</strong></dd>
-            </dl>
-        {% endif %}
-
-        {{ form_start(form) }}
-            {{ form_row(form.address) }}
-            {{ form_row(form.paymentMethod) }}
-            {{ form_row(form.tipAmount) }}
-            {{ form_row(form.voucherCode) }}
-            {{ form_row(form.notes) }}
-            {{ form_row(form.checkoutToken) }}
-            {{ form_row(form.preview) }}
-            {{ form_row(form.place) }}
-        {{ form_end(form) }}
+                    <dl id="totals" class="totals">
+                        <div><dt>Subtotal</dt><dd>₱{{ quote.subtotal }}</dd></div>
+                        <div><dt>Delivery fee</dt><dd>₱{{ quote.delivery_fee }}</dd></div>
+                        <div><dt>Service fee</dt><dd>₱{{ quote.service_fee }}</dd></div>
+                        {% if quote.discount_amount > 0 %}<div><dt>Discount</dt><dd>- ₱{{ quote.discount_amount }}</dd></div>{% endif %}
+                        {% if quote.tip_amount > 0 %}<div><dt>Rider tip</dt><dd>₱{{ quote.tip_amount }}</dd></div>{% endif %}
+                        <div class="grand"><dt>Total</dt><dd><strong>₱{{ quote.total_amount }}</strong></dd></div>
+                    </dl>
+                    <p class="subtle" style="margin-top: 14px">{{ icon('bike', 'icon-sm') }} A rider picks it up as soon as the kitchen is ready.</p>
+                </aside>
+            {% endif %}
+        </div>
     {% endif %}
 {% endblock %}
