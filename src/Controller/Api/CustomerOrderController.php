@@ -18,6 +18,7 @@ use App\Enum\OrderReportType;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Exception\InvalidOrderTransitionException;
+use App\Repository\OrderRepository;
 use App\Security\Voter\OrderVoter;
 use App\Service\ApiPaginator;
 use App\Service\OrderTransitionService;
@@ -37,24 +38,18 @@ final class CustomerOrderController extends AbstractCustomerController
         private readonly ApiPaginator $paginator,
         private readonly OrderTransitionService $transitions,
         private readonly PaymentTransitionService $payments,
+        private readonly OrderRepository $orders,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $this->customer())
-            ->orderBy('orders.placedAt', 'DESC');
         $filter = $request->query->getString('filter');
-        $terminal = array_map(static fn (OrderStatus $status): string => $status->value, array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal()));
-        if ('active' === $filter) {
-            $query->andWhere('orders.status NOT IN (:terminal)')->setParameter('terminal', $terminal);
-        } elseif ('past' === $filter) {
-            $query->andWhere('orders.status IN (:terminal)')->setParameter('terminal', $terminal);
-        } elseif ('' !== $filter) {
+        if (!in_array($filter, ['', 'active', 'past'], true)) {
             return $this->json(['message' => 'filter must be active or past.'], 422);
         }
+        $query = $this->orders->createForCustomerQuery($this->customer(), '' === $filter ? null : $filter);
 
         return $this->json($this->paginator->paginate($query, $request, $this->summary(...)));
     }
@@ -245,10 +240,7 @@ final class CustomerOrderController extends AbstractCustomerController
 
     private function ownedOrder(string $id): Order
     {
-        $order = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.id = :id')->setParameter('id', $id)
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $this->customer())
-            ->getQuery()->getOneOrNullResult();
+        $order = $this->orders->findOneForCustomer($id, $this->customer());
         if (!$order instanceof Order) {
             throw $this->createNotFoundException('Order not found.');
         }

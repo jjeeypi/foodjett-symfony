@@ -9,6 +9,9 @@ use App\Entity\Message;
 use App\Entity\Order;
 use App\Enum\ConversationType;
 use App\Event\MessageSentEvent;
+use App\Repository\ConversationRepository;
+use App\Repository\MessageRepository;
+use App\Repository\OrderRepository;
 use App\Security\Voter\ConversationVoter;
 use App\Service\ApiPaginator;
 use App\Service\ConversationService;
@@ -28,16 +31,16 @@ final class CustomerConversationController extends AbstractCustomerController
         private readonly ApiPaginator $paginator,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ConversationService $conversations,
+        private readonly OrderRepository $orders,
+        private readonly ConversationRepository $conversationRecords,
+        private readonly MessageRepository $messages,
     ) {
     }
 
     #[Route('/for-order/{orderId}', name: 'for_order', methods: ['POST'], requirements: ['orderId' => '\\d+'])]
     public function forOrder(string $orderId, Request $request): JsonResponse
     {
-        $order = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.id = :id')->setParameter('id', $orderId)
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $this->customer())
-            ->getQuery()->getOneOrNullResult();
+        $order = $this->orders->findOneForCustomer($orderId, $this->customer());
         if (!$order instanceof Order) {
             throw $this->createNotFoundException('Order not found.');
         }
@@ -66,10 +69,7 @@ final class CustomerConversationController extends AbstractCustomerController
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->innerJoin('conversation.order', 'orders')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $this->customer())
-            ->orderBy('conversation.updatedAt', 'DESC')->addOrderBy('conversation.createdAt', 'DESC');
+        $query = $this->conversationRecords->createForCustomerQuery($this->customer());
 
         return $this->json($this->paginator->paginate($query, $request, $this->conversationData(...)));
     }
@@ -79,9 +79,7 @@ final class CustomerConversationController extends AbstractCustomerController
     {
         $conversation = $this->ownedConversation($id);
         $this->denyAccessUnlessGranted(ConversationVoter::VIEW, $conversation);
-        $query = $this->entityManager->getRepository(Message::class)->createQueryBuilder('message')
-            ->andWhere('message.conversation = :conversation')->setParameter('conversation', $conversation)
-            ->orderBy('message.createdAt', 'ASC')->addOrderBy('message.id', 'ASC');
+        $query = $this->messages->createForConversationQuery($conversation);
 
         $result = $this->paginator->paginate($query, $request, $this->messageData(...));
         $result['conversation'] = $this->conversationData($conversation);
@@ -106,9 +104,7 @@ final class CustomerConversationController extends AbstractCustomerController
             return $this->json(['message' => 'body must be between 1 and 1000 characters.'], 422);
         }
         $since = new \DateTimeImmutable('-1 minute');
-        $sentRecently = (int) $this->entityManager->getRepository(Message::class)->createQueryBuilder('message')
-            ->select('COUNT(message.id)')->andWhere('message.sender = :sender')->setParameter('sender', $this->customerUser())
-            ->andWhere('message.createdAt >= :since')->setParameter('since', $since)->getQuery()->getSingleScalarResult();
+        $sentRecently = $this->messages->countSentBySince($this->customerUser(), $since);
         if ($sentRecently >= 20) {
             return $this->json(['message' => 'Too many messages. Please wait before sending another.'], 429);
         }
@@ -141,22 +137,14 @@ final class CustomerConversationController extends AbstractCustomerController
         $conversation = $this->ownedConversation($id);
         $this->denyAccessUnlessGranted(ConversationVoter::VIEW, $conversation);
         $now = new \DateTimeImmutable();
-        $updated = $this->entityManager->createQueryBuilder()->update(Message::class, 'message')
-            ->set('message.readAt', ':now')->setParameter('now', $now)
-            ->andWhere('message.conversation = :conversation')->setParameter('conversation', $conversation)
-            ->andWhere('message.sender != :user')->setParameter('user', $this->customerUser())
-            ->andWhere('message.readAt IS NULL')->getQuery()->execute();
+        $updated = $this->messages->markReadFor($conversation, $this->customerUser(), $now);
 
         return $this->json(['message' => 'Conversation marked as read.', 'updated' => (int) $updated, 'read_at' => $now->format(\DateTimeInterface::ATOM)]);
     }
 
     private function ownedConversation(string $id): Conversation
     {
-        $conversation = $this->entityManager->getRepository(Conversation::class)->createQueryBuilder('conversation')
-            ->innerJoin('conversation.order', 'orders')
-            ->andWhere('conversation.id = :id')->setParameter('id', $id)
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $this->customer())
-            ->getQuery()->getOneOrNullResult();
+        $conversation = $this->conversationRecords->findOneForCustomer($id, $this->customer());
         if (!$conversation instanceof Conversation) {
             throw $this->createNotFoundException('Conversation not found.');
         }
@@ -168,10 +156,7 @@ final class CustomerConversationController extends AbstractCustomerController
     private function conversationData(Conversation $conversation): array
     {
         $lastMessage = $this->entityManager->getRepository(Message::class)->findOneBy(['conversation' => $conversation], ['createdAt' => 'DESC', 'id' => 'DESC']);
-        $unreadCount = (int) $this->entityManager->getRepository(Message::class)->createQueryBuilder('message')
-            ->select('COUNT(message.id)')->andWhere('message.conversation = :conversation')->setParameter('conversation', $conversation)
-            ->andWhere('message.sender != :user')->setParameter('user', $this->customerUser())
-            ->andWhere('message.readAt IS NULL')->getQuery()->getSingleScalarResult();
+        $unreadCount = $this->messages->countUnreadInConversationFor($conversation, $this->customerUser());
         $order = $conversation->getOrder();
         $counterpart = ConversationType::CUSTOMER_RESTAURANT === $conversation->getType()
             ? ['type' => 'restaurant', 'id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName(), 'avatar_path' => $order->getRestaurant()->getLogoPath()]

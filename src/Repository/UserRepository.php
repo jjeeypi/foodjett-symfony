@@ -28,4 +28,21 @@ class UserRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Whether another account already uses this email or phone number.
+     *
+     * @param 'email'|'phone' $field
+     */
+    public function isIdentifierTakenByAnother(string $field, string $value, User $current): bool
+    {
+        if (!in_array($field, ['email', 'phone'], true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported identifier field "%s".', $field));
+        }
+
+        return null !== $this->createQueryBuilder('account')
+            ->select('account.id')->andWhere(sprintf('account.%s = :value', $field))->setParameter('value', $value)
+            ->andWhere('account.id != :current')->setParameter('current', $current->getId())
+            ->setMaxResults(1)->getQuery()->getOneOrNullResult();
+    }
 }

@@ -133,4 +133,32 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('orders.rider IS NULL')
             ->setParameter('status', OrderStatus::FINDING_RIDER);
     }
+
+    /**
+     * The customer's orders, newest first, optionally limited to active or past (terminal) orders.
+     *
+     * @param 'active'|'past'|null $filter
+     */
+    public function createForCustomerQuery(Customer $customer, ?string $filter = null): QueryBuilder
+    {
+        $query = $this->createQueryBuilder('orders')
+            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
+            ->orderBy('orders.placedAt', 'DESC');
+        $terminal = array_map(static fn (OrderStatus $status): string => $status->value, array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal()));
+        if ('active' === $filter) {
+            $query->andWhere('orders.status NOT IN (:terminal)')->setParameter('terminal', $terminal);
+        } elseif ('past' === $filter) {
+            $query->andWhere('orders.status IN (:terminal)')->setParameter('terminal', $terminal);
+        }
+
+        return $query;
+    }
+
+    public function findOneForCustomer(int|string $id, Customer $customer): ?Order
+    {
+        return $this->createQueryBuilder('orders')
+            ->andWhere('orders.id = :id')->setParameter('id', $id)
+            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
+            ->getQuery()->getOneOrNullResult();
+    }
 }

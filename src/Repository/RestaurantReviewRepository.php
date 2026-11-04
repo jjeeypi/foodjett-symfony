@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +18,11 @@ class RestaurantReviewRepository extends ServiceEntityRepository
         parent::__construct($registry, RestaurantReview::class);
     }
 
-//    /**
-//     * @return RestaurantReview[] Returns an array of RestaurantReview objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?RestaurantReview
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** A restaurant's reviews, newest first. */
+    public function createForRestaurantQuery(Restaurant $restaurant): QueryBuilder
+    {
+        return $this->createQueryBuilder('review')
+            ->andWhere('review.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->orderBy('review.createdAt', 'DESC');
+    }
 }

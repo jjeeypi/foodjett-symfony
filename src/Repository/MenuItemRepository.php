@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\MenuItem;
+use App\Enum\ApprovalStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +17,18 @@ class MenuItemRepository extends ServiceEntityRepository
         parent::__construct($registry, MenuItem::class);
     }
 
-//    /**
-//     * @return MenuItem[] Returns an array of MenuItem objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('m.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?MenuItem
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /**
+     * Available menu items of approved restaurants, with their category and restaurant loaded.
+     *
+     * @return list<MenuItem>
+     */
+    public function findAvailableFromApprovedRestaurants(): array
+    {
+        return $this->createQueryBuilder('item')
+            ->innerJoin('item.menuCategory', 'category')->addSelect('category')
+            ->innerJoin('category.restaurant', 'restaurant')->addSelect('restaurant')
+            ->andWhere('item.isAvailable = true')
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
+            ->getQuery()->getResult();
+    }
 }

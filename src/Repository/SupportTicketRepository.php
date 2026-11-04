@@ -3,7 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\SupportTicket;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +18,11 @@ class SupportTicketRepository extends ServiceEntityRepository
         parent::__construct($registry, SupportTicket::class);
     }
 
-//    /**
-//     * @return SupportTicket[] Returns an array of SupportTicket objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('s')
-//            ->andWhere('s.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('s.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?SupportTicket
-//    {
-//        return $this->createQueryBuilder('s')
-//            ->andWhere('s.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** Support tickets the user opened, newest first, ready for pagination. */
+    public function createForUserQuery(User $user): QueryBuilder
+    {
+        return $this->createQueryBuilder('ticket')
+            ->andWhere('ticket.user = :user')->setParameter('user', $user)
+            ->orderBy('ticket.createdAt', 'DESC');
+    }
 }

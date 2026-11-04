@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -16,28 +17,38 @@ class CustomerAddressRepository extends ServiceEntityRepository
         parent::__construct($registry, CustomerAddress::class);
     }
 
-//    /**
-//     * @return CustomerAddress[] Returns an array of CustomerAddress objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * The customer's addresses, default first, then newest.
+     *
+     * @return list<CustomerAddress>
+     */
+    public function findForCustomer(Customer $customer): array
+    {
+        return $this->createQueryBuilder('address')
+            ->andWhere('address.customer = :customer')->setParameter('customer', $customer)
+            ->orderBy('address.isDefault', 'DESC')->addOrderBy('address.createdAt', 'DESC')->getQuery()->getResult();
+    }
 
-//    public function findOneBySomeField($value): ?CustomerAddress
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function findLatestForCustomer(Customer $customer): ?CustomerAddress
+    {
+        return $this->createQueryBuilder('candidate')
+            ->andWhere('candidate.customer = :customer')->setParameter('customer', $customer)
+            ->orderBy('candidate.createdAt', 'DESC')->setMaxResults(1)->getQuery()->getOneOrNullResult();
+    }
+
+    public function findOneForCustomer(int|string $id, Customer $customer): ?CustomerAddress
+    {
+        return $this->createQueryBuilder('address')
+            ->andWhere('address.id = :id')->setParameter('id', $id)
+            ->andWhere('address.customer = :customer')->setParameter('customer', $customer)
+            ->getQuery()->getOneOrNullResult();
+    }
+
+    /** Clears the default flag on every address of the customer. */
+    public function clearDefaultForCustomer(int|string|null $customerId): void
+    {
+        $this->getEntityManager()->createQueryBuilder()->update(CustomerAddress::class, 'address')->set('address.isDefault', ':false')
+            ->andWhere('IDENTITY(address.customer) = :customer')->setParameter('false', false)->setParameter('customer', $customerId)
+            ->getQuery()->execute();
+    }
 }
