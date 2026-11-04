@@ -147,4 +147,44 @@ class CartItem
 
         return $this;
     }
+
+    /**
+     * The add-ons picked for this line that the menu item still offers.
+     *
+     * @return list<MenuItemAddon>
+     */
+    public function getChosenAddons(): array
+    {
+        return array_values(array_filter(
+            $this->menuItem->getAddons()->toArray(),
+            fn (MenuItemAddon $addon): bool => in_array((string) $addon->getId(), $this->addonIds, true),
+        ));
+    }
+
+    /** Current price of one unit: base price, variant change and add-ons. Checkout recomputes it. */
+    public function getUnitPrice(): string
+    {
+        $price = bcadd($this->menuItem->getBasePrice(), $this->variant?->getPriceDelta() ?? '0', 2);
+        foreach ($this->getChosenAddons() as $addon) {
+            $price = bcadd($price, $addon->getPrice(), 2);
+        }
+
+        return $price;
+    }
+
+    public function getLineTotal(): string
+    {
+        return bcmul($this->getUnitPrice(), (string) $this->quantity, 2);
+    }
+
+    /** Two lines with the same item, variant, add-ons and instructions are merged into one. */
+    public function isSameChoiceAs(MenuItem $item, ?MenuItemVariant $variant, array $addonIds, ?string $instructions): bool
+    {
+        $mine = $this->addonIds;
+        sort($mine);
+        sort($addonIds);
+
+        return $this->menuItem === $item && $this->variant === $variant && $mine === $addonIds
+            && ($this->specialInstructions ?? '') === ($instructions ?? '');
+    }
 }

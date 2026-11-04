@@ -39,11 +39,33 @@
                         {% if item.description %}<br>{{ item.description }}{% endif %}
                         {% if item.variants is not empty %}
                             <br>Options:
-                            {% for variant in item.variants %}{{ variant.name }} ({{ variant.priceDelta >= 0 ? '+' : '' }}{{ variant.priceDelta }}){{ not loop.last ? ', ' }}{% endfor %}
+                            {{ item.variants|map(v => v.name ~ ' (' ~ (v.priceDelta >= 0 ? '+' : '') ~ v.priceDelta ~ ')')|join(', ') }}
                         {% endif %}
                         {% if item.addons is not empty %}
                             <br>Add-ons:
-                            {% for addon in item.addons|filter(a => a.available) %}{{ addon.name }} (+{{ addon.price }}){{ not loop.last ? ', ' }}{% endfor %}
+                            {{ item.addons|filter(a => a.available)|map(a => a.name ~ ' (+' ~ a.price ~ ')')|join(', ') }}
+                        {% endif %}
+                        {% if is_granted('ROLE_CUSTOMER') and item.orderableNow %}
+                            <form method="post" action="{{ path('app_cart_add', {id: item.id}) }}" name="add-{{ item.id }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                                {% if item.variants is not empty %}
+                                    <label for="variant-{{ item.id }}">Option</label>
+                                    <select id="variant-{{ item.id }}" name="variant">
+                                        {% for variant in item.variants %}
+                                            <option value="{{ variant.id }}">{{ variant.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% endif %}
+                                {% for addon in item.addons|filter(a => a.available) %}
+                                    <input type="checkbox" id="addon-{{ addon.id }}" name="addons[]" value="{{ addon.id }}">
+                                    <label for="addon-{{ addon.id }}">{{ addon.name }}</label>
+                                {% endfor %}
+                                <label for="quantity-{{ item.id }}">Qty</label>
+                                <input type="number" id="quantity-{{ item.id }}" name="quantity" value="1" min="1" max="99">
+                                <label for="instructions-{{ item.id }}">Note</label>
+                                <input type="text" id="instructions-{{ item.id }}" name="instructions" maxlength="1000">
+                                <button type="submit">Add to cart</button>
+                            </form>
                         {% endif %}
                     </li>
                 {% else %}
