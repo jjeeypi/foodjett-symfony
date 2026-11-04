@@ -57,7 +57,7 @@ class RegistrationControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/');
         $this->client->followRedirect();
-        self::assertSelectorTextContains('nav', 'Signed in as Test Person (customer)');
+        self::assertSelectorTextContains('.profile', 'Signed in as Test Person (customer)');
 
         $user = $this->user('register.customer@foodjett.test');
         self::assertSame(User::ACCOUNT_CUSTOMER, $user->getRole());
