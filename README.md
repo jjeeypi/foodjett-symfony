@@ -59,7 +59,7 @@ starts.
 | --- | --- | --- |
 | `mariadb` | MariaDB 10.4.32 application database | Internal only |
 | `mercure` | Mercure 1.1.0 Server-Sent Events hub | `localhost:3000` |
-| `app` | Symfony under Apache with PHP 8.3 | `localhost:8080` |
+| `app` | Symfony under Apache with PHP 8.4 | `localhost:8080` |
 | `scheduler` | Messenger worker that runs the rider-pool escalation schedule | Internal only |
 
 Apache reverse-proxies `/.well-known/mercure` to the hub, so the browser reaches
@@ -84,7 +84,7 @@ docker compose down -v --remove-orphans               # stop and DELETE all data
 
 ## Native development
 
-Native development uses PHP 8.2 or newer with the `bcmath`, `intl`,
+Native development uses PHP 8.4 or newer with the `bcmath`, `intl`,
 `pdo_mysql` and `zip` extensions, Composer, the Symfony CLI, and a local
 MariaDB (for example XAMPP).
 
@@ -119,3 +119,10 @@ php bin/phpunit
 - Inside Docker the application reaches the database and hub by their service
   names (`mariadb`, `mercure`); `localhost` URLs are only for the browser and
   host-side tools.
+
+## Money
+
+Every amount is stored as `DECIMAL(10,2)` and handled in PHP as an exact
+decimal string with `bcmath` (`bcadd`, `bcsub`, `bcmul`, `bcdiv`, `bccomp`,
+and `bcround` for half-up rounding). Floats are used only for measurements
+such as coordinates, distances and ratings.
