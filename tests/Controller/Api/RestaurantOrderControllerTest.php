@@ -15,6 +15,7 @@ use App\Entity\Rider;
 use App\Entity\User;
 use App\Enum\ApprovalStatus;
 use App\Enum\ConversationType;
+use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
@@ -23,6 +24,7 @@ use App\Enum\RiderAvailabilityStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
+use App\Service\OrderTransitionService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -205,15 +207,27 @@ final class RestaurantOrderControllerTest extends WebTestCase
             ->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $order = $entityManager->find(Order::class, $this->orderId);
-        self::assertInstanceOf(Order::class, $order);
-        $order
-            ->setRider($rider)
-            ->setStatus(OrderStatus::RIDER_ASSIGNED)
-            ->setRiderAssignedAt($now)
-            ->setPickupCode('3378');
         $entityManager->persist($riderUser);
         $entityManager->persist($rider);
+        $entityManager->flush();
+        $order = $entityManager->find(Order::class, $this->orderId);
+        self::assertInstanceOf(Order::class, $order);
+        // Status changes must go through the transition service; the runtime guard rejects direct writes.
+        $transitions = self::getContainer()->get(OrderTransitionService::class);
+        $order = $transitions->transitionSequence(
+            $order,
+            [OrderStatus::ACCEPTED, OrderStatus::PREPARING, OrderStatus::FINDING_RIDER],
+            OrderActor::RESTAURANT,
+        );
+        $order = $transitions->transition(
+            $order,
+            OrderStatus::RIDER_ASSIGNED,
+            OrderActor::ADMIN,
+            applyChanges: static function (Order $locked) use ($rider): void {
+                $locked->setRider($rider);
+            },
+        );
+        $order->setPickupCode('3378');
         $entityManager->flush();
 
         $this->client->request('GET', '/api/restaurant/orders/'.$this->orderId, server: $this->auth($token));

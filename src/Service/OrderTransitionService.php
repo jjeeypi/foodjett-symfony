@@ -19,13 +19,39 @@ use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-final readonly class OrderTransitionService
+/**
+ * The only writer of Order.status. Every status it sets is recorded as authorized so that
+ * StatusGuardListener can reject any other change to the column at flush time.
+ */
+final class OrderTransitionService
 {
+    /**
+     * Statuses this service set and has not yet seen flushed, keyed by entity. Shared by every
+     * instance in the process; a WeakMap so entries disappear together with their entities.
+     *
+     * @var \WeakMap<Order, OrderStatus>|null
+     */
+    private static ?\WeakMap $authorizedStatuses = null;
+
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private PlatformSettingService $settings,
-        private EventDispatcherInterface $eventDispatcher,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PlatformSettingService $settings,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
+        self::$authorizedStatuses ??= new \WeakMap();
+    }
+
+    /**
+     * Whether this service set $order's status to $status; a matching authorization is used up.
+     */
+    public function consumeAuthorizedStatus(Order $order, OrderStatus $status): bool
+    {
+        if ((self::$authorizedStatuses[$order] ?? null) !== $status) {
+            return false;
+        }
+        unset(self::$authorizedStatuses[$order]);
+
+        return true;
     }
 
     /**
@@ -94,6 +120,7 @@ final readonly class OrderTransitionService
 
                 $note = $notes[$index] ?? null;
                 $this->applyStatusSideEffects($locked, $status, $now);
+                self::$authorizedStatuses[$locked] = $status;
                 $locked
                     ->setStatus($status)
                     ->setUpdatedAt($now);
