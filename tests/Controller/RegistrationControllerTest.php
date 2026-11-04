@@ -20,19 +20,31 @@ class RegistrationControllerTest extends WebTestCase
 
     private KernelBrowser $client;
     private string $uploadDir;
-    private string $pdf;
+    /** @var list<string> */
+    private array $pdfs = [];
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
         $this->uploadDir = self::getContainer()->getParameter('app.private_upload_dir');
-        $this->pdf = sys_get_temp_dir().'/foodjett-registration-test.pdf';
-        file_put_contents($this->pdf, "%PDF-1.4\n%test document\n");
+    }
+
+    /**
+     * One file per document field: the browser copies each upload to a temp name made from the
+     * first letters of the file name, and on Windows two copies of one file can get the same name.
+     */
+    private function pdf(int $field): string
+    {
+        $pdf = sys_get_temp_dir().'/d'.$field.'x-foodjett-registration-test.pdf';
+        file_put_contents($pdf, "%PDF-1.4\n%test document\n");
+        $this->pdfs[] = $pdf;
+
+        return $pdf;
     }
 
     protected function tearDown(): void
     {
-        (new Filesystem())->remove([$this->uploadDir, $this->pdf]);
+        (new Filesystem())->remove([$this->uploadDir, ...$this->pdfs]);
         parent::tearDown();
     }
 
@@ -64,8 +76,8 @@ class RegistrationControllerTest extends WebTestCase
         $form['restaurant_registration_form[address]'] = '1 Test Street, Manila';
         $form['restaurant_registration_form[latitude]'] = '14.5995';
         $form['restaurant_registration_form[longitude]'] = '120.9842';
-        foreach (RestaurantDocument::TYPES as $type) {
-            $form['restaurant_registration_form[document_'.$type.']']->upload($this->pdf);
+        foreach (array_values(RestaurantDocument::TYPES) as $i => $type) {
+            $form['restaurant_registration_form[document_'.$type.']']->upload($this->pdf($i));
         }
         $this->client->submit($form);
 
@@ -152,8 +164,8 @@ class RegistrationControllerTest extends WebTestCase
         $this->fillAccount($form, 'rider_registration_form[user]', $email, $phone);
         $form['rider_registration_form[vehicleType]'] = $vehicle;
         $form['rider_registration_form[plateNumber]'] = $plate;
-        foreach (RiderDocument::TYPES as $type) {
-            $form['rider_registration_form[document_'.$type.']']->upload($this->pdf);
+        foreach (array_values(RiderDocument::TYPES) as $i => $type) {
+            $form['rider_registration_form[document_'.$type.']']->upload($this->pdf($i));
         }
 
         return $form;
