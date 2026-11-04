@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Customers | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Customers</h1>
+
+    <form method="get">
+        <label for="search">Name, email or phone</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Search</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Account</th><th>Joined</th><th>actions</th></tr>
+        </thead>
+        <tbody>
+        {% for customer in customers %}
+            <tr id="customer-{{ customer.id }}">
+                <td>{{ customer.user.name }}</td><td>{{ customer.user.email }}</td><td>{{ customer.user.phone }}</td>
+                <td>{{ customer.user.status }}</td><td>{{ customer.createdAt ? customer.createdAt|date('M j, Y') }}</td>
+                <td><a href="{{ path('app_admin_customer_show', {'id': customer.id}) }}">show</a></td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(customers) }}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Restaurants | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Restaurants</h1>
+
+    <form method="get">
+        <label for="approval">Application</label>
+        <select id="approval" name="approval">
+            <option value="">All</option>
+            {% for value in ['pending', 'approved', 'rejected'] %}
+                <option value="{{ value }}" {{ approval == value ? 'selected' }}>{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="search">Search</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Filter</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr><th>Name</th><th>Owner</th><th>Cuisine</th><th>Application</th><th>Account</th><th>actions</th></tr>
+        </thead>
+        <tbody>
+        {% for restaurant in restaurants %}
+            <tr id="restaurant-{{ restaurant.id }}"><td>{{ restaurant.name }}</td><td>{{ restaurant.user.name }}</td><td>{{ restaurant.cuisineType }}</td><td>{{ restaurant.approvalStatus }}</td><td>{{ restaurant.user.status }}</td>
+                <td><a href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">show</a></td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(restaurants) }}
+{% endblock %}

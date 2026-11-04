@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Controller\Api;
+namespace App\Controller;
 
 use App\Entity\Order;
 use App\Entity\Restaurant;
@@ -18,11 +18,10 @@ use App\Repository\SupportTicketRepository;
 use App\Repository\VoucherRedemptionRepository;
 use App\Repository\VoucherRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/api/admin/dashboard', name: 'api_admin_dashboard', methods: ['GET'])]
 #[IsGranted('ROLE_ADMIN')]
 final class AdminDashboardController extends AbstractController
 {
@@ -39,7 +38,8 @@ final class AdminDashboardController extends AbstractController
     ) {
     }
 
-    public function __invoke(): JsonResponse
+    #[Route('/admin', name: 'app_admin_dashboard', methods: ['GET'])]
+    public function index(): Response
     {
         $now = new \DateTimeImmutable();
         $todayStart = $now->setTime(0, 0);
@@ -93,7 +93,7 @@ final class AdminDashboardController extends AbstractController
         $newRestaurants = $this->restaurants->countCreatedBetween($weekStart, $now);
         $newRiders = $this->riders->countCreatedBetween($weekStart, $now);
 
-        return $this->json([
+        return $this->render('admin_dashboard/index.html.twig', ['stats' => [
             'generated_at' => $now->format(\DateTimeInterface::ATOM),
             'operations' => [
                 'today_orders' => $todayOrders,
@@ -129,7 +129,7 @@ final class AdminDashboardController extends AbstractController
                     'riders' => $newRiders,
                 ],
             ],
-        ]);
+        ]]);
     }
 
     private function deliveredRevenue(\DateTimeImmutable $start, \DateTimeImmutable $end): string

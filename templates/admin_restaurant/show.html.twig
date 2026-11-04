@@ -1,0 +1,73 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ restaurant.name }} | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_restaurant_index') }}">back to list</a></p>
+    <h1>{{ restaurant.name }}</h1>
+
+    <table class="table">
+        <tbody>
+            <tr><th>Owner</th><td>{{ restaurant.user.name }} · {{ restaurant.user.email }} · {{ restaurant.user.phone }}</td></tr>
+            <tr><th>Cuisine</th><td>{{ restaurant.cuisineType }}</td></tr>
+            <tr><th>Address</th><td>{{ restaurant.address }} ({{ restaurant.latitude }}, {{ restaurant.longitude }})</td></tr>
+            <tr><th>Commission</th><td>{{ restaurant.commissionRate }}%</td></tr>
+            <tr><th>Minimum order</th><td>PHP {{ restaurant.minOrderAmount }}</td></tr>
+            <tr><th>Status</th><td>{{ restaurant.operatingStatus|replace({'_': ' '}) }}</td></tr>
+        </tbody>
+    </table>
+    <a href="{{ path('app_admin_restaurant_edit', {'id': restaurant.id}) }}">edit</a>
+
+    <h2>Application</h2>
+    <p id="approval">Status: <strong>{{ restaurant.approvalStatus }}</strong>{% if restaurant.rejectionReason %} · {{ restaurant.rejectionReason }}{% endif %}</p>
+    {% if restaurant.approvalStatus != 'approved' %}
+        <form method="post" action="{{ path('app_admin_restaurant_approve', {'id': restaurant.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ restaurant.id) }}">
+            <button type="submit">Approve</button>
+        </form>
+    {% endif %}
+    {% if restaurant.approvalStatus != 'rejected' %}
+        {{ form_start(reject_form, {'action': path('app_admin_restaurant_reject', {'id': restaurant.id})}) }}
+            {{ form_widget(reject_form) }}
+            <button type="submit">Reject application</button>
+        {{ form_end(reject_form) }}
+    {% endif %}
+
+    <h2>Account</h2>
+    <p id="account">Login is <strong>{{ restaurant.user.status }}</strong>.</p>
+    <form method="post" action="{{ path('app_admin_restaurant_account', {'id': restaurant.id, 'status': restaurant.user.status == 'active' ? 'suspended' : 'active'}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('account' ~ restaurant.id) }}">
+        <button type="submit">{{ restaurant.user.status == 'active' ? 'Suspend account' : 'Reactivate account' }}</button>
+    </form>
+
+    <h2>Documents</h2>
+    <table class="table">
+        <thead><tr><th>Document</th><th>Status</th><th>Note</th><th>File</th><th>Review</th></tr></thead>
+        <tbody>
+        {% for document in restaurant.documents %}
+            <tr id="document-{{ document.id }}">
+                <td>{{ document.type|replace({'_': ' '})|capitalize }}</td>
+                <td>{{ document.status }}</td>
+                <td>{{ document.rejectionReason }}</td>
+                <td><a href="{{ path('app_admin_restaurant_document_file', {'id': restaurant.id, 'documentId': document.id}) }}">view</a></td>
+                <td>
+                    {% if document.status != 'verified' %}
+                        <form method="post" action="{{ path('app_admin_restaurant_document_verify', {'id': restaurant.id, 'documentId': document.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('document' ~ document.id) }}">
+                            <button type="submit">Verify</button>
+                        </form>
+                    {% endif %}
+                    {% if document.status != 'rejected' %}
+                        {{ form_start(document_forms[document.id], {'action': path('app_admin_restaurant_document_reject', {'id': restaurant.id, 'documentId': document.id})}) }}
+                            {{ form_widget(document_forms[document.id]) }}
+                            <button type="submit">Reject document</button>
+                        {{ form_end(document_forms[document.id]) }}
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">No documents uploaded.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin dashboard | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Admin dashboard</h1>
+    <p>
+        <a href="{{ path('app_admin_restaurant_index', {approval: 'pending'}) }}">Restaurant applications</a>
+        | <a href="{{ path('app_admin_rider_index', {approval: 'pending'}) }}">Rider applications</a>
+        | <a href="{{ path('app_admin_customer_index') }}">Customers</a>
+    </p>
+
+    {% for section, values in stats %}
+        {% if values is iterable %}
+            <section id="{{ section }}">
+                <h2>{{ section|replace({'_': ' '})|capitalize }}</h2>
+                <dl>
+                    {% for key, value in values %}
+                        <dt>{{ key|replace({'_': ' '})|capitalize }}</dt>
+                        {% if value is iterable %}
+                            <dd>
+                                <dl>
+                                    {% for part, count in value %}
+                                        <dt>{{ part|replace({'_': ' '})|capitalize }}</dt>
+                                        <dd id="{{ section }}-{{ key }}-{{ part }}">{{ count }}</dd>
+                                    {% endfor %}
+                                </dl>
+                            </dd>
+                        {% else %}
+                            <dd id="{{ section }}-{{ key }}">{{ value }}</dd>
+                        {% endif %}
+                    {% endfor %}
+                </dl>
+            </section>
+        {% else %}
+            <p><small>{{ section|replace({'_': ' '}) }}: {{ values }}</small></p>
+        {% endif %}
+    {% endfor %}
+{% endblock %}

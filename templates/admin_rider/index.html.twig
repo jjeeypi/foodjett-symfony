@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Riders | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Riders</h1>
+
+    <form method="get">
+        <label for="approval">Application</label>
+        <select id="approval" name="approval">
+            <option value="">All</option>
+            {% for value in ['pending', 'approved', 'rejected'] %}
+                <option value="{{ value }}" {{ approval == value ? 'selected' }}>{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="search">Search</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Filter</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr><th>Name</th><th>Vehicle</th><th>Availability</th><th>Application</th><th>Account</th><th>actions</th></tr>
+        </thead>
+        <tbody>
+        {% for rider in riders %}
+            <tr id="rider-{{ rider.id }}"><td>{{ rider.user.name }}</td><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td><td>{{ rider.availabilityStatus }}</td><td>{{ rider.approvalStatus }}</td><td>{{ rider.user.status }}</td>
+                <td><a href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">show</a></td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(riders) }}
+{% endblock %}

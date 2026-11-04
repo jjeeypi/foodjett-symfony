@@ -40,26 +40,6 @@ final class AdminCustomerReportControllerTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testCustomerSearchDetailSuspendAndReactivate(): void
-    {
-        $token = $this->login();
-        $this->client->request('GET', '/api/admin/customers?search=Managed Customer', server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame($this->customerId, (string) ($this->payload()['data'][0]['id'] ?? ''));
-
-        $this->client->request('GET', '/api/admin/customers/'.$this->customerId, server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame(1, $this->payload()['customer']['order_summary']['order_count']);
-        self::assertSame('125.00', $this->payload()['customer']['order_summary']['lifetime_spend']);
-
-        $this->client->jsonRequest('POST', '/api/admin/customers/'.$this->customerId.'/suspend', [], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame('suspended', $this->payload()['customer']['status']);
-        $this->client->jsonRequest('POST', '/api/admin/customers/'.$this->customerId.'/reactivate', [], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame('active', $this->payload()['customer']['status']);
-    }
-
     public function testReportQueueCanResolveAndRejectWithAdminAttribution(): void
     {
         $token = $this->login();

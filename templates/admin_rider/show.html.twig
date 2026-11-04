@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ rider.user.name }} | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_rider_index') }}">back to list</a></p>
+    <h1>{{ rider.user.name }}</h1>
+
+    <table class="table">
+        <tbody>
+            <tr><th>Contact</th><td>{{ rider.user.email }} · {{ rider.user.phone }}</td></tr>
+            <tr><th>Vehicle</th><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td></tr>
+            <tr><th>Availability</th><td>{{ rider.availabilityStatus }}</td></tr>
+            <tr><th>Cash on hand</th><td>PHP {{ rider.cashOnHand }} of PHP {{ rider.cashRemitLimit }}</td></tr>
+        </tbody>
+    </table>
+    <a href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">edit</a>
+
+    <h2>Application</h2>
+    <p id="approval">Status: <strong>{{ rider.approvalStatus }}</strong>{% if rider.rejectionReason %} · {{ rider.rejectionReason }}{% endif %}</p>
+    {% if rider.approvalStatus != 'approved' %}
+        <form method="post" action="{{ path('app_admin_rider_approve', {'id': rider.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ rider.id) }}">
+            <button type="submit">Approve</button>
+        </form>
+    {% endif %}
+    {% if rider.approvalStatus != 'rejected' %}
+        {{ form_start(reject_form, {'action': path('app_admin_rider_reject', {'id': rider.id})}) }}
+            {{ form_widget(reject_form) }}
+            <button type="submit">Reject application</button>
+        {{ form_end(reject_form) }}
+    {% endif %}
+
+    <h2>Account</h2>
+    <p id="account">Login is <strong>{{ rider.user.status }}</strong>.</p>
+    <form method="post" action="{{ path('app_admin_rider_account', {'id': rider.id, 'status': rider.user.status == 'active' ? 'suspended' : 'active'}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('account' ~ rider.id) }}">
+        <button type="submit">{{ rider.user.status == 'active' ? 'Suspend account' : 'Reactivate account' }}</button>
+    </form>
+
+    <h2>Documents</h2>
+    <table class="table">
+        <thead><tr><th>Document</th><th>Status</th><th>Note</th><th>File</th><th>Review</th></tr></thead>
+        <tbody>
+        {% for document in rider.documents %}
+            <tr id="document-{{ document.id }}">
+                <td>{{ document.type|replace({'_': ' '})|capitalize }}</td>
+                <td>{{ document.status }}</td>
+                <td>{{ document.rejectionReason }}</td>
+                <td><a href="{{ path('app_admin_rider_document_file', {'id': rider.id, 'documentId': document.id}) }}">view</a></td>
+                <td>
+                    {% if document.status != 'verified' %}
+                        <form method="post" action="{{ path('app_admin_rider_document_verify', {'id': rider.id, 'documentId': document.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('document' ~ document.id) }}">
+                            <button type="submit">Verify</button>
+                        </form>
+                    {% endif %}
+                    {% if document.status != 'rejected' %}
+                        {{ form_start(document_forms[document.id], {'action': path('app_admin_rider_document_reject', {'id': rider.id, 'documentId': document.id})}) }}
+                            {{ form_widget(document_forms[document.id]) }}
+                            <button type="submit">Reject document</button>
+                        {{ form_end(document_forms[document.id]) }}
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">No documents uploaded.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
