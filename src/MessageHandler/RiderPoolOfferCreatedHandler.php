@@ -6,7 +6,7 @@ use App\Entity\Order;
 use App\Entity\RiderPoolOffer;
 use App\Message\RiderPoolOfferCreated;
 use App\Repository\DeliveryZoneRepository;
-use App\Service\RiderPayCalculator;
+use App\Service\OrderTransitionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -17,7 +17,7 @@ final class RiderPoolOfferCreatedHandler
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly RiderPayCalculator $payCalculator,
+        private readonly OrderTransitionService $transitions,
         private readonly HubInterface $hub,
     ) {
     }
@@ -38,7 +38,7 @@ final class RiderPoolOfferCreatedHandler
         );
         // Pickup distance varies per listening rider. This is the minimum offer value;
         // clients add their own pickup-distance component when rendering the pool.
-        $pay = $this->payCalculator->estimate(0.0, $deliveryDistance, $offer);
+        $pay = $this->transitions->estimateRiderPay(0.0, $deliveryDistance, $offer);
 
         $this->hub->publish(new Update(
             'orders/pool',

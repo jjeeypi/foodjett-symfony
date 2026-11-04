@@ -6,7 +6,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Order;
 use App\Entity\User;
-use App\Service\CheckoutService;
+use App\Service\OrderTransitionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +18,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_CUSTOMER')]
 final class CheckoutController extends AbstractController
 {
-    public function __construct(private readonly CheckoutService $checkout)
+    public function __construct(private readonly OrderTransitionService $transitions)
     {
     }
 
@@ -36,15 +36,15 @@ final class CheckoutController extends AbstractController
         }
 
         try {
-            $result = $this->checkout->checkout($user->getCustomer(), $input);
+            $result = $this->transitions->placeOrder($user->getCustomer(), $input);
         } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         }
 
         return $this->json([
-            'created' => $result->created,
-            'order' => $this->serializeOrder($result->order),
-        ], $result->created ? 201 : 200);
+            'created' => $result['created'],
+            'order' => $this->serializeOrder($result['order']),
+        ], $result['created'] ? 201 : 200);
     }
 
     /** @return array<string, mixed> */

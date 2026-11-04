@@ -20,15 +20,10 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
-use App\Repository\OrderRepository;
-use App\Repository\PlatformSettingRepository;
 use App\Service\OrderTransitionService;
-use App\Service\PaymentTransitionService;
-use App\Service\RiderPoolEscalationService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\Messenger\MessageBusInterface;
 
 final class RiderPoolEscalationServiceTest extends KernelTestCase
 {
@@ -60,7 +55,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         $now = new \DateTimeImmutable();
         $order = $this->createOrder('ESCALATION-NOTIFIED', PaymentMethod::COD, PaymentStatus::PENDING, $now->modify('-9 minutes'));
 
-        $changed = $this->service()->processOrder($order, $now);
+        $changed = $this->service()->escalatePoolOrder($order, $now);
 
         self::assertTrue($changed);
         $order = $this->reload((string) $order->getId());
@@ -77,7 +72,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         $now = new \DateTimeImmutable();
         $order = $this->createOrder('ESCALATION-CARD', PaymentMethod::CARD, PaymentStatus::PAID, $now->modify('-16 minutes'));
 
-        self::assertTrue($this->service()->processOrder($order, $now));
+        self::assertTrue($this->service()->escalatePoolOrder($order, $now));
 
         $order = $this->reload((string) $order->getId());
         self::assertSame(OrderStatus::CANCELLED_NO_RIDER, $order->getStatus());
@@ -102,7 +97,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         $now = new \DateTimeImmutable();
         $order = $this->createOrder('ESCALATION-COD', PaymentMethod::COD, PaymentStatus::PENDING, $now->modify('-16 minutes'));
 
-        self::assertTrue($this->service()->processOrder($order, $now));
+        self::assertTrue($this->service()->escalatePoolOrder($order, $now));
 
         $order = $this->reload((string) $order->getId());
         self::assertSame(OrderStatus::CANCELLED_NO_RIDER, $order->getStatus());
@@ -199,16 +194,9 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
             ->setUpdatedAt($now);
     }
 
-    private function service(): RiderPoolEscalationService
+    private function service(): OrderTransitionService
     {
-        $settings = self::getContainer()->get(PlatformSettingRepository::class);
-
-        return new RiderPoolEscalationService(
-            self::getContainer()->get(OrderRepository::class),
-            $settings,
-            new OrderTransitionService($this->entityManager, $settings, self::getContainer()->get(MessageBusInterface::class)),
-            new PaymentTransitionService($this->entityManager),
-        );
+        return self::getContainer()->get(OrderTransitionService::class);
     }
 
     private function reload(string $id): Order

@@ -17,8 +17,12 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Message\OrderStatusChanged;
+use App\Repository\DeliveryZoneRepository;
+use App\Repository\OrderRepository;
 use App\Repository\PlatformSettingRepository;
+use App\Repository\VoucherRedemptionRepository;
 use App\Service\OrderTransitionService;
+use App\Service\PaymentTransitionService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -60,6 +64,10 @@ final class OrderTransitionServiceTest extends KernelTestCase
             $this->entityManager,
             self::getContainer()->get(PlatformSettingRepository::class),
             $bus,
+            self::getContainer()->get(PaymentTransitionService::class),
+            self::getContainer()->get(OrderRepository::class),
+            self::getContainer()->get(DeliveryZoneRepository::class),
+            self::getContainer()->get(VoucherRedemptionRepository::class),
         );
 
         $updated = $service->transitionSequence(
@@ -96,6 +104,10 @@ final class OrderTransitionServiceTest extends KernelTestCase
             self::getContainer()->get(PlatformSettingRepository::class),
             $this->recordingBus(static function (): void {
             }),
+            self::getContainer()->get(PaymentTransitionService::class),
+            self::getContainer()->get(OrderRepository::class),
+            self::getContainer()->get(DeliveryZoneRepository::class),
+            self::getContainer()->get(VoucherRedemptionRepository::class),
         );
 
         try {

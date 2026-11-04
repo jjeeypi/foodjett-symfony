@@ -17,7 +17,6 @@ use App\Repository\OrderRepository;
 use App\Service\ApiPaginator;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
-use App\Service\RiderPoolService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,7 +32,6 @@ final class AdminOrderController extends AbstractController
     public function __construct(
         private readonly OrderTransitionService $transitions,
         private readonly PaymentTransitionService $payments,
-        private readonly RiderPoolService $riderPool,
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogRepository $audit,
@@ -124,7 +122,7 @@ final class AdminOrderController extends AbstractController
         }
 
         try {
-            $order = $this->riderPool->accept($order, $rider, adminOverride: true);
+            $order = $this->transitions->acceptPoolOrder($order, $rider, adminOverride: true);
         } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (\DomainException) {

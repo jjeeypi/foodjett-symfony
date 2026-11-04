@@ -23,7 +23,7 @@ use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
 use App\Repository\DeliveryZoneRepository;
-use App\Service\RiderPoolService;
+use App\Service\OrderTransitionService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -146,7 +146,7 @@ final class RiderPoolControllerTest extends WebTestCase
         self::assertNotNull($secondUser->getRider());
 
         try {
-            self::getContainer()->get(RiderPoolService::class)->accept($staleSnapshot, $secondUser->getRider());
+            self::getContainer()->get(OrderTransitionService::class)->acceptPoolOrder($staleSnapshot, $secondUser->getRider());
             self::fail('The stale competing acceptance should fail after the database lock is acquired.');
         } catch (ConflictHttpException $exception) {
             self::assertSame('This order was just taken by another rider.', $exception->getMessage());
