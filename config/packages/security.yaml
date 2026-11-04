@@ -30,9 +30,34 @@ security:
             stateless: true
             provider: foodjett_users
             jwt: ~
+        # The web pages: session login with email or phone.
+        main:
+            lazy: true
+            provider: foodjett_users
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+                default_target_path: app_home
+            logout:
+                path: app_logout
+                target: app_home
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 1209600 # two weeks
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
+
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_USER]
 
     # Note: Only the *first* matching rule is applied
     access_control:
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/restaurant, roles: ROLE_RESTAURANT }
+        - { path: ^/rider, roles: ROLE_RIDER }
+        - { path: ^/(?:account|cart|checkout|orders), roles: ROLE_CUSTOMER }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/register(?:/restaurant|/rider)?$, roles: PUBLIC_ACCESS }

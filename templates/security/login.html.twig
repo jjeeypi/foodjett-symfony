@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Log in | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Log in</h1>
+
+    <form method="post">
+        {% if error %}
+            <p class="error" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</p>
+        {% endif %}
+
+        {% if app.user %}
+            <p>You are logged in as {{ app.user.userIdentifier }}. <a href="{{ path('app_logout') }}">Log out</a></p>
+        {% endif %}
+
+        <p>
+            <label for="username">Email or phone number</label>
+            <input type="text" value="{{ last_username }}" name="_username" id="username" autocomplete="username" required autofocus>
+        </p>
+        <p>
+            <label for="password">Password</label>
+            <input type="password" name="_password" id="password" autocomplete="current-password" required>
+        </p>
+        <p>
+            <input type="checkbox" name="_remember_me" id="_remember_me">
+            <label for="_remember_me">Remember me</label>
+        </p>
+        <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
+
+        <button type="submit">Log in</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Foodjett</h1>
+    <p>Food delivery from local restaurants.</p>
+
+    {% if not app.user %}
+        <p><a href="{{ path('app_login') }}">Log in</a> to order.</p>
+    {% endif %}
+{% endblock %}
