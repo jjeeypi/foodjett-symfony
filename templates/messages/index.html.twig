@@ -1,35 +1,50 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Messages | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('users/' ~ app.user.id ~ '/notifications', null, {withCredentials: true}) }} hidden></div>
-    <h1>Messages</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Let’s keep in touch</div>
+            <h1>Your <span>messages.</span></h1>
+            <p>Chats with restaurants, riders and customers open with each order.</p>
+        </div>
+    </div>
 
-    <table>
-        <thead>
-            <tr><th>Order</th><th>Chat</th><th>Unread</th><th>Last activity</th></tr>
-        </thead>
-        <tbody>
-            {% for conversation in conversations %}
-                {% set order = conversation.order %}
-                <tr>
-                    <td><a href="{{ path('app_conversation', {id: conversation.id}) }}">{{ order.orderNumber }}</a></td>
-                    <td>
-                        {% if conversation.type == constant('App\\Entity\\Conversation::TYPE_CUSTOMER_RESTAURANT') %}
-                            Customer and {{ order.restaurant.name }}
-                        {% else %}
-                            Customer and rider
-                        {% endif %}
-                        {% if conversation.closed %}(closed){% endif %}
-                    </td>
-                    <td>{{ unread[conversation.id] ?? 0 }}</td>
-                    <td>{{ conversation.updatedAt ? conversation.updatedAt|date('M j, g:i A') : '' }}</td>
-                </tr>
-            {% else %}
-                <tr><td colspan="4">No conversations yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {{ knp_pagination_render(conversations) }}
+    {% if conversations.totalItemCount == 0 %}
+        <div class="empty">
+            {{ icon('message') }}
+            <h2>No conversations yet</h2>
+            <p>Restaurant and rider conversations appear here when an order is under way.</p>
+        </div>
+    {% else %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Order</th><th>Chat</th><th>Unread</th><th>Last activity</th></tr>
+                </thead>
+                <tbody>
+                    {% for conversation in conversations %}
+                        {% set order = conversation.order %}
+                        <tr>
+                            <td><a href="{{ path('app_conversation', {id: conversation.id}) }}"><strong>{{ order.orderNumber }}</strong></a></td>
+                            <td>
+                                {% if conversation.type == constant('App\\Entity\\Conversation::TYPE_CUSTOMER_RESTAURANT') %}
+                                    {{ icon('store', 'icon-sm') }} Customer and {{ order.restaurant.name }}
+                                {% else %}
+                                    {{ icon('bike', 'icon-sm') }} Customer and rider
+                                {% endif %}
+                                {% if conversation.closed %}<span class="badge">closed</span>{% endif %}
+                            </td>
+                            <td>{% set count = unread[conversation.id] ?? 0 %}{% if count > 0 %}<span class="nav-count" style="display: inline-grid; margin: 0">{{ count }}</span>{% else %}0{% endif %}</td>
+                            <td class="subtle">{{ conversation.updatedAt ? conversation.updatedAt|date('M j, g:i A') : '' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {{ knp_pagination_render(conversations) }}
+    {% endif %}
 {% endblock %}

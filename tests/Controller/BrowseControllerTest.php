@@ -137,7 +137,7 @@ class BrowseControllerTest extends CustomerWebTestCase
         $crawler = $this->client->request('GET', $url);
         self::assertResponseIsSuccessful();
 
-        return $crawler->filter('h2:contains("Dishes") + ul li > a')->each(fn ($link) => $link->text());
+        return $crawler->filter('h2:contains("Dishes") + ul li a')->each(fn ($link) => $link->text());
     }
 
     private function review(Restaurant $restaurant, int $rating, string $comment = 'Review'): RestaurantReview

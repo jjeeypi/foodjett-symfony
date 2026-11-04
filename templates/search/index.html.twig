@@ -1,54 +1,68 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Search | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Search</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">What’s your craving?</div>
+            <h1>Search <span>dishes.</span></h1>
+            <p>Find a restaurant or a dish you can order right now.</p>
+        </div>
+    </div>
 
-    <form method="get" action="{{ path('app_search') }}">
-        <label for="q">Restaurant or dish</label>
-        <input type="search" id="q" name="q" value="{{ query }}">
-
-        <label for="category">Category</label>
-        <input type="text" id="category" name="category" value="{{ filters.category }}">
-
-        <label for="min_price">Min price</label>
-        <input type="text" id="min_price" name="min_price" value="{{ filters.min_price }}" inputmode="decimal">
-
-        <label for="max_price">Max price</label>
-        <input type="text" id="max_price" name="max_price" value="{{ filters.max_price }}" inputmode="decimal">
-
-        <button type="submit">Search</button>
-    </form>
+    <div class="filter-bar">
+        <form method="get" action="{{ path('app_search') }}">
+            <label class="search" for="q">{{ icon('search', 'icon-sm') }}<span class="sr-only">Restaurant or dish</span>
+                <input type="search" id="q" name="q" value="{{ query }}" placeholder="Restaurant or dish, like sisig or Starbucks">
+            </label>
+            <label class="chip" for="category"><span class="sr-only">Category</span>
+                <input type="text" id="category" name="category" value="{{ filters.category }}" placeholder="Category" style="border: 0; min-height: 38px; padding: 0; width: 120px; background: none">
+            </label>
+            <label class="chip" for="min_price">₱<span class="sr-only">Min price</span>
+                <input type="text" id="min_price" name="min_price" value="{{ filters.min_price }}" inputmode="decimal" placeholder="Min" style="border: 0; min-height: 38px; padding: 0; width: 64px; background: none">
+            </label>
+            <label class="chip" for="max_price">₱<span class="sr-only">Max price</span>
+                <input type="text" id="max_price" name="max_price" value="{{ filters.max_price }}" inputmode="decimal" placeholder="Max" style="border: 0; min-height: 38px; padding: 0; width: 64px; background: none">
+            </label>
+            <button type="submit">{{ icon('search', 'icon-sm') }} Search</button>
+        </form>
+    </div>
 
     {% for error in errors %}
-        <p class="error" role="alert">{{ error }}</p>
+        <p class="error callout callout-danger" role="alert">{{ error }}</p>
     {% endfor %}
 
     {% if searched and errors is empty %}
         {% if query %}
             <h2>Restaurants</h2>
-            <ul>
+            <ul class="result-list">
                 {% for restaurant in restaurants %}
-                    <li><a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a> · {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}</li>
+                    <li><a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a> <span class="subtle">· {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}</span></li>
                 {% else %}
-                    <li>No restaurants match.</li>
+                    <li class="subtle">No restaurants match.</li>
                 {% endfor %}
             </ul>
         {% endif %}
 
         <h2>Dishes you can order now</h2>
-        <ul>
+        <ul class="result-list dishes">
             {% for item in dishes %}
                 {% set restaurant = item.menuCategory.restaurant %}
                 <li>
-                    <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}#item-{{ item.id }}">{{ item.name }}</a>
-                    · PHP {{ item.basePrice }} · {{ restaurant.name }} · {{ item.menuCategory.name }}
+                    <span class="dish-photo" style="width: 56px; height: 56px">{% if item.photoPath %}<img src="{{ asset(item.photoPath) }}" alt="" width="56" height="56" loading="lazy">{% endif %}</span>
+                    <span class="grow">
+                        <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}#item-{{ item.id }}">{{ item.name }}</a>
+                        <span class="subtle" style="display: block">₱{{ item.basePrice }} · {{ restaurant.name }} · {{ item.menuCategory.name }}</span>
+                    </span>
                 </li>
             {% else %}
-                <li>No dishes match.</li>
+                <li class="subtle">No dishes match.</li>
             {% endfor %}
         </ul>
         {{ knp_pagination_render(dishes) }}
+    {% else %}
+        <div class="empty">{{ icon('search') }}<h2>Hungry for something?</h2><p>Type a dish, a restaurant or a category.</p></div>
     {% endif %}
 {% endblock %}
