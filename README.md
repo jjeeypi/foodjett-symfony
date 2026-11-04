@@ -58,7 +58,21 @@ visual design comes later.
    docker compose exec app php bin/console app:make-admin "Foodjett Admin" admin@example.test "<choose-a-password>"
    ```
 
-5. Open the application at <http://localhost:8080>. The health check is
+5. Optionally load the demo catalog: 50 Philippine restaurant chains with
+   their menus, approved and open, at made-up Dumaguete addresses inside a
+   10 km delivery zone. Each owner signs in as
+   `<slug>@restaurants.foodjett.test` (for example
+   `jollibee@restaurants.foodjett.test`) with the password you pass. Running it
+   again skips the restaurants that already exist.
+
+   ```bash
+   docker compose exec app php bin/console app:seed-catalog --password="<choose-a-password>"
+   ```
+
+   The menus come from `data/catalog.json`. Prices are approximate, and the
+   descriptions that the source lacked were written for this project.
+
+6. Open the application at <http://localhost:8080>. The health check is
    <http://localhost:8080/api/health>.
 
 On startup the `app` container runs all Doctrine migrations before Apache
@@ -110,6 +124,8 @@ MariaDB (for example XAMPP).
 5. Start the web server: `symfony server:start --no-tls`
 6. Start the scheduler worker:
    `php bin/console messenger:consume scheduler_default -vv`
+7. Optionally load the demo catalog:
+   `php bin/console app:seed-catalog --password="<choose-a-password>"`
 
 ## Tests
 
