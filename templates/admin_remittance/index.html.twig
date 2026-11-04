@@ -1,20 +1,47 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminRemittanceController!{% endblock %}
+{% block title %}Cash remittances | Foodjett admin{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Cash remittances</h1>
+    <p>Confirm a remittance only once the money has arrived. It lowers the rider's cash on hand by the amount.</p>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <form method="get">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value }}</option>{% endfor %}
+        </select>
+        <button type="submit">Filter</button>
+    </form>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/AdminRemittanceController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/admin_remittance/index.html.twig</code></li>
-    </ul>
-</div>
+    <table class="table">
+        <thead>
+            <tr><th>Rider</th><th>Amount</th><th>Reference</th><th>Cash on hand</th><th>Status</th><th>Sent</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for remittance in remittances %}
+            <tr id="remittance-{{ remittance.id }}">
+                <td><a href="{{ path('app_admin_rider_show', {id: remittance.rider.id}) }}">{{ remittance.rider.user.name }}</a></td>
+                <td>PHP {{ remittance.amount }}</td>
+                <td>{{ remittance.referenceNote }}</td>
+                <td class="cash">PHP {{ remittance.rider.cashOnHand }}</td>
+                <td class="status">{{ remittance.status }}{% if remittance.confirmedByAdmin %} by {{ remittance.confirmedByAdmin.user.name }}{% endif %}</td>
+                <td>{{ remittance.createdAt|date('M j, Y g:i A') }}</td>
+                <td>
+                    {% if remittance.status == 'pending' %}
+                        <form method="post" action="{{ path('app_admin_remittance_confirm', {id: remittance.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('remittance' ~ remittance.id) }}">
+                            <button type="submit">Confirm received</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7">no records found</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(remittances) }}
 {% endblock %}

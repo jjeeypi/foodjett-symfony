@@ -1,20 +1,52 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminRiderPayoutController!{% endblock %}
+{% block title %}Rider payouts | Foodjett admin{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a> | <a href="{{ path('app_admin_restaurant_payout') }}">Restaurant payouts</a></p>
+    <h1>Rider payouts</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <h2>Generate</h2>
+    <p>One payout per rider: everything earned on orders delivered in the period. Riders already paid for an overlapping period are skipped.</p>
+    {{ form_start(form, {action: path('app_admin_rider_payout_generate')}) }}
+        {{ form_widget(form) }}
+        <button type="submit">Generate payouts</button>
+    {{ form_end(form) }}
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/AdminRiderPayoutController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/admin_rider_payout/index.html.twig</code></li>
-    </ul>
-</div>
+    <h2>Payouts</h2>
+    <form method="get">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value }}</option>{% endfor %}
+        </select>
+        <button type="submit">Filter</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr><th>Rider</th><th>Period</th><th>Total</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for payout in payouts %}
+            <tr id="payout-{{ payout.id }}">
+                <td><a href="{{ path('app_admin_rider_show', {id: payout.rider.id}) }}">{{ payout.rider.user.name }}</a></td>
+                <td>{{ payout.periodStart|date('M j, Y') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
+                <td class="net">PHP {{ payout.totalAmount }}</td>
+                <td class="status">{{ payout.status }}{% if payout.paidAt %} {{ payout.paidAt|date('M j, Y') }}{% endif %}</td>
+                <td>
+                    {% if payout.status == 'pending' %}
+                        <form method="post" action="{{ path('app_admin_rider_payout_paid', {id: payout.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('payout' ~ payout.id) }}">
+                            <button type="submit">Mark paid</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">no records found</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(payouts) }}
 {% endblock %}
