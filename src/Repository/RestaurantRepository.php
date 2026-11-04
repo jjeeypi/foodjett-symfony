@@ -18,13 +18,17 @@ class RestaurantRepository extends ServiceEntityRepository
     }
 
     /**
-     * Approved restaurants in name order.
+     * Approved restaurants in name order, with their reviews and opening hours loaded in the same
+     * query, because the lists show ratings and open status for every card.
      *
      * @return list<Restaurant>
      */
     public function findApproved(): array
     {
         return $this->createQueryBuilder('restaurant')
+            ->addSelect('review', 'hours')
+            ->leftJoin('restaurant.reviews', 'review')
+            ->leftJoin('restaurant.operatingHours', 'hours')
             ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
             ->orderBy('restaurant.name', 'ASC')->getQuery()->getResult();
     }

@@ -1,14 +1,98 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, restaurant_card %}
 
-{% block title %}Foodjett{% endblock %}
+{% block title %}Foodjett · Good food. Good mood.{% endblock %}
 
 {% block body %}
-    <h1>Foodjett</h1>
-    <p>Food delivery from local restaurants.</p>
+    <div class="welcome-row">
+        <div>
+            <div class="eyebrow">A little hungry? You’re in the right place.</div>
+            <h1>Good food. <span class="soft">Good mood.</span></h1>
+            <p class="lead">{% if app.user %}Hey {{ app.user.name|split(' ')|first }}, your{% else %}Your{% endif %} neighborhood favorites, delivered fresh to your door.</p>
+        </div>
+        <span class="local-note">{{ icon('pin', 'icon-sm') }} Made for Dumaguete</span>
+    </div>
+
+    <section class="hero" aria-label="Welcome">
+        <div class="hero-copy">
+            <span class="hero-badge">{{ icon('bolt', 'icon-sm') }} Big flavor. Local favorites.</span>
+            <h2>Your cravings,<br>delivered.</h2>
+            <p>Fifty local favorites around Dumaguete,<br>from crispy fried chicken to Sans Rival.</p>
+            {% if app.user %}
+                <a class="btn" href="#restaurants">Find your next bite {{ icon('arrow', 'icon-sm') }}</a>
+            {% else %}
+                <a class="btn" href="{{ path('app_register') }}">Find your first bite {{ icon('arrow', 'icon-sm') }}</a>
+                <small>Already with us? <a href="{{ path('app_login') }}"><b>Log in</b></a> · Cash or online payment</small>
+            {% endif %}
+        </div>
+        <div class="hero-photo">
+            <img src="{{ asset('images/catalog/items/tombstone-burger-double-patty-burger-with-bacon-and-cheese-s.webp') }}" alt="A double bacon cheeseburger" width="768" height="768">
+            <div class="photo-shade"></div>
+        </div>
+        <div class="hero-sticker">{{ icon('bike') }}<strong>Fresh to<br>your doorstep.</strong><span>That’s the Foodjett way.</span></div>
+    </section>
+
+    <section class="category-section" style="margin-top: 32px">
+        <div class="section-title">
+            <h2>What’s your craving?</h2>
+            <span>Something for every mood</span>
+        </div>
+        <nav class="cravings" aria-label="Cravings">
+            <a class="craving{{ craving ? '' : ' selected' }}" href="{{ path('app_home') }}#restaurants"><span><svg aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#crave-all"></use></svg></span>All</a>
+            {% for key, item in cravings %}
+                <a class="craving{{ craving == key ? ' selected' }}" href="{{ path('app_home', {craving: key}) }}#restaurants" {% if craving == key %}aria-current="true"{% endif %}><span><svg aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#{{ item.icon }}"></use></svg></span>{{ item.label }}</a>
+            {% endfor %}
+        </nav>
+    </section>
+
+    <section id="restaurants">
+        <div class="list-head">
+            <div>
+                <h2>{{ craving ? cravings[craving].label ~ ' near you' : 'Good eats near you' }} <span class="badge badge-green"><i class="dot"></i> Open now</span></h2>
+                <p>{{ total }} {{ total == 1 ? 'place' : 'places' }} ready to make your day a little tastier</p>
+            </div>
+            <form class="search" method="get" action="{{ path('app_search') }}" role="search">
+                {{ icon('search', 'icon-sm') }}
+                <label class="sr-only" for="home-search">Search dishes</label>
+                <input type="search" id="home-search" name="q" placeholder="Search restaurants or dishes">
+            </form>
+        </div>
+
+        {% if restaurants is empty %}
+            <div class="empty">
+                {{ icon('search') }}
+                <h2>No restaurants here yet</h2>
+                <p>Try another craving.</p>
+                <a class="btn btn-light" href="{{ path('app_home') }}">Show everything</a>
+            </div>
+        {% else %}
+            <div class="restaurant-grid">
+                {% for restaurant in restaurants %}
+                    {{ restaurant_card(restaurant, favoriteIds) }}
+                {% endfor %}
+            </div>
+            {% if total > restaurants|length %}
+                <p style="text-align: center; margin-top: 26px">
+                    <a class="btn btn-light" href="{{ path('app_restaurants', craving ? {craving: craving} : {}) }}">See all {{ total }} restaurants {{ icon('arrow', 'icon-sm') }}</a>
+                </p>
+            {% endif %}
+        {% endif %}
+    </section>
 
     {% if not app.user %}
-        <p><a href="{{ path('app_login') }}">Log in</a> or <a href="{{ path('app_register') }}">create an account</a> to order.</p>
-        <p>Own a restaurant? <a href="{{ path('app_register_restaurant') }}">Apply to sell on Foodjett</a>.
-            Want to deliver? <a href="{{ path('app_register_rider') }}">Apply as a rider</a>.</p>
+        <section class="grid-2" style="margin-top: 34px">
+            <div class="panel">
+                <div class="eyebrow">For restaurants</div>
+                <h2>Own a restaurant?</h2>
+                <p class="subtle">Reach hungry neighbors across Dumaguete. Apply in a few minutes.</p>
+                <a class="btn btn-light" href="{{ path('app_register_restaurant') }}">Apply to sell on Foodjett {{ icon('arrow', 'icon-sm') }}</a>
+            </div>
+            <div class="panel">
+                <div class="eyebrow">For riders</div>
+                <h2>Want to deliver?</h2>
+                <p class="subtle">Pick the deliveries that work for you and get paid for every kilometer.</p>
+                <a class="btn btn-light" href="{{ path('app_register_rider') }}">Apply as a rider {{ icon('arrow', 'icon-sm') }}</a>
+            </div>
+        </section>
     {% endif %}
 {% endblock %}
