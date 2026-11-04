@@ -1,31 +1,101 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Order pool | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('orders/pool') }} hidden></div>
-    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
-    <h1>Orders near you</h1>
+    {% set rider = app.user.rider %}
+    {% set today = 'now'|date('Y-m-d') %}
+    {% set todays = rider ? rider.earnings|filter(e => e.createdAt and e.createdAt|date('Y-m-d') == today) : [] %}
+    {% set ratings = rider ? rider.reviews|map(r => r.rating) : [] %}
 
-    {% if reason %}<p id="pool-reason">{{ reason }}</p>{% endif %}
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your road. Your rhythm.</div>
+            <h1>Your next delivery <span>awaits.</span></h1>
+            <p>Find a nearby order, make a delivery, and make someone’s day.</p>
+        </div>
+        <span class="status-note">{{ 'now'|date('l, F j') }}</span>
+    </div>
 
-    {% for offer in offers %}
-        <article id="offer-{{ offer.order_id }}">
-            <h2>{{ offer.restaurant.name }}</h2>
-            <p>
-                Earn about <strong>PHP {{ offer.estimated_pay }}</strong>
-                · {{ offer.pickup_distance_km }} km to the restaurant, {{ offer.delivery_distance_km }} km to the customer
-                · {{ offer.payment_method == 'cod' ? 'cash on delivery' : 'paid online' }}
-                {% if offer.estimated_ready_at %}· food ready about {{ offer.estimated_ready_at|date('g:i A') }}{% endif %}
-            </p>
-            <form method="post" action="{{ path('app_rider_pool_accept', {id: offer.order_id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('pool' ~ offer.order_id) }}">
-                <button type="submit">Accept</button>
-            </form>
-            <form method="post" action="{{ path('app_rider_pool_decline', {id: offer.order_id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('pool' ~ offer.order_id) }}">
-                <button type="submit">Decline</button>
-            </form>
-        </article>
-    {% endfor %}
+    <div class="stats">
+        <div class="stat"><span class="stat-icon">{{ icon('bolt') }}</span><span><small>Today’s earnings</small><strong>₱{{ todays|reduce((sum, e) => sum + e.totalEarned, 0)|number_format(2) }}</strong></span></div>
+        <div class="stat"><span class="stat-icon">{{ icon('bag') }}</span><span><small>Completed today</small><strong>{{ todays|length }}<em> {{ todays|length == 1 ? 'delivery' : 'deliveries' }}</em></strong></span></div>
+        <div class="stat"><span class="stat-icon">{{ icon('star') }}</span><span><small>Your rider rating</small><strong>{{ ratings is empty ? '–' : (ratings|reduce((s, r) => s + r, 0) / ratings|length)|number_format(1) }}<em> / 5.0</em></strong></span></div>
+    </div>
+
+    <div class="split">
+        <section>
+            <div class="list-head">
+                <div>
+                    <h2>Nearby deliveries <span class="badge badge-green">{{ offers|length }}</span></h2>
+                    <p>One delivery at a time. Pick what works for you.</p>
+                </div>
+                <a class="btn btn-light btn-sm" href="{{ path('app_rider_dashboard') }}">{{ icon('pin', 'icon-sm') }} Update location</a>
+            </div>
+
+            {% if reason %}
+                <div class="empty" id="pool-reason">
+                    {{ icon('bike') }}
+                    <h2>Nothing to pick up right now</h2>
+                    <p>{{ reason }}</p>
+                    <a class="btn" href="{{ path('app_rider_dashboard') }}">Check your status</a>
+                </div>
+            {% elseif offers is empty %}
+                <div class="empty">
+                    {{ icon('bike') }}
+                    <h2>You’re all caught up.</h2>
+                    <p>New orders near you appear here on their own.</p>
+                </div>
+            {% endif %}
+
+            {% for offer in offers %}
+                <article class="offer" id="offer-{{ offer.order_id }}">
+                    <div class="offer-top">
+                        <span class="offer-icon">{{ icon('store') }}</span>
+                        <div>
+                            <small>ORDER #{{ offer.order_id }}{% if loop.first %} <span class="badge badge-green">Recommended</span>{% endif %}</small>
+                            <h3>{{ offer.restaurant.name }}</h3>
+                            <p>{{ icon('pin', 'icon-sm') }} {{ offer.pickup_distance_km }} km from you</p>
+                        </div>
+                        <div class="offer-pay">₱{{ offer.estimated_pay }}<small>estimated pay</small></div>
+                    </div>
+                    <p class="sr-only">Earn about ₱{{ offer.estimated_pay }}</p>
+                    <div class="offer-metrics">
+                        <span>{{ offer.pickup_distance_km }} km<small>to pickup</small></span>
+                        <span>{{ offer.delivery_distance_km }} km<small>delivery route</small></span>
+                        <span>{{ offer.estimated_ready_at ? offer.estimated_ready_at|date('g:i A') : 'Soon' }}<small>food ready</small></span>
+                    </div>
+                    <div class="offer-tags">
+                        <span class="badge {{ offer.payment_method == 'cod' ? 'badge-warn' : 'badge-green' }}">{{ offer.payment_method == 'cod' ? 'cash on delivery' : 'paid online' }}</span>
+                    </div>
+                    <div class="offer-actions">
+                        <form method="post" action="{{ path('app_rider_pool_decline', {id: offer.order_id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('pool' ~ offer.order_id) }}">
+                            <button class="btn-light" type="submit">Decline</button>
+                        </form>
+                        <form method="post" action="{{ path('app_rider_pool_accept', {id: offer.order_id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('pool' ~ offer.order_id) }}">
+                            <button class="btn-green" type="submit">Accept {{ icon('arrow', 'icon-sm') }}</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+
+        <aside class="stack">
+            <div class="panel">
+                <span class="badge badge-green"><i class="dot"></i> {{ rider and rider.availabilityStatus == 'available' ? 'You’re in a good spot' : 'You’re offline' }}</span>
+                <h3 style="margin-top: 12px">A little local. A lot of possibility.</h3>
+                <p class="subtle" style="margin-top: 8px">Orders within reach of your last shared location appear here. Exact customer addresses show only after you accept.</p>
+                <div class="line" style="border-top: 1px solid var(--line); margin-top: 8px">
+                    {{ icon('pin', 'icon-sm') }}
+                    <span class="grow subtle">{% if rider and rider.lastLocationAt %}Location shared {{ rider.lastLocationAt|date('g:i A') }}{% else %}Location not shared yet{% endif %}</span>
+                    <a href="{{ path('app_rider_dashboard') }}">Update</a>
+                </div>
+            </div>
+            <div class="callout">{{ icon('bolt') }}<span><strong>A good day starts with a safe ride.</strong><br><span class="subtle">Take your time. We’re with you every kilometer.</span></span></div>
+        </aside>
+    </div>
 {% endblock %}

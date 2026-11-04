@@ -48,7 +48,7 @@ class RiderPoolPageTest extends WebTestCase
         self::assertCount(1, $crawler->filter('#offer-'.$card->getId()));
         self::assertSelectorTextContains('#offer-'.$card->getId(), 'Pool Test Restaurant');
         self::assertSelectorTextContains('#offer-'.$card->getId(), 'paid online');
-        self::assertMatchesRegularExpression('/Earn about PHP \d+\.\d{2}/', $crawler->filter('#offer-'.$card->getId())->text());
+        self::assertMatchesRegularExpression('/Earn about ₱\d+\.\d{2}/u', $crawler->filter('#offer-'.$card->getId())->text());
         self::assertSame('orders/pool', $crawler->filter('#live')->attr('data-symfony--ux-turbo--mercure-turbo-stream-topic-value'), 'The pool refreshes as offers come and go.');
     }
 
