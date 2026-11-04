@@ -36,10 +36,10 @@ class Voucher
     #[ORM\Column(length: 32, enumType: VoucherType::class)]
     private VoucherType $type;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $value = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $minOrderAmount = '0.00';
 
     #[ORM\Column(type: Types::INTEGER, nullable: true, options: ['unsigned' => true])]

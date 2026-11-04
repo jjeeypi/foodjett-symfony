@@ -24,7 +24,7 @@ class RiderCashRemittance
     #[ORM\JoinColumn(name: 'rider_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private Rider $rider;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $amount;
 
     #[ORM\Column(length: 255, nullable: true)]

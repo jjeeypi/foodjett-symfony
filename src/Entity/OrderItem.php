@@ -37,7 +37,7 @@ class OrderItem
     #[ORM\Column(type: Types::INTEGER, options: ['unsigned' => true])]
     private int $quantity;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $unitPrice;
 
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]

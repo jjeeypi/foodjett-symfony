@@ -27,7 +27,7 @@ class OrderItemAddon
     #[ORM\JoinColumn(name: 'menu_item_addon_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private MenuItemAddon $menuItemAddon;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $price;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]

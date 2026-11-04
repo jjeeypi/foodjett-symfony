@@ -27,7 +27,7 @@ class MenuItemAddon
     #[ORM\Column(length: 255)]
     private string $name;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $price;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]

@@ -32,10 +32,10 @@ class Payment
     #[ORM\Column(length: 32, enumType: PaymentStatus::class, options: ['default' => 'pending'])]
     private PaymentStatus $status = PaymentStatus::PENDING;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $amount;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $refundedAmount = '0.00';
 
     #[ORM\Column(length: 255, nullable: true)]
