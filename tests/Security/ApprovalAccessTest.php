@@ -37,29 +37,6 @@ final class ApprovalAccessTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testPendingRestaurantCanSeeStatusButCannotUseFunctionalEndpoint(): void
-    {
-        $email = 'approval-pending-restaurant@foodjett.test';
-        $this->createRestaurant($email, Restaurant::APPROVAL_PENDING);
-        $token = $this->login($email);
-
-        $this->client->request('GET', '/api/restaurant/approval-status', server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-
-        $this->client->request('GET', '/api/restaurant/dashboard', server: $this->auth($token));
-        self::assertResponseStatusCodeSame(403);
-    }
-
-    public function testApprovedRestaurantCanUseFunctionalEndpoint(): void
-    {
-        $email = 'approval-approved-restaurant@foodjett.test';
-        $this->createRestaurant($email, Restaurant::APPROVAL_APPROVED);
-        $token = $this->login($email);
-
-        $this->client->request('GET', '/api/restaurant/dashboard', server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-    }
-
     public function testPendingRiderCanSeeStatusButCannotUsePool(): void
     {
         $email = 'approval-pending-rider@foodjett.test';

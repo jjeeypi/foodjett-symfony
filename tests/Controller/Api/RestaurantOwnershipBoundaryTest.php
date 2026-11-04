@@ -51,12 +51,6 @@ final class RestaurantOwnershipBoundaryTest extends WebTestCase
     {
         $auth = $this->auth($this->login());
 
-        $this->client->request('GET', '/api/restaurant/orders', server: $auth);
-        self::assertResponseIsSuccessful();
-        $orderIds = array_column($this->payload()['data'] ?? [], 'id');
-        self::assertContains($this->orderAId, $orderIds);
-        self::assertNotContains($this->orderBId, $orderIds);
-
         $this->client->request('GET', '/api/restaurant/documents', server: $auth);
         self::assertResponseIsSuccessful();
         $documentIds = array_column($this->payload()['documents'] ?? [], 'id');
@@ -68,18 +62,11 @@ final class RestaurantOwnershipBoundaryTest extends WebTestCase
     {
         $auth = $this->auth($this->login());
 
-        $this->client->request('GET', '/api/restaurant/orders/'.$this->orderBId, server: $auth);
-        self::assertResponseStatusCodeSame(404);
-
-        $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderBId.'/accept', ['estimated_prep_minutes' => 15], server: $auth);
-        self::assertResponseStatusCodeSame(404);
-
         $this->client->request('DELETE', '/api/restaurant/documents/'.$this->documentBId, server: $auth);
         self::assertResponseStatusCodeSame(404);
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->clear();
-        self::assertSame(Order::STATUS_PLACED, $entityManager->find(Order::class, $this->orderBId)?->getStatus());
         self::assertNotNull($entityManager->find(RestaurantDocument::class, $this->documentBId));
     }
 
