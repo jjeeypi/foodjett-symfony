@@ -83,8 +83,9 @@ class BrowseControllerTest extends CustomerWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', $this->restaurant->getName());
         self::assertSelectorTextContains('body', '5.0 ★ (11 reviews)');
-        self::assertSelectorTextContains('section h3', 'Rice Meals');
-        self::assertSelectorTextContains('#item-'.$item->getId(), 'Adobo · PHP 145.00');
+        self::assertSelectorTextContains('section.menu-section h2', 'Rice Meals');
+        self::assertSelectorTextContains('#item-'.$item->getId().' h3', 'Adobo');
+        self::assertSelectorTextContains('#item-'.$item->getId().' .dish-price', '₱145.00');
         self::assertCount(1, $crawler->filter('h2:contains("Hours") + ul li'));
         self::assertCount(10, $crawler->filter('article'));
 
