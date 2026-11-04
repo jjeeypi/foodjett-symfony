@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, restaurant_card %}
+
+{% block title %}Favorites | Foodjett{% endblock %}
+
+{% block body %}
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your Foodjett</div>
+            <h1>Your tried-and-loved <span>favorites.</span></h1>
+            <p>The places you love, all in one spot.</p>
+        </div>
+    </div>
+
+    {% if restaurants is empty %}
+        <div class="empty">
+            {{ icon('heart') }}
+            <h2>No favorites yet</h2>
+            <p>Tap the heart on a restaurant to save it here.</p>
+            <a class="btn" href="{{ path('app_restaurants') }}">Explore restaurants {{ icon('arrow', 'icon-sm') }}</a>
+        </div>
+    {% else %}
+        <div class="list-head">
+            <div>
+                <h2>Saved restaurants</h2>
+                <p>{{ restaurants|length }} {{ restaurants|length == 1 ? 'place' : 'places' }} ready to make your day a little tastier</p>
+            </div>
+        </div>
+        <div class="restaurant-grid">
+            {% for restaurant in restaurants %}
+                {{ restaurant_card(restaurant, favoriteIds) }}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

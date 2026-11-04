@@ -2,6 +2,40 @@
 {% macro icon(name, class = '') -%}
     <svg class="icon {{ class }}" aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#{{ name }}"></use></svg>
 {%- endmacro %}
+{#- Restaurant card used by explore, the restaurant list, search and favorites. -#}
+{% macro restaurant_card(restaurant, favoriteIds = [], distance = null) -%}
+    {% from _self import icon %}
+    {% set saved = (restaurant.id ~ '') in favoriteIds %}
+    <article class="restaurant-card" id="restaurant-{{ restaurant.id }}">
+        <a class="card-photo" href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}" tabindex="-1" aria-hidden="true">
+            {% if restaurant.coverPhotoPath %}
+                <img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="640" height="360" loading="lazy">
+            {% else %}
+                <span class="placeholder">{{ restaurant.name|first|upper }}</span>
+            {% endif %}
+            <span class="food-tag{{ restaurant.openNow ? '' : ' closed' }}">{% if restaurant.openNow %}{{ icon('bolt', 'icon-sm') }} {{ restaurant.kindLabel }}{% else %}Closed now{% endif %}</span>
+        </a>
+        {% if is_granted('ROLE_CUSTOMER') %}
+            <form class="favorite-form" method="post" action="{{ path('app_favorite_toggle', {slug: restaurant.slug}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('favorite') }}">
+                <input type="hidden" name="back" value="{{ app.request.requestUri }}#restaurant-{{ restaurant.id }}">
+                <button class="favorite{{ saved ? ' saved' }}" type="submit" aria-pressed="{{ saved ? 'true' : 'false' }}" aria-label="{{ saved ? 'Remove ' ~ restaurant.name ~ ' from favorites' : 'Save ' ~ restaurant.name }}">{{ icon('heart', 'icon-sm') }}</button>
+            </form>
+        {% endif %}
+        <a class="card-body" href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">
+            <span class="card-title">
+                <h3>{{ restaurant.name }}</h3>
+                <span class="rating">{{ icon('star') }}<b>{{ restaurant.averageRating|number_format(1) }}</b><small>({{ restaurant.reviews|length }})</small></span>
+            </span>
+            <p>{{ restaurant.cuisineType }}{% if restaurant.description %} · {{ restaurant.description|length > 72 ? restaurant.description|slice(0, 70)|trim ~ '…' : restaurant.description }}{% endif %}</p>
+            <span class="card-meta">
+                <span>{{ icon('clock') }}{{ restaurant.defaultPrepTimeMinutes }}–{{ restaurant.defaultPrepTimeMinutes + 15 }} min</span>
+                {% if distance is not null %}<span>{{ icon('pin') }}{{ distance|number_format(1) }} km</span>{% endif %}
+                <span class="{{ restaurant.minOrderAmount > 0 ? '' : 'free' }}">{{ icon('bag') }}{{ restaurant.minOrderAmount > 0 ? 'Min. ₱' ~ restaurant.minOrderAmount|number_format(0) : 'No minimum' }}</span>
+            </span>
+        </a>
+    </article>
+{%- endmacro %}
 {% from _self import icon %}
 {%- set route = app.request.attributes.get('_route') ?? '' -%}
 {%- set user = app.user -%}
@@ -56,6 +90,7 @@
     {%- set nav = [
         ['Explore', 'home', 'app_home', 'app_home|app_restaurant|app_search'],
         ['My orders', 'bag', 'app_orders', 'app_order'],
+        ['Favorites', 'heart', 'app_favorites', 'app_favorite'],
         ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
         ['My account', 'user', 'app_account', 'app_account|app_customer_address|app_support'],
     ] -%}
