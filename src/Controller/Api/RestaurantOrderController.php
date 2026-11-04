@@ -11,7 +11,6 @@ use App\Entity\OrderStatusHistory;
 use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
-use App\Exception\InvalidOrderTransitionException;
 use App\Repository\OrderRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\OrderVoter;
@@ -89,7 +88,7 @@ final class RestaurantOrderController extends AbstractRestaurantController
                         ->setEstimatedReadyAt($now->modify(sprintf('+%d minutes', $minutes)));
                 },
             );
-        } catch (InvalidOrderTransitionException $exception) {
+        } catch (\DomainException $exception) {
             return $this->json(['message' => $exception->getMessage()], 409);
         }
 
@@ -123,7 +122,7 @@ final class RestaurantOrderController extends AbstractRestaurantController
                     }
                 },
             );
-        } catch (InvalidOrderTransitionException $exception) {
+        } catch (\DomainException $exception) {
             return $this->json(['message' => $exception->getMessage()], 409);
         }
 

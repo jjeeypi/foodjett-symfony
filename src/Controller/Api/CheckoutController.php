@@ -6,11 +6,11 @@ namespace App\Controller\Api;
 
 use App\Entity\Order;
 use App\Entity\User;
-use App\Exception\CheckoutValidationException;
 use App\Service\CheckoutService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -37,7 +37,7 @@ final class CheckoutController extends AbstractController
 
         try {
             $result = $this->checkout->checkout($user->getCustomer(), $input);
-        } catch (CheckoutValidationException $exception) {
+        } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         }
 

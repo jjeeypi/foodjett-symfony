@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Conversation;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
-use App\Entity\Conversation;
 use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
@@ -22,13 +22,13 @@ use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
-use App\Exception\RiderPoolException;
 use App\Service\DeliveryZoneService;
 use App\Service\RiderPoolService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class RiderPoolControllerTest extends WebTestCase
 {
@@ -148,7 +148,7 @@ final class RiderPoolControllerTest extends WebTestCase
         try {
             self::getContainer()->get(RiderPoolService::class)->accept($staleSnapshot, $secondUser->getRider());
             self::fail('The stale competing acceptance should fail after the database lock is acquired.');
-        } catch (RiderPoolException $exception) {
+        } catch (ConflictHttpException $exception) {
             self::assertSame('This order was just taken by another rider.', $exception->getMessage());
         }
 

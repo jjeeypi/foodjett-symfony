@@ -17,7 +17,6 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
 use App\Event\OrderStatusChangedEvent;
-use App\Exception\InvalidOrderTransitionException;
 use App\Service\OrderTransitionService;
 use App\Service\PlatformSettingService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -99,7 +98,7 @@ final class OrderTransitionServiceTest extends KernelTestCase
         try {
             $service->transition($order, OrderStatus::DELIVERED, OrderActor::SYSTEM);
             self::fail('An invalid transition should throw.');
-        } catch (InvalidOrderTransitionException $exception) {
+        } catch (\DomainException $exception) {
             self::assertSame('Order cannot transition from "placed" to "delivered".', $exception->getMessage());
         }
 

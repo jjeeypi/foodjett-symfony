@@ -12,8 +12,6 @@ use App\Entity\User;
 use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
-use App\Exception\InvalidOrderTransitionException;
-use App\Exception\RiderPoolException;
 use App\Repository\OrderRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
@@ -24,6 +22,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -126,9 +125,9 @@ final class AdminOrderController extends AbstractController
 
         try {
             $order = $this->riderPool->accept($order, $rider, adminOverride: true);
-        } catch (RiderPoolException $exception) {
+        } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
-        } catch (InvalidOrderTransitionException) {
+        } catch (\DomainException) {
             return $this->json(['message' => 'This order was just taken by another rider.'], 409);
         }
 
@@ -185,7 +184,7 @@ final class AdminOrderController extends AbstractController
                     ]);
                 },
             );
-        } catch (InvalidOrderTransitionException $exception) {
+        } catch (\DomainException $exception) {
             return $this->json(['message' => $exception->getMessage()], 409);
         }
 

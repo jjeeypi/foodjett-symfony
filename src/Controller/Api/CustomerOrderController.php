@@ -17,7 +17,6 @@ use App\Enum\OrderReportStatus;
 use App\Enum\OrderReportType;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
-use App\Exception\InvalidOrderTransitionException;
 use App\Repository\OrderRepository;
 use App\Security\Voter\OrderVoter;
 use App\Service\ApiPaginator;
@@ -90,7 +89,7 @@ final class CustomerOrderController extends AbstractCustomerController
                     }
                 },
             );
-        } catch (InvalidOrderTransitionException $exception) {
+        } catch (\DomainException $exception) {
             return $this->json(['message' => $exception->getMessage()], 409);
         }
 

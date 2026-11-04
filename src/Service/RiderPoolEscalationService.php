@@ -9,8 +9,8 @@ use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Enum\RiderPoolEscalationStage;
-use App\Exception\InvalidOrderTransitionException;
 use App\Repository\OrderRepository;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final readonly class RiderPoolEscalationService
 {
@@ -79,7 +79,7 @@ final readonly class RiderPoolEscalationService
                             || null !== $locked->getRider()
                             || null === $lockedOffer
                             || $stage !== $lockedOffer->getEscalationStage()) {
-                            throw new RiderPoolEscalationRaceException();
+                            throw new ConflictHttpException('The rider pool offer changed while escalating.');
                         }
 
                         $lockedOffer
@@ -94,7 +94,7 @@ final readonly class RiderPoolEscalationService
                         }
                     },
                 );
-            } catch (RiderPoolEscalationRaceException) {
+            } catch (ConflictHttpException) {
                 return $changed;
             }
             $offer = $order->getRiderPoolOffer();
@@ -130,7 +130,7 @@ final readonly class RiderPoolEscalationService
                 'No rider accepted the order before the search deadline.',
                 function (Order $locked, \DateTimeImmutable $now): void {
                     if (OrderStatus::FINDING_RIDER !== $locked->getStatus() || null !== $locked->getRider()) {
-                        throw new RiderPoolEscalationRaceException();
+                        throw new ConflictHttpException('The rider pool offer changed while escalating.');
                     }
                     $locked
                         ->setCancellationReason('No rider was found before the search deadline.')
@@ -146,14 +146,10 @@ final readonly class RiderPoolEscalationService
                     }
                 },
             );
-        } catch (RiderPoolEscalationRaceException|InvalidOrderTransitionException) {
+        } catch (ConflictHttpException|\DomainException) {
             return false;
         }
 
         return true;
     }
-}
-
-final class RiderPoolEscalationRaceException extends \RuntimeException
-{
 }

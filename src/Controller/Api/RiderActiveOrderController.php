@@ -18,7 +18,6 @@ use App\Enum\OrderStatus;
 use App\Enum\PaymentActor;
 use App\Enum\PaymentMethod;
 use App\Enum\RiderAvailabilityStatus;
-use App\Exception\InvalidOrderTransitionException;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
@@ -150,7 +149,7 @@ final class RiderActiveOrderController extends AbstractRiderController
                 });
         } catch (\Throwable $exception) {
             $this->uploads->delete($path);
-            if ($exception instanceof InvalidOrderTransitionException) {
+            if ($exception instanceof \DomainException) {
                 return $this->json(['message' => $exception->getMessage()], 409);
             }
             throw $exception;
@@ -229,7 +228,7 @@ final class RiderActiveOrderController extends AbstractRiderController
     private function transition(Order $order, OrderStatus $to, string $note, ?callable $changes = null): JsonResponse
     {
         try { $order = $this->transitions->transition($order, $to, OrderActor::RIDER, $note, $changes); }
-        catch (InvalidOrderTransitionException $exception) { return $this->json(['message' => $exception->getMessage()], 409); }
+        catch (\DomainException $exception) { return $this->json(['message' => $exception->getMessage()], 409); }
         return $this->json(['order' => $this->orderData($order)]);
     }
 
@@ -241,7 +240,7 @@ final class RiderActiveOrderController extends AbstractRiderController
                     $locked->setCancellationReason($reason)->setCancelledBy(OrderActor::RIDER);
                     $locked->getRider()?->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)->setUpdatedAt($now);
                 });
-        } catch (InvalidOrderTransitionException $exception) { return $this->json(['message' => $exception->getMessage()], 409); }
+        } catch (\DomainException $exception) { return $this->json(['message' => $exception->getMessage()], 409); }
         return $this->json(['message' => 'Delivery marked failed.', 'order' => $this->orderData($order)]);
     }
 
