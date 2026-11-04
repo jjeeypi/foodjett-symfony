@@ -61,6 +61,8 @@ class Restaurant
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, unique: true, onDelete: 'RESTRICT')]
     private User $user;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $name;
 
@@ -76,15 +78,23 @@ class Restaurant
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $coverPhotoPath = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $cuisineType = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $address;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^-?(?:90(?:\.0+)?|[0-8]?\d(?:\.\d+)?)$/', message: 'Latitude must be between -90 and 90.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $latitude;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^-?(?:180(?:\.0+)?|(?:1[0-7]\d|[0-9]?\d)(?:\.\d+)?)$/', message: 'Longitude must be between -180 and 180.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $longitude;
 

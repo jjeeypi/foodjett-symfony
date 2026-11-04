@@ -1,19 +1,21 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Register{% endblock %}
+{% block title %}{{ heading }} | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Register</h1>
-
-    {{ form_errors(registrationForm) }}
+    <h1>{{ heading }}</h1>
 
     {{ form_start(registrationForm) }}
-        {{ form_row(registrationForm.email) }}
-        {{ form_row(registrationForm.plainPassword, {
-            label: 'Password'
-        }) }}
-        {{ form_row(registrationForm.agreeTerms) }}
+        {{ form_errors(registrationForm) }}
+        {{ form_widget(registrationForm) }}
 
-        <button type="submit" class="btn">Register</button>
+        <button type="submit">Submit</button>
     {{ form_end(registrationForm) }}
+
+    <p>
+        Sign up as a <a href="{{ path('app_register') }}">customer</a>,
+        apply as a <a href="{{ path('app_register_restaurant') }}">restaurant</a>
+        or as a <a href="{{ path('app_register_rider') }}">rider</a>.
+        Already registered? <a href="{{ path('app_login') }}">Log in</a>.
+    </p>
 {% endblock %}

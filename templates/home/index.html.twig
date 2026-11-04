@@ -7,6 +7,8 @@
     <p>Food delivery from local restaurants.</p>
 
     {% if not app.user %}
-        <p><a href="{{ path('app_login') }}">Log in</a> to order.</p>
+        <p><a href="{{ path('app_login') }}">Log in</a> or <a href="{{ path('app_register') }}">create an account</a> to order.</p>
+        <p>Own a restaurant? <a href="{{ path('app_register_restaurant') }}">Apply to sell on Foodjett</a>.
+            Want to deliver? <a href="{{ path('app_register_rider') }}">Apply as a rider</a>.</p>
     {% endif %}
 {% endblock %}

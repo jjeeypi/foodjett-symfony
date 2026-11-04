@@ -60,7 +60,6 @@ security:
         - { path: ^/(?:account|cart|checkout|orders), roles: ROLE_CUSTOMER }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/register(?:/restaurant|/rider)?$, roles: PUBLIC_ACCESS }
         - { path: ^/api/(?:forgot-password|reset-password)$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
 
