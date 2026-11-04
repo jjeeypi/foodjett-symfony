@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Double;
 
+use Symfony\Component\Mercure\Exception\RuntimeException;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\DefaultClaimsTokenFactory;
 use Symfony\Component\Mercure\Jwt\LcobucciFactory;
@@ -16,6 +17,7 @@ final class RecordingMercureHub implements HubInterface
     /** @var list<Update> */
     private array $updates = [];
     private readonly TokenFactoryInterface $factory;
+    private bool $down = false;
 
     public function __construct()
     {
@@ -42,6 +44,9 @@ final class RecordingMercureHub implements HubInterface
 
     public function publish(Update $update): string
     {
+        if ($this->down) {
+            throw new RuntimeException('Failed to send an update.');
+        }
         $this->updates[] = $update;
 
         return 'test-update-'.count($this->updates);
@@ -66,5 +71,12 @@ final class RecordingMercureHub implements HubInterface
     public function reset(): void
     {
         $this->updates = [];
+        $this->down = false;
+    }
+
+    /** Acts like a hub that cannot be reached, as when the Mercure container is stopped. */
+    public function goDown(): void
+    {
+        $this->down = true;
     }
 }

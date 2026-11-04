@@ -78,6 +78,20 @@ class CheckoutControllerTest extends WebTestCase
         }
     }
 
+    public function testAnUnreachableLiveUpdateHubDoesNotBreakCheckout(): void
+    {
+        self::getContainer()->get(RecordingMercureHub::class)->goDown();
+
+        $crawler = $this->client->request('GET', '/checkout');
+        $this->client->submit($crawler->selectButton('Place order')->form());
+
+        self::assertResponseRedirects();
+        $order = $this->onlyOrder();
+        self::assertSame(0, $this->cartLines(), 'The cart is emptied even though no live update went out.');
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.flash-success', 'Order '.$order->getOrderNumber().' was placed.');
+    }
+
     public function testPreviewShowsTheTotalsTheOrderIsPlacedWith(): void
     {
         $crawler = $this->client->request('GET', '/checkout');
