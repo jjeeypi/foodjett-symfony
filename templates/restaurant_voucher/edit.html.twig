@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Voucher{% endblock %}
+
+{% block body %}
+    <h1>Edit Voucher</h1>
+
+    {{ include('restaurant_voucher/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_restaurant_voucher_index') }}">back to list</a>
+
+    {{ include('restaurant_voucher/_delete_form.html.twig') }}
+{% endblock %}
