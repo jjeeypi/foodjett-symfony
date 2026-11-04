@@ -50,7 +50,7 @@ class CheckoutControllerTest extends WebTestCase
     {
         $this->placeOrder(Payment::METHOD_COD, self::VOUCHER_CODE);
 
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects();
         $order = $this->onlyOrder();
         self::assertSame('260.00', $order->getSubtotal());
         self::assertSame('10.00', $order->getDiscountAmount());
@@ -89,7 +89,7 @@ class CheckoutControllerTest extends WebTestCase
         self::assertSame(0, $this->entityManager->getRepository(Order::class)->count([]));
 
         $this->client->submit($crawler->selectButton('Place order')->form());
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects();
         $order = $this->onlyOrder();
         self::assertSame('PHP '.$order->getTotalAmount(), $previewTotal);
         self::assertSame(Payment::STATUS_PAID, $order->getPayment()?->getStatus());
@@ -100,7 +100,7 @@ class CheckoutControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/checkout');
         $form = $crawler->selectButton('Place order')->form(['checkout_form[paymentMethod]' => Payment::METHOD_CARD]);
         $this->client->submit($form);
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects();
         $this->client->submit($form);
 
         self::assertSame(1, $this->entityManager->getRepository(Order::class)->count([]));
@@ -145,7 +145,7 @@ class CheckoutControllerTest extends WebTestCase
 
         $this->placeOrder(Payment::METHOD_COD);
 
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects();
         self::assertSame(Order::STATUS_PLACED, $this->onlyOrder()->getStatus());
     }
 

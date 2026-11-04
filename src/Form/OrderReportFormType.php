@@ -2,45 +2,42 @@
 
 namespace App\Form;
 
-use App\Entity\Admin;
-use App\Entity\Order;
 use App\Entity\OrderReport;
-use App\Entity\User;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
+/** A problem a customer reports about an order: what went wrong and who it is about. */
 class OrderReportFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $label = static fn (string $value): string => ucfirst(str_replace('_', ' ', $value));
         $builder
-            ->add('against')
-            ->add('type')
-            ->add('description')
-            ->add('status')
-            ->add('resolution')
-            ->add('resolvedAt', null, [
-                'widget' => 'single_text'
+            ->add('type', ChoiceType::class, [
+                'label' => 'Problem',
+                'choices' => array_combine(array_map($label, OrderReport::TYPES), OrderReport::TYPES),
+                'placeholder' => 'Choose a problem',
+                'empty_data' => '',
             ])
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
+            ->add('against', ChoiceType::class, [
+                'label' => 'About',
+                // customers report restaurants, riders or the platform, never other customers
+                'choices' => array_combine(
+                    array_map($label, array_values(array_diff(OrderReport::AGAINST_TARGETS, [OrderReport::AGAINST_CUSTOMER]))),
+                    array_values(array_diff(OrderReport::AGAINST_TARGETS, [OrderReport::AGAINST_CUSTOMER])),
+                ),
+                'placeholder' => 'Choose who it is about',
+                'empty_data' => '',
             ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('order', EntityType::class, [
-                'class' => Order::class,
-                'choice_label' => 'id',
-            ])
-            ->add('reportedBy', EntityType::class, [
-                'class' => User::class,
-                'choice_label' => 'id',
-            ])
-            ->add('resolvedByAdmin', EntityType::class, [
-                'class' => Admin::class,
-                'choice_label' => 'id',
+            ->add('description', TextareaType::class, [
+                'label' => 'What happened?',
+                'empty_data' => '',
+                'constraints' => [new NotBlank(message: 'Describe the problem.'), new Length(max: 5000)],
             ])
         ;
     }

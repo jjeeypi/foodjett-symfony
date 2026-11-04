@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-namespace App\Tests\Controller\Api;
+namespace App\Tests\Controller;
 
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
@@ -15,7 +13,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-final class CustomerOrderCancellationControllerTest extends WebTestCase
+/** Customer cancellation from the order page, with the matching payment outcome. */
+class OrderCancellationTest extends WebTestCase
 {
     private const PASSWORD = 'TestPassword123!';
     private const CUSTOMER_EMAIL = 'cancel-customer@foodjett.test';
@@ -23,54 +22,57 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
 
     private KernelBrowser $client;
     private string $customerId;
+    private string $customerUserId;
     private string $restaurantId;
     private string $addressId;
 
     protected function setUp(): void
     {
-        $this->client = self::createClient();
-        $this->cleanup();
+        $this->client = static::createClient();
         $this->createFixture();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->cleanup();
-        parent::tearDown();
+        $this->client->loginUser(self::getContainer()->get(EntityManagerInterface::class)->find(User::class, $this->customerUserId), 'main');
     }
 
     public function testCustomerCancelsPlacedPaidOrderAndReceivesFullRefund(): void
     {
         $order = $this->createOrder(Order::STATUS_PLACED, Payment::METHOD_CARD, Payment::STATUS_PAID);
 
-        $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/cancel', [
-            'reason' => 'Changed my mind',
-        ], server: $this->auth($this->login()));
+        $crawler = $this->client->request('GET', '/orders/'.$order->getId());
+        $this->client->submit($crawler->selectButton('Cancel order')->form([
+            'order_cancel_form[reason]' => 'Changed my mind',
+        ]));
 
-        self::assertResponseIsSuccessful();
-        self::assertSame(Order::STATUS_CANCELLED_BY_CUSTOMER, $this->payload()['order']['status'] ?? null);
+        self::assertResponseRedirects('/orders/'.$order->getId());
         $cancelled = $this->reload((string) $order->getId());
+        self::assertSame(Order::STATUS_CANCELLED_BY_CUSTOMER, $cancelled->getStatus());
+        self::assertSame('Changed my mind', $cancelled->getCancellationReason());
         self::assertSame(Payment::STATUS_REFUNDED, $cancelled->getPayment()?->getStatus());
         self::assertSame($cancelled->getPayment()?->getAmount(), $cancelled->getPayment()?->getRefundedAmount());
         self::assertCount(1, $cancelled->getPayment()?->getStatusHistory());
+
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.flash-success', 'Your order was cancelled.');
+        self::assertSelectorNotExists('form[name="order_cancel_form"]');
     }
 
     public function testFindingRiderCancellationRequiresCustomerNotifiedEscalation(): void
     {
         $order = $this->createOrder(Order::STATUS_FINDING_RIDER, Payment::METHOD_COD, Payment::STATUS_PENDING, RiderPoolOffer::STAGE_INITIAL);
-        $token = $this->login();
 
-        $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/cancel', [], server: $this->auth($token));
-        self::assertResponseStatusCodeSame(403);
+        $crawler = $this->client->request('GET', '/orders/'.$order->getId());
+        self::assertCount(0, $crawler->filter('form[name="order_cancel_form"]'), 'No cancel form while the rider search is still running.');
+        // A hand-made POST is refused too.
+        $crawler = $this->client->request('GET', '/orders/'.$order->getId());
+        $this->client->request('POST', '/orders/'.$order->getId().'/cancel', ['order_cancel_form' => ['reason' => '']]);
+        self::assertSame(Order::STATUS_FINDING_RIDER, $this->reload((string) $order->getId())->getStatus());
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $offer = $entityManager->find(RiderPoolOffer::class, $order->getRiderPoolOffer()?->getId());
-        self::assertInstanceOf(RiderPoolOffer::class, $offer);
-        $offer->setEscalationStage(RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED);
+        $entityManager->find(RiderPoolOffer::class, $order->getRiderPoolOffer()?->getId())
+            ->setEscalationStage(RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED);
         $entityManager->flush();
 
-        $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/cancel', [], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
+        $crawler = $this->client->request('GET', '/orders/'.$order->getId());
+        $this->client->submit($crawler->selectButton('Cancel order')->form());
         $cancelled = $this->reload((string) $order->getId());
         self::assertSame(Order::STATUS_CANCELLED_BY_CUSTOMER, $cancelled->getStatus());
         self::assertSame(Payment::STATUS_FAILED, $cancelled->getPayment()?->getStatus());
@@ -108,6 +110,7 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
         }
         $entityManager->flush();
         $this->customerId = (string) $customer->getId();
+        $this->customerUserId = (string) $customerUser->getId();
         $this->addressId = (string) $address->getId();
         $this->restaurantId = (string) $restaurant->getId();
     }
@@ -172,26 +175,6 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
             ->setUpdatedAt($now);
     }
 
-    private function login(): string
-    {
-        $this->client->jsonRequest('POST', '/api/login', ['login' => self::CUSTOMER_EMAIL, 'password' => self::PASSWORD]);
-        self::assertResponseIsSuccessful();
-
-        return $this->payload()['token'];
-    }
-
-    /** @return array<string, string> */
-    private function auth(string $token): array
-    {
-        return ['HTTP_AUTHORIZATION' => 'Bearer '.$token];
-    }
-
-    /** @return array<string, mixed> */
-    private function payload(): array
-    {
-        return json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-    }
-
     private function reload(string $id): Order
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -200,23 +183,5 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
         self::assertInstanceOf(Order::class, $order);
 
         return $order;
-    }
-
-    private function cleanup(): void
-    {
-        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
-        foreach ([
-            'DELETE FROM payment_status_history WHERE payment_id IN (SELECT id FROM payments WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?))',
-            'DELETE FROM payments WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
-            'DELETE FROM rider_pool_offers WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
-            'DELETE FROM order_status_history WHERE order_id IN (SELECT id FROM orders WHERE order_number LIKE ?)',
-            'DELETE FROM orders WHERE order_number LIKE ?',
-        ] as $sql) {
-            $connection->executeStatement($sql, ['CANCEL-%']);
-        }
-        $connection->executeStatement('DELETE FROM customer_addresses WHERE label = ?', ['Cancellation Test Address']);
-        $connection->executeStatement('DELETE FROM customers WHERE user_id IN (SELECT id FROM users WHERE email = ?)', [self::CUSTOMER_EMAIL]);
-        $connection->executeStatement('DELETE FROM restaurants WHERE user_id IN (SELECT id FROM users WHERE email = ?)', [self::RESTAURANT_EMAIL]);
-        $connection->executeStatement('DELETE FROM users WHERE email IN (?, ?)', [self::CUSTOMER_EMAIL, self::RESTAURANT_EMAIL]);
     }
 }
