@@ -132,7 +132,7 @@ final class RiderConversationController extends AbstractRiderController
 
         return [
             'id' => $conversation->getId(),
-            'type' => $conversation->getType()->value,
+            'type' => $conversation->getType(),
             'order' => [
                 'id' => $order->getId(),
                 'order_number' => $order->getOrderNumber(),

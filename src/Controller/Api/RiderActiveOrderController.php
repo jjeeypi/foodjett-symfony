@@ -8,16 +8,9 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderReport;
 use App\Entity\OrderStatusHistory;
+use App\Entity\Payment;
 use App\Entity\Rider;
 use App\Entity\RiderEarning;
-use App\Enum\OrderActor;
-use App\Enum\OrderReportAgainst;
-use App\Enum\OrderReportStatus;
-use App\Enum\OrderReportType;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentActor;
-use App\Enum\PaymentMethod;
-use App\Enum\RiderAvailabilityStatus;
 use App\Repository\PlatformSettingRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\OrderTransitionService;
@@ -60,7 +53,7 @@ final class RiderActiveOrderController extends AbstractRiderController
     #[Route('/arrived-at-restaurant', name: 'arrived_restaurant', methods: ['POST'])]
     public function arrivedAtRestaurant(): JsonResponse
     {
-        return $this->advance(OrderStatus::RIDER_ASSIGNED, OrderStatus::AT_RESTAURANT, 'Rider arrived at the restaurant.',
+        return $this->advance(Order::STATUS_RIDER_ASSIGNED, Order::STATUS_AT_RESTAURANT, 'Rider arrived at the restaurant.',
             static fn (Order $order, \DateTimeImmutable $now) => $order->setRiderArrivedRestaurantAt($now));
     }
 
@@ -68,8 +61,8 @@ final class RiderActiveOrderController extends AbstractRiderController
     public function confirmPickup(Request $request): JsonResponse
     {
         $order = $this->activeOrder();
-        if (OrderStatus::AT_RESTAURANT !== $order->getStatus()) {
-            return $this->invalidStatus($order, OrderStatus::AT_RESTAURANT);
+        if (Order::STATUS_AT_RESTAURANT !== $order->getStatus()) {
+            return $this->invalidStatus($order, Order::STATUS_AT_RESTAURANT);
         }
         $data = $this->body($request);
         if ($data instanceof JsonResponse) { return $data; }
@@ -78,38 +71,38 @@ final class RiderActiveOrderController extends AbstractRiderController
             return $this->json(['message' => 'The pickup code is invalid.'], 422);
         }
 
-        return $this->transition($order, OrderStatus::PICKED_UP, 'Restaurant handoff confirmed.',
+        return $this->transition($order, Order::STATUS_PICKED_UP, 'Restaurant handoff confirmed.',
             static fn (Order $locked, \DateTimeImmutable $now) => $locked->setPickedUpAt($now));
     }
 
     #[Route('/start-delivery', name: 'start_delivery', methods: ['POST'])]
     public function startDelivery(): JsonResponse
     {
-        return $this->advance(OrderStatus::PICKED_UP, OrderStatus::ON_THE_WAY, 'Rider started the delivery.');
+        return $this->advance(Order::STATUS_PICKED_UP, Order::STATUS_ON_THE_WAY, 'Rider started the delivery.');
     }
 
     #[Route('/arrived-at-customer', name: 'arrived_customer', methods: ['POST'])]
     public function arrivedAtCustomer(): JsonResponse
     {
-        return $this->advance(OrderStatus::ON_THE_WAY, OrderStatus::ARRIVED, 'Rider arrived at the customer.');
+        return $this->advance(Order::STATUS_ON_THE_WAY, Order::STATUS_ARRIVED, 'Rider arrived at the customer.');
     }
 
     #[Route('/confirm-delivery', name: 'confirm_delivery', methods: ['POST'])]
     public function confirmDelivery(Request $request): JsonResponse
     {
         $order = $this->activeOrder();
-        if (OrderStatus::ARRIVED !== $order->getStatus()) {
-            return $this->invalidStatus($order, OrderStatus::ARRIVED);
+        if (Order::STATUS_ARRIVED !== $order->getStatus()) {
+            return $this->invalidStatus($order, Order::STATUS_ARRIVED);
         }
         $file = $request->files->get('proof');
         if (null === $file) {
             return $this->json(['message' => 'A proof-of-delivery image is required.', 'errors' => ['proof' => ['A proof-of-delivery image is required.']]], 422);
         }
         $cashCollected = filter_var($request->request->get('cashCollected', $request->request->get('cash_collected')), FILTER_VALIDATE_BOOL);
-        if (PaymentMethod::COD === $order->getPaymentMethod() && true !== $cashCollected) {
+        if (Payment::METHOD_COD === $order->getPaymentMethod() && true !== $cashCollected) {
             return $this->json(['message' => 'Confirm that COD cash was collected before completing delivery.'], 422);
         }
-        if (PaymentMethod::COD === $order->getPaymentMethod() && null === $order->getPayment()) {
+        if (Payment::METHOD_COD === $order->getPaymentMethod() && null === $order->getPayment()) {
             return $this->json(['message' => 'The COD payment record is missing.'], 409);
         }
         if (null === $order->getRiderPoolOffer()?->getAcceptedPickupDistanceKm()) {
@@ -122,13 +115,13 @@ final class RiderActiveOrderController extends AbstractRiderController
         }
 
         try {
-            $order = $this->transitions->transition($order, OrderStatus::DELIVERED, OrderActor::RIDER, 'Delivery completed by rider.',
+            $order = $this->transitions->transition($order, Order::STATUS_DELIVERED, Order::ACTOR_RIDER, 'Delivery completed by rider.',
                 function (Order $locked, \DateTimeImmutable $now) use ($path): void {
                     $rider = $this->entityManager->find(Rider::class, $locked->getRider()?->getId(), LockMode::PESSIMISTIC_WRITE);
                     if (!$rider instanceof Rider) { throw new \DomainException('Assigned rider not found.'); }
                     $locked->setProofOfDeliveryPath($path);
-                    if (PaymentMethod::COD === $locked->getPaymentMethod() && null !== $locked->getPayment()) {
-                        $this->payments->markPaid($locked->getPayment(), PaymentActor::RIDER, 'COD cash collected by rider.', $now);
+                    if (Payment::METHOD_COD === $locked->getPaymentMethod() && null !== $locked->getPayment()) {
+                        $this->payments->markPaid($locked->getPayment(), Payment::ACTOR_RIDER, 'COD cash collected by rider.', $now);
                         $rider->setCashOnHand(bcadd($rider->getCashOnHand(), $locked->getTotalAmount(), 2));
                     }
                     $waitMinutes = 0.0;
@@ -143,7 +136,7 @@ final class RiderActiveOrderController extends AbstractRiderController
                         $locked->setRiderEarning($earning);
                         $this->entityManager->persist($earning);
                     }
-                    $rider->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)->setUpdatedAt($now);
+                    $rider->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)->setUpdatedAt($now);
                 });
         } catch (\Throwable $exception) {
             $this->uploads->delete($path);
@@ -162,31 +155,31 @@ final class RiderActiveOrderController extends AbstractRiderController
         $order = $this->activeOrder();
         $data = $this->body($request);
         if ($data instanceof JsonResponse) { return $data; }
-        $type = OrderReportType::tryFrom((string) ($data['type'] ?? ''));
+        $type = (in_array((string) ($data['type'] ?? ''), OrderReport::TYPES, true) ? (string) ($data['type'] ?? '') : null);
         $description = trim((string) ($data['description'] ?? ''));
         if (null === $type || '' === $description || mb_strlen($description) > 5000) {
             return $this->json(['message' => 'A valid type and description between 1 and 5000 characters are required.'], 422);
         }
         $against = match ($type) {
-            OrderReportType::MISSING_ITEM, OrderReportType::WRONG_ITEM, OrderReportType::LATE_DELIVERY => OrderReportAgainst::RESTAURANT,
-            OrderReportType::CUSTOMER_UNREACHABLE, OrderReportType::RUDE_BEHAVIOR => OrderReportAgainst::CUSTOMER,
-            default => OrderReportAgainst::PLATFORM,
+            OrderReport::TYPE_MISSING_ITEM, OrderReport::TYPE_WRONG_ITEM, OrderReport::TYPE_LATE_DELIVERY => OrderReport::AGAINST_RESTAURANT,
+            OrderReport::TYPE_CUSTOMER_UNREACHABLE, OrderReport::TYPE_RUDE_BEHAVIOR => OrderReport::AGAINST_CUSTOMER,
+            default => OrderReport::AGAINST_PLATFORM,
         };
         $now = new \DateTimeImmutable();
         $report = (new OrderReport())->setOrder($order)->setReportedBy($this->riderUser())->setAgainst($against)->setType($type)
-            ->setDescription($description)->setStatus(OrderReportStatus::OPEN)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setDescription($description)->setStatus(OrderReport::STATUS_OPEN)->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($report);
         $this->entityManager->flush();
 
-        return $this->json(['message' => 'Issue reported.', 'report' => ['id' => $report->getId(), 'type' => $type->value, 'against' => $against->value, 'status' => $report->getStatus()->value]], 201);
+        return $this->json(['message' => 'Issue reported.', 'report' => ['id' => $report->getId(), 'type' => $type, 'against' => $against, 'status' => $report->getStatus()]], 201);
     }
 
     #[Route('/customer-unreachable', name: 'customer_unreachable', methods: ['POST'])]
     public function customerUnreachable(): JsonResponse
     {
         $order = $this->activeOrder();
-        if (OrderStatus::ARRIVED !== $order->getStatus()) { return $this->invalidStatus($order, OrderStatus::ARRIVED); }
-        $arrival = $this->entityManager->getRepository(OrderStatusHistory::class)->findOneBy(['order' => $order, 'status' => OrderStatus::ARRIVED->value], ['createdAt' => 'DESC', 'id' => 'DESC']);
+        if (Order::STATUS_ARRIVED !== $order->getStatus()) { return $this->invalidStatus($order, Order::STATUS_ARRIVED); }
+        $arrival = $this->entityManager->getRepository(OrderStatusHistory::class)->findOneBy(['order' => $order, 'status' => Order::STATUS_ARRIVED], ['createdAt' => 'DESC', 'id' => 'DESC']);
         if (!$arrival instanceof OrderStatusHistory) {
             return $this->json(['message' => 'The customer-arrival timestamp is missing.'], 409);
         }
@@ -203,7 +196,7 @@ final class RiderActiveOrderController extends AbstractRiderController
     public function cancel(Request $request): JsonResponse
     {
         $order = $this->activeOrder();
-        if (!in_array($order->getStatus(), [OrderStatus::RIDER_ASSIGNED, OrderStatus::AT_RESTAURANT], true)) {
+        if (!in_array($order->getStatus(), [Order::STATUS_RIDER_ASSIGNED, Order::STATUS_AT_RESTAURANT], true)) {
             return $this->json(['message' => 'A rider can only cancel before pickup.'], 409);
         }
         $data = $this->body($request);
@@ -216,16 +209,16 @@ final class RiderActiveOrderController extends AbstractRiderController
         return $this->failDelivery($order, $reason);
     }
 
-    private function advance(OrderStatus $from, OrderStatus $to, string $note, ?callable $changes = null): JsonResponse
+    private function advance(string $from, string $to, string $note, ?callable $changes = null): JsonResponse
     {
         $order = $this->activeOrder();
         if ($from !== $order->getStatus()) { return $this->invalidStatus($order, $from); }
         return $this->transition($order, $to, $note, $changes);
     }
 
-    private function transition(Order $order, OrderStatus $to, string $note, ?callable $changes = null): JsonResponse
+    private function transition(Order $order, string $to, string $note, ?callable $changes = null): JsonResponse
     {
-        try { $order = $this->transitions->transition($order, $to, OrderActor::RIDER, $note, $changes); }
+        try { $order = $this->transitions->transition($order, $to, Order::ACTOR_RIDER, $note, $changes); }
         catch (\DomainException $exception) { return $this->json(['message' => $exception->getMessage()], 409); }
         return $this->json(['order' => $this->orderData($order)]);
     }
@@ -233,31 +226,31 @@ final class RiderActiveOrderController extends AbstractRiderController
     private function failDelivery(Order $order, string $reason): JsonResponse
     {
         try {
-            $order = $this->transitions->transition($order, OrderStatus::FAILED_DELIVERY, OrderActor::RIDER, $reason,
+            $order = $this->transitions->transition($order, Order::STATUS_FAILED_DELIVERY, Order::ACTOR_RIDER, $reason,
                 static function (Order $locked, \DateTimeImmutable $now) use ($reason): void {
-                    $locked->setCancellationReason($reason)->setCancelledBy(OrderActor::RIDER);
-                    $locked->getRider()?->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)->setUpdatedAt($now);
+                    $locked->setCancellationReason($reason)->setCancelledBy(Order::ACTOR_RIDER);
+                    $locked->getRider()?->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)->setUpdatedAt($now);
                 });
         } catch (\DomainException $exception) { return $this->json(['message' => $exception->getMessage()], 409); }
         return $this->json(['message' => 'Delivery marked failed.', 'order' => $this->orderData($order)]);
     }
 
-    private function invalidStatus(Order $order, OrderStatus $expected): JsonResponse
+    private function invalidStatus(Order $order, string $expected): JsonResponse
     {
-        return $this->json(['message' => sprintf('Order must be %s for this action; current status is %s.', $expected->value, $order->getStatus()->value)], 409);
+        return $this->json(['message' => sprintf('Order must be %s for this action; current status is %s.', $expected, $order->getStatus())], 409);
     }
 
     /** @return array<string, mixed> */
     private function orderData(Order $order): array
     {
-        return ['id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus()->value,
+        return ['id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus(),
             'restaurant' => ['name' => $order->getRestaurant()->getName(), 'address' => $order->getRestaurant()->getAddress(), 'latitude' => $order->getRestaurant()->getLatitude(), 'longitude' => $order->getRestaurant()->getLongitude()],
             'delivery_address' => ['address_line' => $order->getCustomerAddress()->getAddressLine(), 'landmark' => $order->getCustomerAddress()->getLandmark(), 'instructions' => $order->getCustomerAddress()->getDeliveryInstructions(), 'latitude' => $order->getCustomerAddress()->getLatitude(), 'longitude' => $order->getCustomerAddress()->getLongitude()],
             'customer' => ['name' => $order->getCustomer()->getUser()->getName(), 'phone' => $order->getCustomer()->getUser()->getPhone()],
             'items' => array_map(static fn (OrderItem $item): array => ['name' => $item->getMenuItem()->getName(), 'quantity' => $item->getQuantity(), 'special_instructions' => $item->getSpecialInstructions()], $order->getItems()->toArray()),
-            'customer_notes' => $order->getCustomerNotes(), 'payment_method' => $order->getPaymentMethod()->value,
-            'cash_to_collect' => PaymentMethod::COD === $order->getPaymentMethod() ? $order->getTotalAmount() : null,
-            'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM), 'pickup_code_required' => OrderStatus::AT_RESTAURANT === $order->getStatus(),
+            'customer_notes' => $order->getCustomerNotes(), 'payment_method' => $order->getPaymentMethod(),
+            'cash_to_collect' => Payment::METHOD_COD === $order->getPaymentMethod() ? $order->getTotalAmount() : null,
+            'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM), 'pickup_code_required' => Order::STATUS_AT_RESTAURANT === $order->getStatus(),
             'proof_of_delivery_path' => $order->getProofOfDeliveryPath(), 'delivered_at' => $order->getDeliveredAt()?->format(\DateTimeInterface::ATOM)];
     }
 

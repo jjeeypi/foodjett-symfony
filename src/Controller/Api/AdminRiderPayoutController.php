@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\RestaurantPayout;
 use App\Entity\RiderPayout;
 use App\Entity\User;
-use App\Enum\PayoutStatus;
 use App\Repository\AuditLogRepository;
 use App\Repository\RiderEarningRepository;
 use App\Repository\RiderPayoutRepository;
@@ -37,7 +37,7 @@ final class AdminRiderPayoutController extends AbstractController
     {
         $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
-            $status = PayoutStatus::tryFrom($statusValue);
+            $status = (in_array($statusValue, RestaurantPayout::STATUSES, true) ? $statusValue : null);
             if (null === $status) { return $this->json(['message' => 'Invalid status.'], 422); }
         }
         $query = $this->payouts->createAdminListQuery($status, trim((string) $request->query->get('rider_id', '')));
@@ -70,7 +70,7 @@ final class AdminRiderPayoutController extends AbstractController
                 $overlap = $this->payouts->countOverlapping($total['rider'], $periodStart, $periodEnd);
                 if ((int) $overlap > 0) { ++$skipped; continue; }
                 $payout = (new RiderPayout())->setRider($total['rider'])->setPeriodStart($periodStart)->setPeriodEnd($periodEnd)
-                    ->setTotalAmount($total['total'])->setStatus(PayoutStatus::PENDING)
+                    ->setTotalAmount($total['total'])->setStatus(RestaurantPayout::STATUS_PENDING)
                     ->setCreatedAt($now)->setUpdatedAt($now);
                 $this->entityManager->persist($payout);
                 $created[] = $payout;
@@ -99,11 +99,11 @@ final class AdminRiderPayoutController extends AbstractController
         $updated = $this->entityManager->wrapInTransaction(function () use ($payout, $admin): RiderPayout {
             $locked = $this->entityManager->find(RiderPayout::class, $payout->getId(), LockMode::PESSIMISTIC_WRITE);
             if (!$locked instanceof RiderPayout) { throw new \RuntimeException('Payout not found.'); }
-            if (PayoutStatus::PAID === $locked->getStatus()) { return $locked; }
+            if (RestaurantPayout::STATUS_PAID === $locked->getStatus()) { return $locked; }
             $now = new \DateTimeImmutable();
-            $locked->setStatus(PayoutStatus::PAID)->setPaidAt($now)->setUpdatedAt($now);
+            $locked->setStatus(RestaurantPayout::STATUS_PAID)->setPaidAt($now)->setUpdatedAt($now);
             $this->audit->record($admin, 'rider_payout.paid', 'rider_payout', (string) $locked->getId(), [
-                'status' => ['from' => PayoutStatus::PENDING->value, 'to' => PayoutStatus::PAID->value], 'paid_at' => $now->format(\DateTimeInterface::ATOM),
+                'status' => ['from' => RestaurantPayout::STATUS_PENDING, 'to' => RestaurantPayout::STATUS_PAID], 'paid_at' => $now->format(\DateTimeInterface::ATOM),
             ]);
             $this->entityManager->flush();
             return $locked;
@@ -136,7 +136,7 @@ final class AdminRiderPayoutController extends AbstractController
     {
         return ['id' => $payout->getId(), 'rider' => ['id' => $payout->getRider()->getId(), 'name' => $payout->getRider()->getUser()->getName()],
             'period_start' => $payout->getPeriodStart()->format('Y-m-d'), 'period_end' => $payout->getPeriodEnd()->format('Y-m-d'),
-            'total_amount' => $payout->getTotalAmount(), 'status' => $payout->getStatus()->value, 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM)];
+            'total_amount' => $payout->getTotalAmount(), 'status' => $payout->getStatus(), 'paid_at' => $payout->getPaidAt()?->format(\DateTimeInterface::ATOM)];
     }
 
     private function admin(): User

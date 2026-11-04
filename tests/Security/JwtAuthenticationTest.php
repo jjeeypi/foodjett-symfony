@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Security;
 
 use App\Entity\User;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -25,8 +23,8 @@ final class JwtAuthenticationTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
 
         $this->deleteTestUsers($entityManager);
-        $this->createUser($entityManager, self::ACTIVE_EMAIL, UserStatus::ACTIVE);
-        $this->createUser($entityManager, self::SUSPENDED_EMAIL, UserStatus::SUSPENDED);
+        $this->createUser($entityManager, self::ACTIVE_EMAIL, User::STATUS_ACTIVE);
+        $this->createUser($entityManager, self::SUSPENDED_EMAIL, User::STATUS_SUSPENDED);
     }
 
     protected function tearDown(): void
@@ -59,8 +57,8 @@ final class JwtAuthenticationTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $me = json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
         self::assertSame(self::ACTIVE_EMAIL, $me['email'] ?? null);
-        self::assertSame(UserRole::CUSTOMER->value, $me['role'] ?? null);
-        self::assertSame(UserStatus::ACTIVE->value, $me['status'] ?? null);
+        self::assertSame(User::ACCOUNT_CUSTOMER, $me['role'] ?? null);
+        self::assertSame(User::STATUS_ACTIVE, $me['status'] ?? null);
     }
 
     public function testActiveUserCanLoginByPhone(): void
@@ -122,7 +120,7 @@ final class JwtAuthenticationTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $entityManager->getRepository(User::class)->findOneBy(['email' => self::ACTIVE_EMAIL]);
         self::assertInstanceOf(User::class, $user);
-        $user->setStatus(UserStatus::SUSPENDED);
+        $user->setStatus(User::STATUS_SUSPENDED);
         $entityManager->flush();
 
         $this->client->request('GET', '/api/me', server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
@@ -132,17 +130,17 @@ final class JwtAuthenticationTest extends WebTestCase
         self::assertSame('Your account is suspended. Contact support for assistance.', $payload['message'] ?? null);
     }
 
-    private function createUser(EntityManagerInterface $entityManager, string $email, UserStatus $status): void
+    private function createUser(EntityManagerInterface $entityManager, string $email, string $status): void
     {
         $now = new \DateTimeImmutable();
-        $phone = UserStatus::ACTIVE === $status ? '+639171234567' : '+639171234568';
+        $phone = User::STATUS_ACTIVE === $status ? '+639171234567' : '+639171234568';
 
         $user = (new User())
             ->setName('JWT Test User')
             ->setEmail($email)
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole(UserRole::CUSTOMER)
+            ->setRole(User::ACCOUNT_CUSTOMER)
             ->setStatus($status)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\Voucher;
-use App\Enum\VoucherScope;
-use App\Enum\VoucherType;
 use App\Repository\VoucherRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
@@ -49,7 +47,7 @@ final class RestaurantVoucherController extends AbstractRestaurantController
             return $error;
         }
         $now = new \DateTimeImmutable();
-        $voucher->setScope(VoucherScope::RESTAURANT)->setRestaurant($this->restaurant())->setCreatedAt($now)->setUpdatedAt($now);
+        $voucher->setScope(Voucher::SCOPE_RESTAURANT)->setRestaurant($this->restaurant())->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($voucher);
         $this->entityManager->flush();
 
@@ -108,16 +106,16 @@ final class RestaurantVoucherController extends AbstractRestaurantController
         if ($duplicate instanceof Voucher && $duplicate->getId() !== $voucher->getId()) {
             return $this->json(['message' => 'A voucher with that code already exists.'], 409);
         }
-        $type = array_key_exists('type', $data) ? VoucherType::tryFrom((string) $data['type']) : ($creating ? null : $voucher->getType());
+        $type = array_key_exists('type', $data) ? (in_array((string) $data['type'], Voucher::TYPES, true) ? (string) $data['type'] : null) : ($creating ? null : $voucher->getType());
         if (null === $type) {
             return $this->json(['message' => 'Invalid or missing type.'], 422);
         }
         $rawValue = array_key_exists('value', $data) ? $data['value'] : ($creating ? null : $voucher->getValue());
         $value = null === $rawValue || '' === $rawValue ? null : $this->decimalInput($rawValue);
-        if (VoucherType::FREE_DELIVERY !== $type && (null === $value || 1 !== bccomp($value, '0', 2))) {
+        if (Voucher::TYPE_FREE_DELIVERY !== $type && (null === $value || 1 !== bccomp($value, '0', 2))) {
             return $this->json(['message' => 'value must be greater than zero for percentage and fixed vouchers.'], 422);
         }
-        if (VoucherType::PERCENTAGE === $type && 1 === bccomp((string) $value, '100', 2)) {
+        if (Voucher::TYPE_PERCENTAGE === $type && 1 === bccomp((string) $value, '100', 2)) {
             return $this->json(['message' => 'Percentage value cannot exceed 100.'], 422);
         }
         $minimum = $this->decimalInput(array_key_exists('min_order_amount', $data) ? $data['min_order_amount'] : ($creating ? 0 : $voucher->getMinOrderAmount()));
@@ -142,7 +140,7 @@ final class RestaurantVoucherController extends AbstractRestaurantController
             return $this->json(['message' => 'is_active must be boolean.'], 422);
         }
 
-        $voucher->setCode($code)->setType($type)->setValue(VoucherType::FREE_DELIVERY === $type ? null : $value)
+        $voucher->setCode($code)->setType($type)->setValue(Voucher::TYPE_FREE_DELIVERY === $type ? null : $value)
             ->setMinOrderAmount($minimum)->setUsageLimitTotal(null === $totalLimit ? null : (int) $totalLimit)
             ->setUsageLimitPerCustomer((int) $customerLimit)->setStartsAt($starts instanceof \DateTimeImmutable ? $starts : null)
             ->setEndsAt($ends instanceof \DateTimeImmutable ? $ends : null)->setIsActive($active);
@@ -169,8 +167,8 @@ final class RestaurantVoucherController extends AbstractRestaurantController
     private function serialize(Voucher $voucher): array
     {
         return [
-            'id' => $voucher->getId(), 'code' => $voucher->getCode(), 'scope' => $voucher->getScope()->value,
-            'type' => $voucher->getType()->value, 'value' => $voucher->getValue(), 'min_order_amount' => $voucher->getMinOrderAmount(),
+            'id' => $voucher->getId(), 'code' => $voucher->getCode(), 'scope' => $voucher->getScope(),
+            'type' => $voucher->getType(), 'value' => $voucher->getValue(), 'min_order_amount' => $voucher->getMinOrderAmount(),
             'usage_limit_total' => $voucher->getUsageLimitTotal(), 'usage_limit_per_customer' => $voucher->getUsageLimitPerCustomer(),
             'redemption_count' => $voucher->getRedemptions()->count(), 'starts_at' => $voucher->getStartsAt()?->format(\DateTimeInterface::ATOM),
             'ends_at' => $voucher->getEndsAt()?->format(\DateTimeInterface::ATOM), 'is_active' => $voucher->isActive(),

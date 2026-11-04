@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\ApprovalStatus;
-use App\Enum\PayoutMethod;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\VehicleType;
 use App\Repository\RiderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RiderRepository::class)]
 #[ORM\Table(name: 'riders')]
@@ -20,6 +17,52 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'riders_user_id_unique', columns: ['user_id'])]
 class Rider
 {
+    // Admin approval of the account (APPROVAL_STATUSES)
+    public const APPROVAL_PENDING = 'pending';
+    public const APPROVAL_APPROVED = 'approved';
+    public const APPROVAL_REJECTED = 'rejected';
+
+    /** @var list<string> */
+    public const APPROVAL_STATUSES = [
+        self::APPROVAL_PENDING,
+        self::APPROVAL_APPROVED,
+        self::APPROVAL_REJECTED,
+    ];
+
+    // Where payouts are sent (PAYOUT_METHODS)
+    public const PAYOUT_METHOD_BANK = 'bank';
+    public const PAYOUT_METHOD_EWALLET = 'ewallet';
+
+    /** @var list<string> */
+    public const PAYOUT_METHODS = [
+        self::PAYOUT_METHOD_BANK,
+        self::PAYOUT_METHOD_EWALLET,
+    ];
+
+    // Rider availability (AVAILABILITY_STATUSES)
+    public const AVAILABILITY_OFFLINE = 'offline';
+    public const AVAILABILITY_AVAILABLE = 'available';
+    public const AVAILABILITY_BUSY = 'busy';
+
+    /** @var list<string> */
+    public const AVAILABILITY_STATUSES = [
+        self::AVAILABILITY_OFFLINE,
+        self::AVAILABILITY_AVAILABLE,
+        self::AVAILABILITY_BUSY,
+    ];
+
+    // Rider vehicle (VEHICLE_TYPES)
+    public const VEHICLE_MOTORCYCLE = 'motorcycle';
+    public const VEHICLE_BICYCLE = 'bicycle';
+    public const VEHICLE_CAR = 'car';
+
+    /** @var list<string> */
+    public const VEHICLE_TYPES = [
+        self::VEHICLE_MOTORCYCLE,
+        self::VEHICLE_BICYCLE,
+        self::VEHICLE_CAR,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -29,20 +72,23 @@ class Rider
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, unique: true, onDelete: 'RESTRICT')]
     private User $user;
 
-    #[ORM\Column(length: 32, enumType: VehicleType::class)]
-    private VehicleType $vehicleType;
+    #[Assert\Choice(choices: Rider::VEHICLE_TYPES)]
+    #[ORM\Column(length: 32)]
+    private string $vehicleType;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $plateNumber = null;
 
-    #[ORM\Column(length: 32, enumType: ApprovalStatus::class, options: ['default' => 'pending'])]
-    private ApprovalStatus $approvalStatus = ApprovalStatus::PENDING;
+    #[Assert\Choice(choices: Rider::APPROVAL_STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'pending'])]
+    private string $approvalStatus = Restaurant::APPROVAL_PENDING;
 
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $rejectionReason = null;
 
-    #[ORM\Column(length: 32, enumType: RiderAvailabilityStatus::class, options: ['default' => 'offline'])]
-    private RiderAvailabilityStatus $availabilityStatus = RiderAvailabilityStatus::OFFLINE;
+    #[Assert\Choice(choices: Rider::AVAILABILITY_STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'offline'])]
+    private string $availabilityStatus = self::AVAILABILITY_OFFLINE;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $currentLatitude = null;
@@ -59,8 +105,9 @@ class Rider
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '2000.00'])]
     private string $cashRemitLimit = '2000.00';
 
-    #[ORM\Column(length: 32, nullable: true, enumType: PayoutMethod::class)]
-    private ?PayoutMethod $payoutMethod = null;
+    #[Assert\Choice(choices: Rider::PAYOUT_METHODS)]
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $payoutMethod = null;
 
     #[ORM\Column(name: 'payout_account_details', type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $encryptedPayoutAccountDetails = null;
@@ -131,12 +178,12 @@ class Rider
         return $this;
     }
 
-    public function getVehicleType(): VehicleType
+    public function getVehicleType(): string
     {
         return $this->vehicleType;
     }
 
-    public function setVehicleType(VehicleType $vehicleType): self
+    public function setVehicleType(string $vehicleType): self
     {
         $this->vehicleType = $vehicleType;
 
@@ -155,12 +202,12 @@ class Rider
         return $this;
     }
 
-    public function getApprovalStatus(): ApprovalStatus
+    public function getApprovalStatus(): string
     {
         return $this->approvalStatus;
     }
 
-    public function setApprovalStatus(ApprovalStatus $approvalStatus): self
+    public function setApprovalStatus(string $approvalStatus): self
     {
         $this->approvalStatus = $approvalStatus;
 
@@ -179,12 +226,12 @@ class Rider
         return $this;
     }
 
-    public function getAvailabilityStatus(): RiderAvailabilityStatus
+    public function getAvailabilityStatus(): string
     {
         return $this->availabilityStatus;
     }
 
-    public function setAvailabilityStatus(RiderAvailabilityStatus $availabilityStatus): self
+    public function setAvailabilityStatus(string $availabilityStatus): self
     {
         $this->availabilityStatus = $availabilityStatus;
 
@@ -251,12 +298,12 @@ class Rider
         return $this;
     }
 
-    public function getPayoutMethod(): ?PayoutMethod
+    public function getPayoutMethod(): ?string
     {
         return $this->payoutMethod;
     }
 
-    public function setPayoutMethod(?PayoutMethod $payoutMethod): self
+    public function setPayoutMethod(?string $payoutMethod): self
     {
         $this->payoutMethod = $payoutMethod;
 

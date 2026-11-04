@@ -7,7 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Order;
-use App\Enum\ConversationType;
 use App\Message\ConversationMessageSent;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
@@ -47,14 +46,14 @@ final class CustomerConversationController extends AbstractCustomerController
         if ($data instanceof JsonResponse) {
             return $data;
         }
-        $type = ConversationType::tryFrom((string) ($data['type'] ?? ConversationType::CUSTOMER_RIDER->value));
-        if (!$type instanceof ConversationType) {
+        $type = (in_array((string) ($data['type'] ?? Conversation::TYPE_CUSTOMER_RIDER), Conversation::TYPES, true) ? (string) ($data['type'] ?? Conversation::TYPE_CUSTOMER_RIDER) : null);
+        if (null === $type) {
             return $this->json(['message' => 'type must be customer_rider or customer_restaurant.'], 422);
         }
-        if (ConversationType::CUSTOMER_RIDER === $type && null === $order->getRider()) {
+        if (Conversation::TYPE_CUSTOMER_RIDER === $type && null === $order->getRider()) {
             return $this->json(['message' => 'A rider has not been assigned to this order yet.'], 409);
         }
-        if (ConversationType::CUSTOMER_RESTAURANT === $type && null === $order->getAcceptedAt()) {
+        if (Conversation::TYPE_CUSTOMER_RESTAURANT === $type && null === $order->getAcceptedAt()) {
             return $this->json(['message' => 'Restaurant chat opens after the restaurant accepts the order.'], 409);
         }
 
@@ -113,7 +112,7 @@ final class CustomerConversationController extends AbstractCustomerController
         $conversation->addMessage($message)->setUpdatedAt($now);
         $this->entityManager->persist($message);
         $this->entityManager->flush();
-        $recipient = ConversationType::CUSTOMER_RESTAURANT === $conversation->getType()
+        $recipient = Conversation::TYPE_CUSTOMER_RESTAURANT === $conversation->getType()
             ? $conversation->getOrder()->getRestaurant()->getUser()
             : $conversation->getOrder()->getRider()?->getUser();
         if (null !== $recipient) {
@@ -156,12 +155,12 @@ final class CustomerConversationController extends AbstractCustomerController
         $lastMessage = $this->entityManager->getRepository(Message::class)->findOneBy(['conversation' => $conversation], ['createdAt' => 'DESC', 'id' => 'DESC']);
         $unreadCount = $this->messages->countUnreadInConversationFor($conversation, $this->customerUser());
         $order = $conversation->getOrder();
-        $counterpart = ConversationType::CUSTOMER_RESTAURANT === $conversation->getType()
+        $counterpart = Conversation::TYPE_CUSTOMER_RESTAURANT === $conversation->getType()
             ? ['type' => 'restaurant', 'id' => $order->getRestaurant()->getId(), 'name' => $order->getRestaurant()->getName(), 'avatar_path' => $order->getRestaurant()->getLogoPath()]
             : ['type' => 'rider', 'id' => $order->getRider()?->getId(), 'name' => $order->getRider()?->getUser()->getName(), 'avatar_path' => $order->getRider()?->getUser()->getAvatarPath()];
 
         return [
-            'id' => $conversation->getId(), 'type' => $conversation->getType()->value,
+            'id' => $conversation->getId(), 'type' => $conversation->getType(),
             'order' => ['id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'restaurant_name' => $order->getRestaurant()->getName()],
             'counterpart' => $counterpart, 'is_closed' => $conversation->isClosed(),
             'closed_at' => $conversation->getClosedAt()?->format(\DateTimeInterface::ATOM), 'unread_count' => $unreadCount,

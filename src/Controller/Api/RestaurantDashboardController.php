@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\Order;
-use App\Enum\OrderStatus;
 use App\Repository\OrderRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -29,7 +28,7 @@ final class RestaurantDashboardController extends AbstractRestaurantController
         $end = $start->modify('+1 day');
         $todayCount = $this->orders->countPlacedForRestaurantBetween($restaurant, $start, $end);
         $revenue = $this->orders->sumDeliveredTotalForRestaurantBetween($restaurant, $start, $end);
-        $pending = $this->orders->countForRestaurantWithStatus($restaurant, OrderStatus::PLACED);
+        $pending = $this->orders->countForRestaurantWithStatus($restaurant, Order::STATUS_PLACED);
         $recent = $this->orders->findRecentForRestaurant($restaurant);
 
         return $this->json([
@@ -37,8 +36,8 @@ final class RestaurantDashboardController extends AbstractRestaurantController
             'today_revenue' => bcround($revenue, 2),
             'pending_orders_count' => $pending,
             'recent_orders' => array_map(static fn (Order $order): array => [
-                'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus()->value,
-                'total_amount' => $order->getTotalAmount(), 'payment_method' => $order->getPaymentMethod()->value,
+                'id' => $order->getId(), 'order_number' => $order->getOrderNumber(), 'status' => $order->getStatus(),
+                'total_amount' => $order->getTotalAmount(), 'payment_method' => $order->getPaymentMethod(),
                 'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
             ], $recent),
         ]);

@@ -6,8 +6,6 @@ namespace App\Security\Voter;
 
 use App\Entity\Conversation;
 use App\Entity\User;
-use App\Enum\ConversationType;
-use App\Enum\UserRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -29,7 +27,7 @@ final class ConversationVoter extends Voter
         }
 
         // Admins can inspect chat for disputes, but deliberately cannot impersonate a participant.
-        if (UserRole::ADMIN === $user->getRole()) {
+        if (User::ACCOUNT_ADMIN === $user->getRole()) {
             return self::VIEW === $attribute;
         }
 
@@ -43,8 +41,8 @@ final class ConversationVoter extends Voter
         }
 
         return match ($subject->getType()) {
-            ConversationType::CUSTOMER_RESTAURANT => $order->getRestaurant()->getUser() === $user,
-            ConversationType::CUSTOMER_RIDER => null !== $order->getRider() && $order->getRider()?->getUser() === $user,
+            Conversation::TYPE_CUSTOMER_RESTAURANT => $order->getRestaurant()->getUser() === $user,
+            Conversation::TYPE_CUSTOMER_RIDER => null !== $order->getRider() && $order->getRider()?->getUser() === $user,
         };
     }
 }

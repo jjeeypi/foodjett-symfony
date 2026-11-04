@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api;
 
 use App\Entity\Voucher;
-use App\Enum\VoucherScope;
-use App\Enum\VoucherType;
 
 final class RestaurantVoucherControllerTest extends RestaurantApiTestCase
 {
@@ -22,9 +20,9 @@ final class RestaurantVoucherControllerTest extends RestaurantApiTestCase
         $id = (string) $this->payload()['voucher']['id'];
         /** @var Voucher $voucher */
         $voucher = $this->fresh(Voucher::class, $id);
-        self::assertSame(VoucherScope::RESTAURANT, $voucher->getScope());
+        self::assertSame(Voucher::SCOPE_RESTAURANT, $voucher->getScope());
         self::assertSame($this->restaurant->getId(), $voucher->getRestaurant()?->getId());
-        self::assertSame(VoucherType::PERCENTAGE, $voucher->getType());
+        self::assertSame(Voucher::TYPE_PERCENTAGE, $voucher->getType());
 
         $this->client->request('GET', '/api/restaurant/vouchers', server: $this->auth());
         self::assertResponseIsSuccessful();
@@ -36,7 +34,7 @@ final class RestaurantVoucherControllerTest extends RestaurantApiTestCase
         self::assertResponseIsSuccessful();
         /** @var Voucher $voucher */
         $voucher = $this->fresh(Voucher::class, $id);
-        self::assertSame(VoucherType::FIXED, $voucher->getType());
+        self::assertSame(Voucher::TYPE_FIXED, $voucher->getType());
         self::assertSame('75.00', $voucher->getValue());
         self::assertFalse($voucher->isActive());
 
@@ -50,8 +48,8 @@ final class RestaurantVoucherControllerTest extends RestaurantApiTestCase
     public function testRestaurantCannotCreatePlatformScopeOrEditForeignAndPlatformVouchers(): void
     {
         $now = new \DateTimeImmutable();
-        $platform = $this->voucher('PLATFORM'.strtoupper(bin2hex(random_bytes(3))), VoucherScope::PLATFORM, null, $now);
-        $foreign = $this->voucher('FOREIGN'.strtoupper(bin2hex(random_bytes(3))), VoucherScope::RESTAURANT, $this->otherRestaurant, $now);
+        $platform = $this->voucher('PLATFORM'.strtoupper(bin2hex(random_bytes(3))), Voucher::SCOPE_PLATFORM, null, $now);
+        $foreign = $this->voucher('FOREIGN'.strtoupper(bin2hex(random_bytes(3))), Voucher::SCOPE_RESTAURANT, $this->otherRestaurant, $now);
         $this->persist($platform, $foreign);
         $this->entityManager->flush();
 
@@ -63,7 +61,7 @@ final class RestaurantVoucherControllerTest extends RestaurantApiTestCase
         $createdId = (string) $this->payload()['voucher']['id'];
         /** @var Voucher $created */
         $created = $this->fresh(Voucher::class, $createdId);
-        self::assertSame(VoucherScope::RESTAURANT, $created->getScope());
+        self::assertSame(Voucher::SCOPE_RESTAURANT, $created->getScope());
         self::assertSame($this->restaurant->getId(), $created->getRestaurant()?->getId());
 
         $this->client->jsonRequest('PATCH', '/api/restaurant/vouchers/'.$platform->getId(), ['value' => '10.00'], server: $this->auth());
@@ -72,9 +70,9 @@ final class RestaurantVoucherControllerTest extends RestaurantApiTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
-    private function voucher(string $code, VoucherScope $scope, ?\App\Entity\Restaurant $restaurant, \DateTimeImmutable $now): Voucher
+    private function voucher(string $code, string $scope, ?\App\Entity\Restaurant $restaurant, \DateTimeImmutable $now): Voucher
     {
-        return (new Voucher())->setCode($code)->setScope($scope)->setRestaurant($restaurant)->setType(VoucherType::FIXED)
+        return (new Voucher())->setCode($code)->setScope($scope)->setRestaurant($restaurant)->setType(Voucher::TYPE_FIXED)
             ->setValue('25.00')->setMinOrderAmount('0.00')->setUsageLimitPerCustomer(1)->setIsActive(true)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }

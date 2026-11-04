@@ -6,8 +6,6 @@ namespace App\Tests\Controller\Api;
 
 use App\Entity\Admin;
 use App\Entity\User;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -88,7 +86,7 @@ final class AdminSettingsAccountControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
         $user = (new User())->setName('Settings Admin')->setEmail(self::ADMIN_EMAIL)->setPhone('+639190400001')
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))->setRole(UserRole::ADMIN)->setStatus(UserStatus::ACTIVE)
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))->setRole(User::ACCOUNT_ADMIN)->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)->setUpdatedAt($now);
         $admin = (new Admin())->setUser($user)->setCreatedAt($now)->setUpdatedAt($now);
         $entityManager->persist($user);

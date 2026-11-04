@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\SupportTicketStatus;
+use App\Entity\Order;
+use App\Entity\Restaurant;
+use App\Entity\Rider;
+use App\Entity\SupportTicket;
 use App\Repository\CustomerRepository;
 use App\Repository\OrderRepository;
 use App\Repository\OrderStatusHistoryRepository;
@@ -48,24 +49,24 @@ final class AdminDashboardController extends AbstractController
         $nextMonth = $monthStart->modify('first day of next month');
 
         $inProgressStatuses = [
-            OrderStatus::PLACED,
-            OrderStatus::ACCEPTED,
-            OrderStatus::PREPARING,
-            OrderStatus::READY,
-            OrderStatus::FINDING_RIDER,
-            OrderStatus::RIDER_ASSIGNED,
-            OrderStatus::AT_RESTAURANT,
-            OrderStatus::PICKED_UP,
-            OrderStatus::ON_THE_WAY,
-            OrderStatus::ARRIVED,
+            Order::STATUS_PLACED,
+            Order::STATUS_ACCEPTED,
+            Order::STATUS_PREPARING,
+            Order::STATUS_READY,
+            Order::STATUS_FINDING_RIDER,
+            Order::STATUS_RIDER_ASSIGNED,
+            Order::STATUS_AT_RESTAURANT,
+            Order::STATUS_PICKED_UP,
+            Order::STATUS_ON_THE_WAY,
+            Order::STATUS_ARRIVED,
         ];
         $cancelledStatuses = [
-            OrderStatus::REJECTED_BY_RESTAURANT->value,
-            OrderStatus::CANCELLED_BY_CUSTOMER->value,
-            OrderStatus::CANCELLED_BY_RESTAURANT->value,
-            OrderStatus::CANCELLED_NO_RIDER->value,
-            OrderStatus::CANCELLED_BY_ADMIN->value,
-            OrderStatus::FAILED_DELIVERY->value,
+            Order::STATUS_REJECTED_BY_RESTAURANT,
+            Order::STATUS_CANCELLED_BY_CUSTOMER,
+            Order::STATUS_CANCELLED_BY_RESTAURANT,
+            Order::STATUS_CANCELLED_NO_RIDER,
+            Order::STATUS_CANCELLED_BY_ADMIN,
+            Order::STATUS_FAILED_DELIVERY,
         ];
 
         $todayOrders = $this->orders->countPlacedBetween($todayStart, $tomorrow);
@@ -75,14 +76,14 @@ final class AdminDashboardController extends AbstractController
         $cancelledToday = $this->statusHistory->countOrdersEnteringStatusesBetween($cancelledStatuses, $todayStart, $tomorrow);
 
         $openRestaurants = $this->restaurants->countOpenAndActive();
-        $pendingRestaurants = $this->restaurants->countWithApprovalStatus(ApprovalStatus::PENDING);
-        $approvedRestaurants = $this->restaurants->countWithApprovalStatus(ApprovalStatus::APPROVED);
+        $pendingRestaurants = $this->restaurants->countWithApprovalStatus(Restaurant::APPROVAL_PENDING);
+        $approvedRestaurants = $this->restaurants->countWithApprovalStatus(Restaurant::APPROVAL_APPROVED);
 
         $onlineRiders = $this->riders->countOnline();
-        $pendingRiders = $this->riders->countWithApprovalStatus(ApprovalStatus::PENDING);
-        $approvedRiders = $this->riders->countWithApprovalStatus(ApprovalStatus::APPROVED);
+        $pendingRiders = $this->riders->countWithApprovalStatus(Rider::APPROVAL_PENDING);
+        $approvedRiders = $this->riders->countWithApprovalStatus(Rider::APPROVAL_APPROVED);
 
-        $openSupportTickets = $this->supportTickets->countWithStatuses([SupportTicketStatus::OPEN, SupportTicketStatus::IN_PROGRESS]);
+        $openSupportTickets = $this->supportTickets->countWithStatuses([SupportTicket::STATUS_OPEN, SupportTicket::STATUS_IN_PROGRESS]);
         $pendingRemittances = $this->remittances->sumPending();
         $activeVouchers = $this->vouchers->countActiveAt($now);
         $voucherRedemptions = $this->voucherRedemptions->countBetween($monthStart, $nextMonth);

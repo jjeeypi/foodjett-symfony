@@ -54,15 +54,15 @@ final class CheckoutController extends AbstractController
             'id' => $order->getId(),
             'order_number' => $order->getOrderNumber(),
             'checkout_token' => $order->getCheckoutToken(),
-            'status' => $order->getStatus()->value,
+            'status' => $order->getStatus(),
             'subtotal' => $order->getSubtotal(),
             'delivery_fee' => $order->getDeliveryFee(),
             'service_fee' => $order->getServiceFee(),
             'discount_amount' => $order->getDiscountAmount(),
             'tip_amount' => $order->getTipAmount(),
             'total_amount' => $order->getTotalAmount(),
-            'payment_method' => $order->getPaymentMethod()->value,
-            'payment_status' => $order->getPayment()?->getStatus()->value,
+            'payment_method' => $order->getPaymentMethod(),
+            'payment_status' => $order->getPayment()?->getStatus(),
             'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
         ];
     }

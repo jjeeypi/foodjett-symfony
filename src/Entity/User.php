@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -13,6 +11,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
@@ -20,6 +19,32 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\UniqueConstraint(name: 'users_phone_unique', columns: ['phone'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    // Account role; getRoles() maps it to ROLE_* (ACCOUNT_ROLES)
+    public const ACCOUNT_ADMIN = 'admin';
+    public const ACCOUNT_RESTAURANT = 'restaurant';
+    public const ACCOUNT_RIDER = 'rider';
+    public const ACCOUNT_CUSTOMER = 'customer';
+
+    /** @var list<string> */
+    public const ACCOUNT_ROLES = [
+        self::ACCOUNT_ADMIN,
+        self::ACCOUNT_RESTAURANT,
+        self::ACCOUNT_RIDER,
+        self::ACCOUNT_CUSTOMER,
+    ];
+
+    // Account status (STATUSES)
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_SUSPENDED = 'suspended';
+    public const STATUS_BANNED = 'banned';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_ACTIVE,
+        self::STATUS_SUSPENDED,
+        self::STATUS_BANNED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -46,11 +71,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $twoFactorConfirmedAt = null;
 
-    #[ORM\Column(length: 32, enumType: UserRole::class)]
-    private UserRole $role;
+    #[Assert\Choice(choices: User::ACCOUNT_ROLES)]
+    #[ORM\Column(length: 32)]
+    private string $role;
 
-    #[ORM\Column(length: 32, enumType: UserStatus::class, options: ['default' => 'active'])]
-    private UserStatus $status = UserStatus::ACTIVE;
+    #[Assert\Choice(choices: User::STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'active'])]
+    private string $status = self::STATUS_ACTIVE;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $emailVerifiedAt = null;
@@ -203,12 +230,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getRole(): UserRole
+    public function getRole(): string
     {
         return $this->role;
     }
 
-    public function setRole(UserRole $role): self
+    public function setRole(string $role): self
     {
         $this->role = $role;
 
@@ -217,15 +244,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        return ['ROLE_USER', 'ROLE_'.strtoupper($this->role->value)];
+        return ['ROLE_USER', 'ROLE_'.strtoupper($this->role)];
     }
 
-    public function getStatus(): UserStatus
+    public function getStatus(): string
     {
         return $this->status;
     }
 
-    public function setStatus(UserStatus $status): self
+    public function setStatus(string $status): self
     {
         $this->status = $status;
 

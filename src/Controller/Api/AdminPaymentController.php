@@ -6,9 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\Payment;
 use App\Entity\User;
-use App\Enum\PaymentActor;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
 use App\Repository\AuditLogRepository;
 use App\Repository\PaymentRepository;
 use App\Service\ApiPaginator;
@@ -39,14 +36,14 @@ final class AdminPaymentController extends AbstractController
     {
         $method = null;
         if ('' !== ($methodValue = trim((string) $request->query->get('method', '')))) {
-            $method = PaymentMethod::tryFrom($methodValue);
+            $method = (in_array($methodValue, Payment::METHODS, true) ? $methodValue : null);
             if (null === $method) {
                 return $this->json(['message' => 'Invalid method.'], 422);
             }
         }
         $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
-            $status = PaymentStatus::tryFrom($statusValue);
+            $status = (in_array($statusValue, Payment::STATUSES, true) ? $statusValue : null);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid status.'], 422);
             }
@@ -94,9 +91,9 @@ final class AdminPaymentController extends AbstractController
                 }
                 $from = $locked->getStatus();
                 $amount = $requested ?? bcsub($locked->getAmount(), $locked->getRefundedAmount(), 2);
-                $to = $this->paymentTransitions->refund($locked, $amount, PaymentActor::ADMIN, '' === $reason ? null : $reason, new \DateTimeImmutable());
+                $to = $this->paymentTransitions->refund($locked, $amount, Payment::ACTOR_ADMIN, '' === $reason ? null : $reason, new \DateTimeImmutable());
                 $this->audit->record($admin, 'payment.refunded', 'payment', (string) $locked->getId(), [
-                    'status' => ['from' => $from->value, 'to' => $to->value],
+                    'status' => ['from' => $from, 'to' => $to],
                     'refund_amount' => $amount,
                     'refunded_amount' => $locked->getRefundedAmount(),
                     'reason' => '' === $reason ? null : $reason,
@@ -123,8 +120,8 @@ final class AdminPaymentController extends AbstractController
                 'restaurant_name' => $payment->getOrder()->getRestaurant()->getName(),
                 'customer_name' => $payment->getOrder()->getCustomer()->getUser()->getName(),
             ],
-            'method' => $payment->getMethod()->value,
-            'status' => $payment->getStatus()->value,
+            'method' => $payment->getMethod(),
+            'status' => $payment->getStatus(),
             'amount' => $payment->getAmount(),
             'refunded_amount' => $payment->getRefundedAmount(),
             'transaction_reference' => $payment->getTransactionReference(),

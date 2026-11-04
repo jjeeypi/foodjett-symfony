@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\RiderPoolDeclineAction;
 use App\Repository\RiderPoolDeclineRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RiderPoolDeclineRepository::class)]
 #[ORM\Table(name: 'rider_pool_declines')]
@@ -16,6 +16,16 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'rider_pool_declines_rider_id_foreign', columns: ['rider_id'])]
 class RiderPoolDecline
 {
+    // How the rider passed on the offer (ACTIONS)
+    public const ACTION_SKIPPED = 'skipped';
+    public const ACTION_EXPIRED = 'expired';
+
+    /** @var list<string> */
+    public const ACTIONS = [
+        self::ACTION_SKIPPED,
+        self::ACTION_EXPIRED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -29,8 +39,9 @@ class RiderPoolDecline
     #[ORM\JoinColumn(name: 'rider_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private Rider $rider;
 
-    #[ORM\Column(length: 16, enumType: RiderPoolDeclineAction::class)]
-    private RiderPoolDeclineAction $action;
+    #[Assert\Choice(choices: RiderPoolDecline::ACTIONS)]
+    #[ORM\Column(length: 16)]
+    private string $action;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, columnDefinition: 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', options: ['default' => 'CURRENT_TIMESTAMP'])]
     private \DateTimeImmutable $createdAt;
@@ -64,12 +75,12 @@ class RiderPoolDecline
         return $this;
     }
 
-    public function getAction(): RiderPoolDeclineAction
+    public function getAction(): string
     {
         return $this->action;
     }
 
-    public function setAction(RiderPoolDeclineAction $action): self
+    public function setAction(string $action): self
     {
         $this->action = $action;
 

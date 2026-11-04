@@ -3,9 +3,6 @@
 namespace App\Repository;
 
 use App\Entity\OrderReport;
-use App\Enum\OrderReportAgainst;
-use App\Enum\OrderReportStatus;
-use App\Enum\OrderReportType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -22,9 +19,9 @@ class OrderReportRepository extends ServiceEntityRepository
 
     /** Order reports with their order, reporter and resolver, newest first, optionally filtered. */
     public function createAdminListQuery(
-        ?OrderReportStatus $status = null,
-        ?OrderReportType $type = null,
-        ?OrderReportAgainst $against = null,
+        ?string $status = null,
+        ?string $type = null,
+        ?string $against = null,
     ): QueryBuilder {
         $query = $this->createQueryBuilder('report')
             ->innerJoin('report.order', 'orders')->addSelect('orders')
@@ -33,7 +30,7 @@ class OrderReportRepository extends ServiceEntityRepository
             ->orderBy('report.createdAt', 'DESC');
         foreach (['status' => $status, 'type' => $type, 'against' => $against] as $field => $value) {
             if (null !== $value) {
-                $query->andWhere('report.'.$field.' = :'.$field)->setParameter($field, $value->value);
+                $query->andWhere('report.'.$field.' = :'.$field)->setParameter($field, $value);
             }
         }
 

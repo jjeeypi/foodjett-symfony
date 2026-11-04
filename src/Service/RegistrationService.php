@@ -14,15 +14,6 @@ use App\Entity\RestaurantDocument;
 use App\Entity\Rider;
 use App\Entity\RiderDocument;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\DocumentStatus;
-use App\Enum\RestaurantDocumentType;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\RiderDocumentType;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -40,7 +31,7 @@ final readonly class RegistrationService
     {
         return $this->entityManager->wrapInTransaction(function () use ($request): User {
             $now = new \DateTimeImmutable();
-            $user = $this->newUser($request->name, $request->email, $request->phone, $request->password, UserRole::CUSTOMER, $now);
+            $user = $this->newUser($request->name, $request->email, $request->phone, $request->password, User::ACCOUNT_CUSTOMER, $now);
             $customer = (new Customer())
                 ->setUser($user)
                 ->setCreatedAt($now)
@@ -59,7 +50,7 @@ final readonly class RegistrationService
     {
         return $this->entityManager->wrapInTransaction(function () use ($request, $documentPaths): User {
             $now = new \DateTimeImmutable();
-            $user = $this->newUser($request->ownerName, $request->email, $request->phone, $request->password, UserRole::RESTAURANT, $now);
+            $user = $this->newUser($request->ownerName, $request->email, $request->phone, $request->password, User::ACCOUNT_RESTAURANT, $now);
             $setting = $this->entityManager->getRepository(PlatformSetting::class)->findOneBy(['key' => 'default_commission_rate']);
             $commissionRate = $setting?->getValue() ?? '15.00';
             if (1 !== preg_match('/^\d{1,3}(\.\d+)?$/', trim($commissionRate))) {
@@ -74,8 +65,8 @@ final readonly class RegistrationService
                 ->setLongitude($request->longitude)
                 ->setCuisineType($request->cuisineType)
                 ->setCommissionRate(bcround(trim($commissionRate), 2))
-                ->setApprovalStatus(ApprovalStatus::PENDING)
-                ->setOperatingStatus(RestaurantOperatingStatus::CLOSED)
+                ->setApprovalStatus(Restaurant::APPROVAL_PENDING)
+                ->setOperatingStatus(Restaurant::OPERATING_CLOSED)
                 ->setCreatedAt($now)
                 ->setUpdatedAt($now);
 
@@ -84,9 +75,9 @@ final readonly class RegistrationService
             foreach ($documentPaths as $type => $path) {
                 $document = (new RestaurantDocument())
                     ->setRestaurant($restaurant)
-                    ->setType(RestaurantDocumentType::from($type))
+                    ->setType($type)
                     ->setFilePath($path)
-                    ->setStatus(DocumentStatus::PENDING)
+                    ->setStatus(RestaurantDocument::STATUS_PENDING)
                     ->setCreatedAt($now)
                     ->setUpdatedAt($now);
                 $restaurant->addDocument($document);
@@ -103,13 +94,13 @@ final readonly class RegistrationService
     {
         return $this->entityManager->wrapInTransaction(function () use ($request, $documentPaths): User {
             $now = new \DateTimeImmutable();
-            $user = $this->newUser($request->name, $request->email, $request->phone, $request->password, UserRole::RIDER, $now);
+            $user = $this->newUser($request->name, $request->email, $request->phone, $request->password, User::ACCOUNT_RIDER, $now);
             $rider = (new Rider())
                 ->setUser($user)
-                ->setVehicleType(VehicleType::from($request->vehicleType))
+                ->setVehicleType($request->vehicleType)
                 ->setPlateNumber($request->plateNumber)
-                ->setApprovalStatus(ApprovalStatus::PENDING)
-                ->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE)
+                ->setApprovalStatus(Restaurant::APPROVAL_PENDING)
+                ->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE)
                 ->setCreatedAt($now)
                 ->setUpdatedAt($now);
 
@@ -118,9 +109,9 @@ final readonly class RegistrationService
             foreach ($documentPaths as $type => $path) {
                 $document = (new RiderDocument())
                     ->setRider($rider)
-                    ->setType(RiderDocumentType::from($type))
+                    ->setType($type)
                     ->setFilePath($path)
-                    ->setStatus(DocumentStatus::PENDING)
+                    ->setStatus(RestaurantDocument::STATUS_PENDING)
                     ->setCreatedAt($now)
                     ->setUpdatedAt($now);
                 $rider->addDocument($document);
@@ -142,14 +133,14 @@ final readonly class RegistrationService
         return null !== $this->entityManager->getRepository(User::class)->findOneBy(['phone' => trim($phone)]);
     }
 
-    private function newUser(string $name, string $email, string $phone, string $password, UserRole $role, \DateTimeImmutable $now): User
+    private function newUser(string $name, string $email, string $phone, string $password, string $role, \DateTimeImmutable $now): User
     {
         $user = (new User())
             ->setName(trim($name))
             ->setEmail(mb_strtolower(trim($email)))
             ->setPhone(trim($phone))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
 

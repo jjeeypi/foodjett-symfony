@@ -3,8 +3,6 @@
 namespace App\Repository;
 
 use App\Entity\Payment;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,8 +19,8 @@ class PaymentRepository extends ServiceEntityRepository
 
     /** Payments with their order parties, newest first, optionally filtered by method, status and paid date. */
     public function createAdminListQuery(
-        ?PaymentMethod $method = null,
-        ?PaymentStatus $status = null,
+        ?string $method = null,
+        ?string $status = null,
         ?\DateTimeImmutable $paidFrom = null,
         ?\DateTimeImmutable $paidTo = null,
     ): QueryBuilder {
@@ -33,10 +31,10 @@ class PaymentRepository extends ServiceEntityRepository
             ->innerJoin('customer.user', 'customerUser')->addSelect('customerUser')
             ->orderBy('payment.createdAt', 'DESC');
         if (null !== $method) {
-            $query->andWhere('payment.method = :method')->setParameter('method', $method->value);
+            $query->andWhere('payment.method = :method')->setParameter('method', $method);
         }
         if (null !== $status) {
-            $query->andWhere('payment.status = :status')->setParameter('status', $status->value);
+            $query->andWhere('payment.status = :status')->setParameter('status', $status);
         }
         if (null !== $paidFrom) {
             $query->andWhere('payment.paidAt >= :date_from')->setParameter('date_from', $paidFrom);

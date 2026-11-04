@@ -3,7 +3,6 @@
 namespace App\EventListener;
 
 use App\Entity\User;
-use App\Enum\UserStatus;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
 use Symfony\Component\Security\Http\Event\CheckPassportEvent;
@@ -18,13 +17,13 @@ final class AccountStatusListener
     public function onCheckPassportEvent(CheckPassportEvent $event): void
     {
         $user = $event->getPassport()->getUser();
-        if (!$user instanceof User || UserStatus::ACTIVE === $user->getStatus()) {
+        if (!$user instanceof User || User::STATUS_ACTIVE === $user->getStatus()) {
             return;
         }
 
         $message = match ($user->getStatus()) {
-            UserStatus::SUSPENDED => 'Your account is suspended. Contact support for assistance.',
-            UserStatus::BANNED => 'Your account is banned. Contact support for assistance.',
+            User::STATUS_SUSPENDED => 'Your account is suspended. Contact support for assistance.',
+            User::STATUS_BANNED => 'Your account is banned. Contact support for assistance.',
             default => 'Your account is not active.',
         };
 

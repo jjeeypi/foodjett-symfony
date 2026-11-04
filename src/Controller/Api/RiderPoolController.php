@@ -7,8 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\Order;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\OrderStatus;
-use App\Enum\RiderAvailabilityStatus;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\OrderVoter;
 use App\Service\OrderTransitionService;
@@ -41,7 +39,7 @@ final class RiderPoolController extends AbstractController
                 'reason' => 'Set your current location before viewing the rider pool.',
             ]);
         }
-        if (RiderAvailabilityStatus::AVAILABLE !== $rider->getAvailabilityStatus()) {
+        if (Rider::AVAILABILITY_AVAILABLE !== $rider->getAvailabilityStatus()) {
             return $this->json([
                 'orders' => [],
                 'reason' => 'Go online to view available orders.',
@@ -61,7 +59,7 @@ final class RiderPoolController extends AbstractController
     #[Route('/{id}/accept', name: 'accept', methods: ['POST'])]
     public function accept(Order $order): JsonResponse
     {
-        if (OrderStatus::FINDING_RIDER !== $order->getStatus() || null !== $order->getRider()) {
+        if (Order::STATUS_FINDING_RIDER !== $order->getStatus() || null !== $order->getRider()) {
             return $this->json(['message' => 'This order was just taken by another rider.'], 409);
         }
         $this->denyAccessUnlessGranted(OrderVoter::UPDATE_AS_RIDER, $order);
@@ -79,7 +77,7 @@ final class RiderPoolController extends AbstractController
             'order' => [
                 'id' => $order->getId(),
                 'order_number' => $order->getOrderNumber(),
-                'status' => $order->getStatus()->value,
+                'status' => $order->getStatus(),
                 'rider_id' => $order->getRider()?->getId(),
                 'rider_assigned_at' => $order->getRiderAssignedAt()?->format(\DateTimeInterface::ATOM),
                 'pickup_code' => $order->getPickupCode(),
@@ -90,7 +88,7 @@ final class RiderPoolController extends AbstractController
     #[Route('/{id}/decline', name: 'decline', methods: ['POST'])]
     public function decline(Order $order): JsonResponse
     {
-        if (OrderStatus::FINDING_RIDER !== $order->getStatus() || null !== $order->getRider()) {
+        if (Order::STATUS_FINDING_RIDER !== $order->getStatus() || null !== $order->getRider()) {
             return $this->json(['message' => 'This order is no longer available.'], 409);
         }
         $this->denyAccessUnlessGranted(OrderVoter::UPDATE_AS_RIDER, $order);
@@ -104,7 +102,7 @@ final class RiderPoolController extends AbstractController
         return $this->json([
             'decline' => [
                 'order_id' => $decline->getOrder()->getId(),
-                'action' => $decline->getAction()->value,
+                'action' => $decline->getAction(),
             ],
         ]);
     }

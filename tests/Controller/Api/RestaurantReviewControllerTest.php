@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Order;
 use App\Entity\RestaurantReview;
-use App\Enum\OrderStatus;
 
 final class RestaurantReviewControllerTest extends RestaurantApiTestCase
 {
@@ -64,7 +64,7 @@ final class RestaurantReviewControllerTest extends RestaurantApiTestCase
 
     private function review(\App\Entity\Restaurant $restaurant, int $rating, string $comment, \DateTimeImmutable $now): RestaurantReview
     {
-        $order = $this->createOrder($restaurant, OrderStatus::DELIVERED, deliveredAt: $now);
+        $order = $this->createOrder($restaurant, Order::STATUS_DELIVERED, deliveredAt: $now);
 
         return (new RestaurantReview())->setOrder($order)->setCustomer($this->customer)->setRestaurant($restaurant)
             ->setRating($rating)->setComment($comment)->setCreatedAt($now)->setUpdatedAt($now);

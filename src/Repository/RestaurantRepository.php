@@ -3,8 +3,6 @@
 namespace App\Repository;
 
 use App\Entity\Restaurant;
-use App\Enum\ApprovalStatus;
-use App\Enum\RestaurantOperatingStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -34,7 +32,7 @@ class RestaurantRepository extends ServiceEntityRepository
     public function findApproved(): array
     {
         return $this->createQueryBuilder('restaurant')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
             ->orderBy('restaurant.name', 'ASC')->getQuery()->getResult();
     }
 
@@ -42,18 +40,18 @@ class RestaurantRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('restaurant')
             ->andWhere('restaurant.id = :id')->setParameter('id', $id)
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
             ->getQuery()->getOneOrNullResult();
     }
 
     /** Restaurants with their owners, newest first, optionally filtered by approval and name search. */
-    public function createAdminListQuery(?ApprovalStatus $approval = null, string $search = ''): QueryBuilder
+    public function createAdminListQuery(?string $approval = null, string $search = ''): QueryBuilder
     {
         $query = $this->createQueryBuilder('restaurant')
             ->innerJoin('restaurant.user', 'owner')->addSelect('owner')
             ->orderBy('restaurant.createdAt', 'DESC');
         if (null !== $approval) {
-            $query->andWhere('restaurant.approvalStatus = :approval')->setParameter('approval', $approval->value);
+            $query->andWhere('restaurant.approvalStatus = :approval')->setParameter('approval', $approval);
         }
         if ('' !== $search) {
             $query->andWhere('LOWER(restaurant.name) LIKE :search')->setParameter('search', '%'.mb_strtolower($search).'%');
@@ -68,7 +66,7 @@ class RestaurantRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('restaurant')
             ->innerJoin('restaurant.user', 'owner')->addSelect('owner')
             ->andWhere('restaurant.approvalStatus = :status')
-            ->setParameter('status', ApprovalStatus::PENDING->value)
+            ->setParameter('status', Restaurant::APPROVAL_PENDING)
             ->orderBy('restaurant.createdAt', 'ASC');
     }
 
@@ -78,17 +76,17 @@ class RestaurantRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('restaurant')
             ->select('COUNT(restaurant.id)')
             ->innerJoin('restaurant.user', 'account')
-            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
-            ->andWhere('restaurant.operatingStatus = :open')->setParameter('open', RestaurantOperatingStatus::OPEN->value)
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
+            ->andWhere('restaurant.operatingStatus = :open')->setParameter('open', Restaurant::OPERATING_OPEN)
             ->andWhere('account.status = :active')->setParameter('active', 'active')
             ->getQuery()->getSingleScalarResult();
     }
 
-    public function countWithApprovalStatus(ApprovalStatus $status): int
+    public function countWithApprovalStatus(string $status): int
     {
         return (int) $this->createQueryBuilder('restaurant')
             ->select('COUNT(restaurant.id)')
-            ->andWhere('restaurant.approvalStatus = :status')->setParameter('status', $status->value)
+            ->andWhere('restaurant.approvalStatus = :status')->setParameter('status', $status)
             ->getQuery()->getSingleScalarResult();
     }
 

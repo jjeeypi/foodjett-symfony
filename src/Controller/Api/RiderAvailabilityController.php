@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Enum\RiderAvailabilityStatus;
+use App\Entity\Rider;
 use App\Security\Voter\ApprovedAccountVoter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,7 +21,7 @@ final class RiderAvailabilityController extends AbstractRiderController
     {
         $rider = $this->rider();
         $activeOrder = $this->activeOrder(false);
-        if (null !== $activeOrder && RiderAvailabilityStatus::OFFLINE !== $rider->getAvailabilityStatus()) {
+        if (null !== $activeOrder && Rider::AVAILABILITY_OFFLINE !== $rider->getAvailabilityStatus()) {
             return $this->json(['message' => 'Finish your current delivery first.'], 409);
         }
         $data = $this->body($request);
@@ -33,19 +33,19 @@ final class RiderAvailabilityController extends AbstractRiderController
             return $this->json(['message' => 'The submitted data is invalid.', 'errors' => $errors], 422);
         }
         $now = new \DateTimeImmutable();
-        if (RiderAvailabilityStatus::OFFLINE === $rider->getAvailabilityStatus()) {
-            $rider->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE);
+        if (Rider::AVAILABILITY_OFFLINE === $rider->getAvailabilityStatus()) {
+            $rider->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE);
             if (null !== $latitude && null !== $longitude) {
                 $rider->setCurrentLatitude($latitude)->setCurrentLongitude($longitude)->setLastLocationAt($now);
             }
         } else {
-            $rider->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE);
+            $rider->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE);
         }
         $rider->setUpdatedAt($now);
         $this->entityManager->flush();
 
         return $this->json([
-            'availability_status' => $rider->getAvailabilityStatus()->value,
+            'availability_status' => $rider->getAvailabilityStatus(),
             'latitude' => $rider->getCurrentLatitude(), 'longitude' => $rider->getCurrentLongitude(),
             'last_location_at' => $rider->getLastLocationAt()?->format(\DateTimeInterface::ATOM),
         ]);

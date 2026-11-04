@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\OrderReportAgainst;
-use App\Enum\OrderReportStatus;
-use App\Enum\OrderReportType;
 use App\Repository\OrderReportRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderReportRepository::class)]
 #[ORM\Table(name: 'order_reports')]
@@ -18,6 +16,56 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'order_reports_resolved_by_admin_id_foreign', columns: ['resolved_by_admin_id'])]
 class OrderReport
 {
+    // Who the report is about (AGAINST_TARGETS)
+    public const AGAINST_RESTAURANT = 'restaurant';
+    public const AGAINST_RIDER = 'rider';
+    public const AGAINST_CUSTOMER = 'customer';
+    public const AGAINST_PLATFORM = 'platform';
+
+    /** @var list<string> */
+    public const AGAINST_TARGETS = [
+        self::AGAINST_RESTAURANT,
+        self::AGAINST_RIDER,
+        self::AGAINST_CUSTOMER,
+        self::AGAINST_PLATFORM,
+    ];
+
+    // Report handling status (STATUSES)
+    public const STATUS_OPEN = 'open';
+    public const STATUS_UNDER_REVIEW = 'under_review';
+    public const STATUS_RESOLVED = 'resolved';
+    public const STATUS_REJECTED = 'rejected';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_OPEN,
+        self::STATUS_UNDER_REVIEW,
+        self::STATUS_RESOLVED,
+        self::STATUS_REJECTED,
+    ];
+
+    // Kind of problem reported (TYPES)
+    public const TYPE_MISSING_ITEM = 'missing_item';
+    public const TYPE_WRONG_ITEM = 'wrong_item';
+    public const TYPE_LATE_DELIVERY = 'late_delivery';
+    public const TYPE_NO_SHOW_RIDER = 'no_show_rider';
+    public const TYPE_RUDE_BEHAVIOR = 'rude_behavior';
+    public const TYPE_CUSTOMER_UNREACHABLE = 'customer_unreachable';
+    public const TYPE_ACCIDENT = 'accident';
+    public const TYPE_OTHER = 'other';
+
+    /** @var list<string> */
+    public const TYPES = [
+        self::TYPE_MISSING_ITEM,
+        self::TYPE_WRONG_ITEM,
+        self::TYPE_LATE_DELIVERY,
+        self::TYPE_NO_SHOW_RIDER,
+        self::TYPE_RUDE_BEHAVIOR,
+        self::TYPE_CUSTOMER_UNREACHABLE,
+        self::TYPE_ACCIDENT,
+        self::TYPE_OTHER,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -31,17 +79,20 @@ class OrderReport
     #[ORM\JoinColumn(name: 'reported_by_user_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private User $reportedBy;
 
-    #[ORM\Column(length: 16, enumType: OrderReportAgainst::class)]
-    private OrderReportAgainst $against;
+    #[Assert\Choice(choices: OrderReport::AGAINST_TARGETS)]
+    #[ORM\Column(length: 16)]
+    private string $against;
 
-    #[ORM\Column(length: 32, enumType: OrderReportType::class)]
-    private OrderReportType $type;
+    #[Assert\Choice(choices: OrderReport::TYPES)]
+    #[ORM\Column(length: 32)]
+    private string $type;
 
     #[ORM\Column(type: Types::TEXT, length: 65535)]
     private string $description;
 
-    #[ORM\Column(length: 32, enumType: OrderReportStatus::class, options: ['default' => 'open'])]
-    private OrderReportStatus $status = OrderReportStatus::OPEN;
+    #[Assert\Choice(choices: OrderReport::STATUSES)]
+    #[ORM\Column(length: 32, options: ['default' => 'open'])]
+    private string $status = self::STATUS_OPEN;
 
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $resolution = null;
@@ -64,14 +115,14 @@ class OrderReport
     public function setOrder(Order $order): self { $this->order = $order; return $this; }
     public function getReportedBy(): User { return $this->reportedBy; }
     public function setReportedBy(User $user): self { $this->reportedBy = $user; return $this; }
-    public function getAgainst(): OrderReportAgainst { return $this->against; }
-    public function setAgainst(OrderReportAgainst $against): self { $this->against = $against; return $this; }
-    public function getType(): OrderReportType { return $this->type; }
-    public function setType(OrderReportType $type): self { $this->type = $type; return $this; }
+    public function getAgainst(): string { return $this->against; }
+    public function setAgainst(string $against): self { $this->against = $against; return $this; }
+    public function getType(): string { return $this->type; }
+    public function setType(string $type): self { $this->type = $type; return $this; }
     public function getDescription(): string { return $this->description; }
     public function setDescription(string $description): self { $this->description = $description; return $this; }
-    public function getStatus(): OrderReportStatus { return $this->status; }
-    public function setStatus(OrderReportStatus $status): self { $this->status = $status; return $this; }
+    public function getStatus(): string { return $this->status; }
+    public function setStatus(string $status): self { $this->status = $status; return $this; }
     public function getResolution(): ?string { return $this->resolution; }
     public function setResolution(?string $resolution): self { $this->resolution = $resolution; return $this; }
     public function getResolvedByAdmin(): ?Admin { return $this->resolvedByAdmin; }

@@ -11,14 +11,6 @@ use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\RiderPoolOffer;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderPoolEscalationStage;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -49,23 +41,23 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
 
     public function testCustomerCancelsPlacedPaidOrderAndReceivesFullRefund(): void
     {
-        $order = $this->createOrder(OrderStatus::PLACED, PaymentMethod::CARD, PaymentStatus::PAID);
+        $order = $this->createOrder(Order::STATUS_PLACED, Payment::METHOD_CARD, Payment::STATUS_PAID);
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/cancel', [
             'reason' => 'Changed my mind',
         ], server: $this->auth($this->login()));
 
         self::assertResponseIsSuccessful();
-        self::assertSame(OrderStatus::CANCELLED_BY_CUSTOMER->value, $this->payload()['order']['status'] ?? null);
+        self::assertSame(Order::STATUS_CANCELLED_BY_CUSTOMER, $this->payload()['order']['status'] ?? null);
         $cancelled = $this->reload((string) $order->getId());
-        self::assertSame(PaymentStatus::REFUNDED, $cancelled->getPayment()?->getStatus());
+        self::assertSame(Payment::STATUS_REFUNDED, $cancelled->getPayment()?->getStatus());
         self::assertSame($cancelled->getPayment()?->getAmount(), $cancelled->getPayment()?->getRefundedAmount());
         self::assertCount(1, $cancelled->getPayment()?->getStatusHistory());
     }
 
     public function testFindingRiderCancellationRequiresCustomerNotifiedEscalation(): void
     {
-        $order = $this->createOrder(OrderStatus::FINDING_RIDER, PaymentMethod::COD, PaymentStatus::PENDING, RiderPoolEscalationStage::INITIAL);
+        $order = $this->createOrder(Order::STATUS_FINDING_RIDER, Payment::METHOD_COD, Payment::STATUS_PENDING, RiderPoolOffer::STAGE_INITIAL);
         $token = $this->login();
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/cancel', [], server: $this->auth($token));
@@ -74,14 +66,14 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $offer = $entityManager->find(RiderPoolOffer::class, $order->getRiderPoolOffer()?->getId());
         self::assertInstanceOf(RiderPoolOffer::class, $offer);
-        $offer->setEscalationStage(RiderPoolEscalationStage::CUSTOMER_NOTIFIED);
+        $offer->setEscalationStage(RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED);
         $entityManager->flush();
 
         $this->client->jsonRequest('POST', '/api/customer/orders/'.$order->getId().'/cancel', [], server: $this->auth($token));
         self::assertResponseIsSuccessful();
         $cancelled = $this->reload((string) $order->getId());
-        self::assertSame(OrderStatus::CANCELLED_BY_CUSTOMER, $cancelled->getStatus());
-        self::assertSame(PaymentStatus::FAILED, $cancelled->getPayment()?->getStatus());
+        self::assertSame(Order::STATUS_CANCELLED_BY_CUSTOMER, $cancelled->getStatus());
+        self::assertSame(Payment::STATUS_FAILED, $cancelled->getPayment()?->getStatus());
         self::assertSame('0.00', $cancelled->getPayment()?->getRefundedAmount());
     }
 
@@ -89,7 +81,7 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186200001', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user(self::CUSTOMER_EMAIL, '+639186200001', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())
             ->setCustomer($customer)
@@ -99,7 +91,7 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
             ->setLongitude('120.9850000')
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
-        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186200002', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user(self::RESTAURANT_EMAIL, '+639186200002', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())
             ->setUser($restaurantUser)
             ->setName('Cancellation Test Restaurant')
@@ -107,8 +99,8 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
             ->setAddress('Test restaurant')
             ->setLatitude('14.5995000')
             ->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)
-            ->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)
+            ->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         foreach ([$customerUser, $customer, $address, $restaurantUser, $restaurant] as $entity) {
@@ -121,10 +113,10 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
     }
 
     private function createOrder(
-        OrderStatus $status,
-        PaymentMethod $method,
-        PaymentStatus $paymentStatus,
-        ?RiderPoolEscalationStage $stage = null,
+        string $status,
+        string $method,
+        string $paymentStatus,
+        ?string $stage = null,
     ): Order {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
@@ -146,14 +138,14 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
             ->setMethod($method)
             ->setStatus($paymentStatus)
             ->setAmount('135.00')
-            ->setPaidAt(PaymentStatus::PAID === $paymentStatus ? $now : null)
-            ->setTransactionReference(PaymentStatus::PAID === $paymentStatus ? 'SIMULATED-CANCEL' : null)
+            ->setPaidAt(Payment::STATUS_PAID === $paymentStatus ? $now : null)
+            ->setTransactionReference(Payment::STATUS_PAID === $paymentStatus ? 'SIMULATED-CANCEL' : null)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
         $order->setPayment($payment);
         $entityManager->persist($order);
         $entityManager->persist($payment);
-        if ($stage instanceof RiderPoolEscalationStage) {
+        if (null !== $stage) {
             $offer = (new RiderPoolOffer())
                 ->setOrder($order)
                 ->setEscalationStage($stage)
@@ -167,7 +159,7 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
         return $order;
     }
 
-    private function user(string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())
             ->setName('Cancellation Test User')
@@ -175,7 +167,7 @@ final class CustomerOrderCancellationControllerTest extends WebTestCase
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
-            ->setStatus(UserStatus::ACTIVE)
+            ->setStatus(User::STATUS_ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
     }

@@ -4,8 +4,6 @@ namespace App\EventListener;
 
 use App\Entity\Order;
 use App\Entity\Payment;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentStatus;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
@@ -35,20 +33,18 @@ final class StatusGuardListener
             return;
         }
 
-        // The status columns are mapped as strings; the entities expose them as enums.
-        $old = $event->getOldValue('status');
-        $new = $event->getNewValue('status');
-        $newValue = $new instanceof \BackedEnum ? $new->value : (string) $new;
+        $old = (string) $event->getOldValue('status');
+        $newValue = (string) $event->getNewValue('status');
         $authorized = $entity instanceof Order
-            ? null !== ($status = OrderStatus::tryFrom($newValue)) && $this->orderTransitions->consumeAuthorizedStatus($entity, $status)
-            : null !== ($status = PaymentStatus::tryFrom($newValue)) && $this->paymentTransitions->consumeAuthorizedStatus($entity, $status);
+            ? $this->orderTransitions->consumeAuthorizedStatus($entity, $newValue)
+            : $this->paymentTransitions->consumeAuthorizedStatus($entity, $newValue);
 
         if (!$authorized) {
             throw new \LogicException(sprintf(
                 '%s #%s status cannot change from "%s" to "%s" outside %s.',
                 $entity instanceof Order ? 'Order' : 'Payment',
                 (string) $entity->getId(),
-                $old instanceof \BackedEnum ? $old->value : (string) $old,
+                $old,
                 $newValue,
                 $entity instanceof Order ? 'OrderTransitionService' : 'PaymentTransitionService',
             ));

@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api;
 
 use App\Entity\Order;
+use App\Entity\RestaurantPayout;
 use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
 use App\Entity\User;
-use App\Enum\OrderStatus;
-use App\Enum\PayoutStatus;
-use App\Enum\RemittanceStatus;
-use App\Enum\UserStatus;
 
 final class RiderAccountControllerTest extends RiderApiTestCase
 {
@@ -51,13 +48,13 @@ final class RiderAccountControllerTest extends RiderApiTestCase
     public function testAccountDeletionAnonymizesRiderButPreservesOperationalHistory(): void
     {
         $now = new \DateTimeImmutable();
-        $order = $this->createOrder(OrderStatus::DELIVERED, $this->rider, at: $now)->setDeliveredAt($now);
+        $order = $this->createOrder(Order::STATUS_DELIVERED, $this->rider, at: $now)->setDeliveredAt($now);
         $earning = (new RiderEarning())->setRider($this->rider)->setOrder($order)->setBasePay('40.00')->setDistancePay('10.00')
             ->setWaitingPay('0.00')->setIncentivePay('0.00')->setTipAmount('0.00')->setTotalEarned('50.00')->setCreatedAt($now)->setUpdatedAt($now);
         $order->setRiderEarning($earning);
         $payout = (new RiderPayout())->setRider($this->rider)->setPeriodStart($now->modify('-7 days'))->setPeriodEnd($now)
-            ->setTotalAmount('50.00')->setStatus(PayoutStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
-        $remittance = (new RiderCashRemittance())->setRider($this->rider)->setAmount('25.00')->setStatus(RemittanceStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setTotalAmount('50.00')->setStatus(RestaurantPayout::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+        $remittance = (new RiderCashRemittance())->setRider($this->rider)->setAmount('25.00')->setStatus(RiderCashRemittance::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($earning, $payout, $remittance);
         $this->entityManager->flush();
         $ids = [(string) $this->riderUser->getId(), (string) $this->rider->getId(), (string) $order->getId(), (string) $earning->getId(), (string) $payout->getId(), (string) $remittance->getId()];
@@ -71,7 +68,7 @@ final class RiderAccountControllerTest extends RiderApiTestCase
         self::assertSame('Deleted Rider', $user->getName());
         self::assertNull($user->getEmail());
         self::assertNull($user->getPhone());
-        self::assertSame(UserStatus::BANNED, $user->getStatus());
+        self::assertSame(User::STATUS_BANNED, $user->getStatus());
         self::assertInstanceOf(Rider::class, $this->entityManager->find(Rider::class, $ids[1]));
         self::assertNotNull($this->entityManager->find(Order::class, $ids[2]));
         self::assertNotNull($this->entityManager->find(RiderEarning::class, $ids[3]));

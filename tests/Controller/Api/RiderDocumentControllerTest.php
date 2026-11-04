@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api;
 
 use App\Entity\RiderDocument;
-use App\Enum\DocumentStatus;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class RiderDocumentControllerTest extends RiderApiTestCase
@@ -26,7 +25,7 @@ final class RiderDocumentControllerTest extends RiderApiTestCase
         self::assertResponseStatusCodeSame(409);
         self::assertStringContainsString('Only rejected', $this->payload()['message']);
 
-        $this->entityManager->getConnection()->executeStatement('UPDATE rider_documents SET status = ?, rejection_reason = ? WHERE id = ?', [DocumentStatus::REJECTED->value, 'Unreadable image', $first['id']]);
+        $this->entityManager->getConnection()->executeStatement('UPDATE rider_documents SET status = ?, rejection_reason = ? WHERE id = ?', [RiderDocument::STATUS_REJECTED, 'Unreadable image', $first['id']]);
         $this->client->request('POST', '/api/rider/documents', ['type' => 'drivers_license'], ['file' => $this->imageUpload('replacement.png')], server: $this->auth());
         self::assertResponseIsSuccessful();
         $replacement = $this->payload()['document'];
@@ -40,8 +39,8 @@ final class RiderDocumentControllerTest extends RiderApiTestCase
     public function testAnotherRidersDocumentsAreNeverListed(): void
     {
         $now = new \DateTimeImmutable();
-        $foreign = (new RiderDocument())->setRider($this->otherRider)->setType(\App\Enum\RiderDocumentType::VALID_ID)
-            ->setFilePath('uploads/riders/documents/foreign.pdf')->setStatus(DocumentStatus::PENDING)->setCreatedAt($now)->setUpdatedAt($now);
+        $foreign = (new RiderDocument())->setRider($this->otherRider)->setType(RiderDocument::TYPE_VALID_ID)
+            ->setFilePath('uploads/riders/documents/foreign.pdf')->setStatus(RiderDocument::STATUS_PENDING)->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($foreign);
         $this->entityManager->flush();
 

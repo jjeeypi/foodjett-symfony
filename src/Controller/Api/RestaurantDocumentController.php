@@ -6,8 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
-use App\Enum\DocumentStatus;
-use App\Enum\RestaurantDocumentType;
 use App\Repository\RestaurantDocumentRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\UploadStorage;
@@ -43,7 +41,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
     public function store(Request $request): JsonResponse
     {
         $restaurant = $this->restaurant();
-        $type = RestaurantDocumentType::tryFrom((string) $request->request->get('type', ''));
+        $type = (in_array((string) $request->request->get('type', ''), RestaurantDocument::TYPES, true) ? (string) $request->request->get('type', '') : null);
         $file = $request->files->get('file');
         $errors = [];
         if (null === $type) {
@@ -57,7 +55,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
         }
 
         $document = $this->entityManager->getRepository(RestaurantDocument::class)->findOneBy(['restaurant' => $restaurant, 'type' => $type]);
-        if ($document instanceof RestaurantDocument && DocumentStatus::REJECTED !== $document->getStatus()) {
+        if ($document instanceof RestaurantDocument && RestaurantDocument::STATUS_REJECTED !== $document->getStatus()) {
             return $this->json(['message' => 'This document type has already been submitted. Only rejected documents can be replaced.'], 409);
         }
 
@@ -68,7 +66,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
     public function replace(string $id, Request $request): JsonResponse
     {
         $document = $this->ownedDocument($id);
-        if (DocumentStatus::REJECTED !== $document->getStatus()) {
+        if (RestaurantDocument::STATUS_REJECTED !== $document->getStatus()) {
             return $this->json(['message' => 'Only a rejected document can be re-uploaded.'], 409);
         }
         $file = $request->files->get('file');
@@ -91,7 +89,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
         return $this->json(['message' => 'Document deleted.']);
     }
 
-    private function saveUpload(Restaurant $restaurant, ?RestaurantDocument $document, RestaurantDocumentType $type, mixed $file, int $status = 200): JsonResponse
+    private function saveUpload(Restaurant $restaurant, ?RestaurantDocument $document, string $type, mixed $file, int $status = 200): JsonResponse
     {
         try {
             $path = $this->uploads->store($file, 'restaurants/documents', self::MIME_TYPES);
@@ -102,7 +100,7 @@ final class RestaurantDocumentController extends AbstractRestaurantController
         $now = new \DateTimeImmutable();
         $oldPath = $document?->getFilePath();
         $document ??= (new RestaurantDocument())->setRestaurant($restaurant)->setType($type)->setCreatedAt($now);
-        $document->setFilePath($path)->setStatus(DocumentStatus::PENDING)->setRejectionReason(null)->setUpdatedAt($now);
+        $document->setFilePath($path)->setStatus(RestaurantDocument::STATUS_PENDING)->setRejectionReason(null)->setUpdatedAt($now);
         $this->entityManager->persist($document);
         $this->entityManager->flush();
         $this->uploads->delete($oldPath);
@@ -124,8 +122,8 @@ final class RestaurantDocumentController extends AbstractRestaurantController
     private function serialize(RestaurantDocument $document): array
     {
         return [
-            'id' => $document->getId(), 'type' => $document->getType()->value, 'file_path' => $document->getFilePath(),
-            'status' => $document->getStatus()->value, 'rejection_reason' => $document->getRejectionReason(),
+            'id' => $document->getId(), 'type' => $document->getType(), 'file_path' => $document->getFilePath(),
+            'status' => $document->getStatus(), 'rejection_reason' => $document->getRejectionReason(),
             'created_at' => $document->getCreatedAt()?->format(\DateTimeInterface::ATOM),
             'updated_at' => $document->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
         ];

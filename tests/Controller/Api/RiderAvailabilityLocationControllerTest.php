@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Order;
 use App\Entity\Rider;
-use App\Enum\OrderStatus;
-use App\Enum\RiderAvailabilityStatus;
 use App\Tests\Double\RecordingMercureHub;
 
 final class RiderAvailabilityLocationControllerTest extends RiderApiTestCase
@@ -31,8 +30,8 @@ final class RiderAvailabilityLocationControllerTest extends RiderApiTestCase
 
     public function testBusyLockPreventsGoingOfflineDuringAnActiveDelivery(): void
     {
-        $this->rider->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE);
-        $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->rider);
+        $this->rider->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE);
+        $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider);
         $this->entityManager->flush();
 
         $this->client->jsonRequest('PATCH', '/api/rider/availability', [], server: $this->auth());
@@ -45,7 +44,7 @@ final class RiderAvailabilityLocationControllerTest extends RiderApiTestCase
         $hub = self::getContainer()->get(RecordingMercureHub::class);
         $hub->reset();
         $this->rider->setLastLocationAt(new \DateTimeImmutable('-10 seconds'));
-        $order = $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->rider);
+        $order = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider);
         $this->entityManager->flush();
 
         $this->client->jsonRequest('POST', '/api/rider/location', ['latitude' => 14.601, 'longitude' => 120.986], server: $this->auth());
@@ -70,7 +69,7 @@ final class RiderAvailabilityLocationControllerTest extends RiderApiTestCase
 
     public function testAnotherRidersOrderDoesNotAuthorizeLocationUpdates(): void
     {
-        $this->createOrder(OrderStatus::RIDER_ASSIGNED, $this->otherRider);
+        $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->otherRider);
         $this->entityManager->flush();
 
         $this->client->jsonRequest('POST', '/api/rider/location', ['latitude' => 14.601, 'longitude' => 120.986], server: $this->auth());

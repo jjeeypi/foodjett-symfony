@@ -6,7 +6,6 @@ use App\Entity\Conversation;
 use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\Rider;
-use App\Enum\ConversationType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -38,7 +37,7 @@ class ConversationRepository extends ServiceEntityRepository
             ->select('conversation.id')
             ->innerJoin('conversation.order', 'orders')
             ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('conversation.type = :type')->setParameter('type', ConversationType::CUSTOMER_RIDER)
+            ->andWhere('conversation.type = :type')->setParameter('type', Conversation::TYPE_CUSTOMER_RIDER)
             ->getQuery()->getSingleColumnResult();
     }
 
@@ -73,7 +72,7 @@ class ConversationRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('conversation')
             ->innerJoin('conversation.order', 'orders')
             ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('conversation.type = :type')->setParameter('type', ConversationType::CUSTOMER_RIDER->value)
+            ->andWhere('conversation.type = :type')->setParameter('type', Conversation::TYPE_CUSTOMER_RIDER)
             ->orderBy('conversation.updatedAt', 'DESC')->addOrderBy('conversation.createdAt', 'DESC');
     }
 
@@ -83,7 +82,7 @@ class ConversationRepository extends ServiceEntityRepository
             ->innerJoin('conversation.order', 'orders')
             ->andWhere('conversation.id = :id')->setParameter('id', $id)
             ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('conversation.type = :type')->setParameter('type', ConversationType::CUSTOMER_RIDER->value)
+            ->andWhere('conversation.type = :type')->setParameter('type', Conversation::TYPE_CUSTOMER_RIDER)
             ->getQuery()->getOneOrNullResult();
     }
 
@@ -91,9 +90,9 @@ class ConversationRepository extends ServiceEntityRepository
      * The order's conversation of this type, created (and queued for saving) when it does not exist yet.
      * A customer-rider conversation needs an assigned rider.
      */
-    public function forOrder(Order $order, ConversationType $type, ?\DateTimeImmutable $now = null): Conversation
+    public function forOrder(Order $order, string $type, ?\DateTimeImmutable $now = null): Conversation
     {
-        if (ConversationType::CUSTOMER_RIDER === $type && null === $order->getRider()) {
+        if (Conversation::TYPE_CUSTOMER_RIDER === $type && null === $order->getRider()) {
             throw new \DomainException('A rider must be assigned before opening this conversation.');
         }
 

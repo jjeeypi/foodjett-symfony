@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
-use App\Enum\RemittanceStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -32,19 +31,19 @@ class RiderCashRemittanceRepository extends ServiceEntityRepository
     {
         return (string) $this->createQueryBuilder('remittance')
             ->select('COALESCE(SUM(remittance.amount), 0)')->andWhere('remittance.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
+            ->andWhere('remittance.status = :status')->setParameter('status', RiderCashRemittance::STATUS_PENDING)
             ->getQuery()->getSingleScalarResult();
     }
 
     /** Every remittance with its rider and reviewing admin, oldest first, optionally filtered by status. */
-    public function createAdminListQuery(?RemittanceStatus $status = null): QueryBuilder
+    public function createAdminListQuery(?string $status = null): QueryBuilder
     {
         $query = $this->createQueryBuilder('remittance')
             ->innerJoin('remittance.rider', 'rider')->addSelect('rider')->innerJoin('rider.user', 'riderUser')->addSelect('riderUser')
             ->leftJoin('remittance.confirmedByAdmin', 'admin')->addSelect('admin')
             ->orderBy('remittance.createdAt', 'ASC');
         if (null !== $status) {
-            $query->andWhere('remittance.status = :status')->setParameter('status', $status->value);
+            $query->andWhere('remittance.status = :status')->setParameter('status', $status);
         }
 
         return $query;
@@ -55,7 +54,7 @@ class RiderCashRemittanceRepository extends ServiceEntityRepository
     {
         return (string) $this->createQueryBuilder('remittance')
             ->select('COALESCE(SUM(remittance.amount), 0)')
-            ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
+            ->andWhere('remittance.status = :status')->setParameter('status', RiderCashRemittance::STATUS_PENDING)
             ->getQuery()->getSingleScalarResult();
     }
 }

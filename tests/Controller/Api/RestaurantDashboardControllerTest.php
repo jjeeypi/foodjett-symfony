@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
-use App\Enum\OrderStatus;
+use App\Entity\Order;
+
 
 final class RestaurantDashboardControllerTest extends RestaurantApiTestCase
 {
@@ -15,10 +16,10 @@ final class RestaurantDashboardControllerTest extends RestaurantApiTestCase
         $olderAt = $today->setTime(10, 0);
         $newerAt = $today->setTime(11, 0);
         $foreignAt = $today->setTime(12, 0);
-        $older = $this->createOrder($this->restaurant, OrderStatus::PLACED, '80.00', '115.00', $olderAt);
-        $newer = $this->createOrder($this->restaurant, OrderStatus::DELIVERED, '120.00', '155.00', $newerAt, $newerAt);
-        $this->createOrder($this->restaurant, OrderStatus::DELIVERED, '50.00', '85.00', $today->modify('-2 days'), $today->modify('-2 days'));
-        $foreign = $this->createOrder($this->otherRestaurant, OrderStatus::DELIVERED, '999.00', '1034.00', $foreignAt, $foreignAt);
+        $older = $this->createOrder($this->restaurant, Order::STATUS_PLACED, '80.00', '115.00', $olderAt);
+        $newer = $this->createOrder($this->restaurant, Order::STATUS_DELIVERED, '120.00', '155.00', $newerAt, $newerAt);
+        $this->createOrder($this->restaurant, Order::STATUS_DELIVERED, '50.00', '85.00', $today->modify('-2 days'), $today->modify('-2 days'));
+        $foreign = $this->createOrder($this->otherRestaurant, Order::STATUS_DELIVERED, '999.00', '1034.00', $foreignAt, $foreignAt);
         $this->entityManager->flush();
 
         $this->client->request('GET', '/api/restaurant/dashboard', server: $this->auth());

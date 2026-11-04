@@ -7,7 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\MenuItem;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
-use App\Enum\RestaurantOperatingStatus;
 use App\Repository\DeliveryZoneRepository;
 use App\Repository\MenuItemRepository;
 use App\Repository\RestaurantRepository;
@@ -216,7 +215,7 @@ final class CustomerBrowsingController extends AbstractController
 
     private function isOpen(Restaurant $restaurant, ?\DateTimeImmutable $now = null): bool
     {
-        if (RestaurantOperatingStatus::OPEN !== $restaurant->getOperatingStatus()) {
+        if (Restaurant::OPERATING_OPEN !== $restaurant->getOperatingStatus()) {
             return false;
         }
 
@@ -283,7 +282,7 @@ final class CustomerBrowsingController extends AbstractController
         return [
             'id' => $restaurant->getId(), 'name' => $restaurant->getName(), 'slug' => $restaurant->getSlug(),
             'logo_path' => $restaurant->getLogoPath(), 'cuisine_type' => $restaurant->getCuisineType(),
-            'operating_status' => $restaurant->getOperatingStatus()->value, 'is_open_now' => $open,
+            'operating_status' => $restaurant->getOperatingStatus(), 'is_open_now' => $open,
             'rating' => $rating['average'], 'review_count' => $rating['count'],
             'distance_km' => null === $distance ? null : round($distance, 2),
         ];

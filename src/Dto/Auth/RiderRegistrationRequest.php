@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto\Auth;
 
-use App\Enum\VehicleType;
+use App\Entity\Rider;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -37,7 +37,7 @@ final readonly class RiderRegistrationRequest
     #[Assert\Callback]
     public function validatePlateNumber(ExecutionContextInterface $context): void
     {
-        if (VehicleType::BICYCLE->value !== $this->vehicleType && null === $this->plateNumber) {
+        if (Rider::VEHICLE_BICYCLE !== $this->vehicleType && null === $this->plateNumber) {
             $context->buildViolation('A plate number is required for this vehicle type.')
                 ->atPath('plateNumber')
                 ->addViolation();

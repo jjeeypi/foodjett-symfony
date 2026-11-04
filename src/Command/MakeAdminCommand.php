@@ -6,8 +6,6 @@ namespace App\Command;
 
 use App\Entity\Admin;
 use App\Entity\User;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -70,8 +68,8 @@ final class MakeAdminCommand extends Command
             $user = (new User())
                 ->setName($name)
                 ->setEmail($email)
-                ->setRole(UserRole::ADMIN)
-                ->setStatus(UserStatus::ACTIVE)
+                ->setRole(User::ACCOUNT_ADMIN)
+                ->setStatus(User::STATUS_ACTIVE)
                 ->setCreatedAt($now)
                 ->setUpdatedAt($now);
             $user->setPassword($this->passwordHasher->hashPassword($user, $password));

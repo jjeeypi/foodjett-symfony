@@ -9,18 +9,11 @@ use App\Entity\CustomerAddress;
 use App\Entity\MenuCategory;
 use App\Entity\MenuItem;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantOperatingHour;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -56,15 +49,15 @@ abstract class CustomerApiTestCase extends WebTestCase
         $this->marker = 'CAPI-'.bin2hex(random_bytes(5));
         $now = new \DateTimeImmutable();
 
-        $this->customerUser = $this->user('customer-a', UserRole::CUSTOMER, $now);
-        $this->otherCustomerUser = $this->user('customer-b', UserRole::CUSTOMER, $now);
+        $this->customerUser = $this->user('customer-a', User::ACCOUNT_CUSTOMER, $now);
+        $this->otherCustomerUser = $this->user('customer-b', User::ACCOUNT_CUSTOMER, $now);
         $this->customer = (new Customer())->setUser($this->customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $this->otherCustomer = (new Customer())->setUser($this->otherCustomerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $this->address = $this->address($this->customer, 'Home', true, $now);
         $this->otherAddress = $this->address($this->otherCustomer, 'Other home', true, $now);
 
-        $restaurantUser = $this->user('restaurant-a', UserRole::RESTAURANT, $now);
-        $otherRestaurantUser = $this->user('restaurant-b', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user('restaurant-a', User::ACCOUNT_RESTAURANT, $now);
+        $otherRestaurantUser = $this->user('restaurant-b', User::ACCOUNT_RESTAURANT, $now);
         $this->restaurant = $this->restaurant($restaurantUser, 'Test Kitchen', 'Filipino', '14.5995000', '120.9842000', $now);
         $this->otherRestaurant = $this->restaurant($otherRestaurantUser, 'Second Kitchen', 'Japanese', '14.7000000', '121.1000000', $now);
 
@@ -165,7 +158,7 @@ abstract class CustomerApiTestCase extends WebTestCase
         Customer $customer,
         Restaurant $restaurant,
         CustomerAddress $address,
-        OrderStatus $status = OrderStatus::PLACED,
+        string $status = Order::STATUS_PLACED,
         ?\DateTimeImmutable $placedAt = null,
         ?\DateTimeImmutable $deliveredAt = null,
     ): Order {
@@ -173,7 +166,7 @@ abstract class CustomerApiTestCase extends WebTestCase
         $order = (new Order())->setOrderNumber($this->marker.'-'.(++$this->orderSequence))->setCustomer($customer)->setRestaurant($restaurant)
             ->setCustomerAddress($address)->setStatus($status)->setSubtotal('100.00')->setDeliveryFee('35.00')->setServiceFee('0.00')
             ->setDiscountAmount('0.00')->setTipAmount('0.00')->setTotalAmount('135.00')->setCommissionAmount('15.00')
-            ->setPaymentMethod(PaymentMethod::COD)->setPlacedAt($placedAt)->setDeliveredAt($deliveredAt)->setCreatedAt($placedAt)->setUpdatedAt($placedAt);
+            ->setPaymentMethod(Payment::METHOD_COD)->setPlacedAt($placedAt)->setDeliveredAt($deliveredAt)->setCreatedAt($placedAt)->setUpdatedAt($placedAt);
         $this->persist($order);
 
         return $order;
@@ -182,22 +175,22 @@ abstract class CustomerApiTestCase extends WebTestCase
     protected function createRider(string $label = 'rider'): Rider
     {
         $now = new \DateTimeImmutable();
-        $user = $this->user($label, UserRole::RIDER, $now);
-        $rider = (new Rider())->setUser($user)->setVehicleType(VehicleType::MOTORCYCLE)->setPlateNumber('TEST-123')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+        $user = $this->user($label, User::ACCOUNT_RIDER, $now);
+        $rider = (new Rider())->setUser($user)->setVehicleType(Rider::VEHICLE_MOTORCYCLE)->setPlateNumber('TEST-123')
+            ->setApprovalStatus(Rider::APPROVAL_APPROVED)->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)
             ->setCreatedAt($now)->setUpdatedAt($now);
         $this->persist($user, $rider);
 
         return $rider;
     }
 
-    protected function user(string $label, UserRole $role, \DateTimeImmutable $now): User
+    protected function user(string $label, string $role, \DateTimeImmutable $now): User
     {
         $suffix = bin2hex(random_bytes(3));
 
         return (new User())->setName($this->marker.' '.$label)->setEmail(strtolower($this->marker)."-$label-$suffix@foodjett.test")
             ->setPhone('+639'.random_int(100000000, 999999999))->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function address(Customer $customer, string $label, bool $default, \DateTimeImmutable $now): CustomerAddress
@@ -210,7 +203,7 @@ abstract class CustomerApiTestCase extends WebTestCase
     {
         return (new Restaurant())->setUser($user)->setName($this->marker.' '.$name)->setSlug(strtolower($this->marker).'-'.strtolower(str_replace(' ', '-', $name)))
             ->setCuisineType($cuisine)->setAddress('Restaurant address')->setLatitude($latitude)->setLongitude($longitude)
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }
 }

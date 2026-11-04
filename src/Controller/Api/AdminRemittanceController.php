@@ -8,7 +8,6 @@ use App\Entity\Admin;
 use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
 use App\Entity\User;
-use App\Enum\RemittanceStatus;
 use App\Repository\AuditLogRepository;
 use App\Repository\RiderCashRemittanceRepository;
 use App\Service\ApiPaginator;
@@ -37,7 +36,7 @@ final class AdminRemittanceController extends AbstractController
     {
         $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
-            $status = RemittanceStatus::tryFrom($statusValue);
+            $status = (in_array($statusValue, RiderCashRemittance::STATUSES, true) ? $statusValue : null);
             if (null === $status) { return $this->json(['message' => 'Invalid status.'], 422); }
         }
         $query = $this->remittances->createAdminListQuery($status);
@@ -55,7 +54,7 @@ final class AdminRemittanceController extends AbstractController
             $updated = $this->entityManager->wrapInTransaction(function () use ($remittance, $adminUser): RiderCashRemittance {
                 $locked = $this->entityManager->find(RiderCashRemittance::class, $remittance->getId(), LockMode::PESSIMISTIC_WRITE);
                 if (!$locked instanceof RiderCashRemittance) { throw new \RuntimeException('Remittance not found.'); }
-                if (RemittanceStatus::CONFIRMED === $locked->getStatus()) { return $locked; }
+                if (RiderCashRemittance::STATUS_CONFIRMED === $locked->getStatus()) { return $locked; }
                 $rider = $this->entityManager->find(Rider::class, $locked->getRider()->getId(), LockMode::PESSIMISTIC_WRITE);
                 if (!$rider instanceof Rider) { throw new \RuntimeException('Rider not found.'); }
                 if (1 === bccomp($locked->getAmount(), $rider->getCashOnHand(), 2)) {
@@ -64,11 +63,11 @@ final class AdminRemittanceController extends AbstractController
                 $beforeCash = $rider->getCashOnHand();
                 $now = new \DateTimeImmutable();
                 $afterCash = bcsub($beforeCash, $locked->getAmount(), 2);
-                $locked->setStatus(RemittanceStatus::CONFIRMED)->setConfirmedByAdmin($adminUser->getAdmin())
+                $locked->setStatus(RiderCashRemittance::STATUS_CONFIRMED)->setConfirmedByAdmin($adminUser->getAdmin())
                     ->setRemittedAt($locked->getRemittedAt() ?? $now)->setUpdatedAt($now);
                 $rider->setCashOnHand($afterCash)->setUpdatedAt($now);
                 $this->audit->record($adminUser, 'rider_remittance.confirmed', 'rider_cash_remittance', (string) $locked->getId(), [
-                    'status' => ['from' => RemittanceStatus::PENDING->value, 'to' => RemittanceStatus::CONFIRMED->value],
+                    'status' => ['from' => RiderCashRemittance::STATUS_PENDING, 'to' => RiderCashRemittance::STATUS_CONFIRMED],
                     'rider_cash_on_hand' => ['from' => $beforeCash, 'to' => $afterCash],
                     'amount' => $locked->getAmount(),
                 ]);
@@ -88,7 +87,7 @@ final class AdminRemittanceController extends AbstractController
         return [
             'id' => $remittance->getId(),
             'rider' => ['id' => $remittance->getRider()->getId(), 'name' => $remittance->getRider()->getUser()->getName(), 'cash_on_hand' => $remittance->getRider()->getCashOnHand()],
-            'amount' => $remittance->getAmount(), 'reference_note' => $remittance->getReferenceNote(), 'status' => $remittance->getStatus()->value,
+            'amount' => $remittance->getAmount(), 'reference_note' => $remittance->getReferenceNote(), 'status' => $remittance->getStatus(),
             'confirmed_by_admin_id' => $remittance->getConfirmedByAdmin()?->getId(), 'remitted_at' => $remittance->getRemittedAt()?->format(\DateTimeInterface::ATOM),
             'created_at' => $remittance->getCreatedAt()?->format(\DateTimeInterface::ATOM),
         ];

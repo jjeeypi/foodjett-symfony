@@ -11,11 +11,6 @@ use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\RiderPoolOffer;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\ConversationType;
-use App\Enum\OrderStatus;
-use App\Enum\RiderPoolEscalationStage;
-use App\Enum\UserRole;
 use App\Security\Voter\ConversationVoter;
 use App\Security\Voter\OrderVoter;
 use App\Security\Voter\RestaurantVoter;
@@ -38,14 +33,14 @@ final class OwnershipVotersTest extends TestCase
 
         $offer = (new RiderPoolOffer())
             ->setOrder($order)
-            ->setEscalationStage(RiderPoolEscalationStage::CUSTOMER_NOTIFIED);
+            ->setEscalationStage(RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED);
         $order->setRiderPoolOffer($offer);
         self::assertTrue($this->granted($voter, OrderVoter::CANCEL, $order, $customerUser));
 
-        $unapprovedRider = $this->riderUser(ApprovalStatus::PENDING);
+        $unapprovedRider = $this->riderUser(Rider::APPROVAL_PENDING);
         self::assertFalse($this->granted($voter, OrderVoter::UPDATE_AS_RIDER, $order, $unapprovedRider));
 
-        $order->setStatus(OrderStatus::PLACED);
+        $order->setStatus(Order::STATUS_PLACED);
         self::assertTrue($this->granted($voter, OrderVoter::CANCEL, $order, $customerUser));
         self::assertFalse($this->granted($voter, OrderVoter::UPDATE_AS_RIDER, $order, $riderUser));
 
@@ -53,15 +48,15 @@ final class OwnershipVotersTest extends TestCase
         self::assertTrue($this->granted($voter, OrderVoter::VIEW, $order, $riderUser));
         self::assertFalse($this->granted($voter, OrderVoter::VIEW, $order, $unapprovedRider));
 
-        $admin = $this->user(UserRole::ADMIN);
+        $admin = $this->user(User::ACCOUNT_ADMIN);
         self::assertTrue($this->granted($voter, OrderVoter::CANCEL, $order, $admin));
     }
 
     public function testRestaurantAndRiderVotersAllowSelfAndAdminOnly(): void
     {
         [, , $restaurantUser, $riderUser] = $this->orderGraph();
-        $admin = $this->user(UserRole::ADMIN);
-        $outsider = $this->user(UserRole::CUSTOMER);
+        $admin = $this->user(User::ACCOUNT_ADMIN);
+        $outsider = $this->user(User::ACCOUNT_CUSTOMER);
 
         $restaurantVoter = new RestaurantVoter();
         self::assertTrue($this->granted($restaurantVoter, RestaurantVoter::UPDATE, $restaurantUser->getRestaurant(), $restaurantUser));
@@ -80,14 +75,14 @@ final class OwnershipVotersTest extends TestCase
         $order->setRider($riderUser->getRider());
         $conversation = (new Conversation())
             ->setOrder($order)
-            ->setType(ConversationType::CUSTOMER_RIDER);
+            ->setType(Conversation::TYPE_CUSTOMER_RIDER);
         $voter = new ConversationVoter();
 
         self::assertTrue($this->granted($voter, ConversationVoter::SEND, $conversation, $customerUser));
         self::assertTrue($this->granted($voter, ConversationVoter::SEND, $conversation, $riderUser));
         self::assertFalse($this->granted($voter, ConversationVoter::VIEW, $conversation, $restaurantUser));
 
-        $admin = $this->user(UserRole::ADMIN);
+        $admin = $this->user(User::ACCOUNT_ADMIN);
         self::assertTrue($this->granted($voter, ConversationVoter::VIEW, $conversation, $admin));
         self::assertFalse($this->granted($voter, ConversationVoter::SEND, $conversation, $admin));
 
@@ -99,29 +94,29 @@ final class OwnershipVotersTest extends TestCase
     /** @return array{Order, User, User, User} */
     private function orderGraph(): array
     {
-        $customerUser = $this->user(UserRole::CUSTOMER);
+        $customerUser = $this->user(User::ACCOUNT_CUSTOMER);
         $customer = (new Customer())->setUser($customerUser);
-        $restaurantUser = $this->user(UserRole::RESTAURANT);
+        $restaurantUser = $this->user(User::ACCOUNT_RESTAURANT);
         $restaurant = (new Restaurant())->setUser($restaurantUser);
-        $riderUser = $this->riderUser(ApprovalStatus::APPROVED);
+        $riderUser = $this->riderUser(Rider::APPROVAL_APPROVED);
 
         $order = (new Order())
             ->setCustomer($customer)
             ->setRestaurant($restaurant)
-            ->setStatus(OrderStatus::FINDING_RIDER);
+            ->setStatus(Order::STATUS_FINDING_RIDER);
 
         return [$order, $customerUser, $restaurantUser, $riderUser];
     }
 
-    private function riderUser(ApprovalStatus $approvalStatus): User
+    private function riderUser(string $approvalStatus): User
     {
-        $user = $this->user(UserRole::RIDER);
+        $user = $this->user(User::ACCOUNT_RIDER);
         (new Rider())->setUser($user)->setApprovalStatus($approvalStatus);
 
         return $user;
     }
 
-    private function user(UserRole $role): User
+    private function user(string $role): User
     {
         return (new User())->setRole($role);
     }

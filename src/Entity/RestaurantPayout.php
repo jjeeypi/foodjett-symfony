@@ -4,16 +4,26 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\PayoutStatus;
 use App\Repository\RestaurantPayoutRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RestaurantPayoutRepository::class)]
 #[ORM\Table(name: 'restaurant_payouts')]
 #[ORM\UniqueConstraint(name: 'restaurant_payout_period_unique', columns: ['restaurant_id', 'period_start', 'period_end'])]
 class RestaurantPayout
 {
+    // Payout status (STATUSES)
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_PAID = 'paid';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_PAID,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -38,8 +48,9 @@ class RestaurantPayout
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $netAmount;
 
-    #[ORM\Column(length: 16, enumType: PayoutStatus::class, options: ['default' => 'pending'])]
-    private PayoutStatus $status = PayoutStatus::PENDING;
+    #[Assert\Choice(choices: RestaurantPayout::STATUSES)]
+    #[ORM\Column(length: 16, options: ['default' => 'pending'])]
+    private string $status = self::STATUS_PENDING;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $paidAt = null;
@@ -63,8 +74,8 @@ class RestaurantPayout
     public function setCommissionDeducted(string $amount): self { $this->commissionDeducted = $amount; return $this; }
     public function getNetAmount(): string { return $this->netAmount; }
     public function setNetAmount(string $amount): self { $this->netAmount = $amount; return $this; }
-    public function getStatus(): PayoutStatus { return $this->status; }
-    public function setStatus(PayoutStatus $status): self { $this->status = $status; return $this; }
+    public function getStatus(): string { return $this->status; }
+    public function setStatus(string $status): self { $this->status = $status; return $this; }
     public function getPaidAt(): ?\DateTimeImmutable { return $this->paidAt; }
     public function setPaidAt(?\DateTimeImmutable $paidAt): self { $this->paidAt = $paidAt; return $this; }
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }

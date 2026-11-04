@@ -9,17 +9,9 @@ use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Order;
 use App\Entity\OrderReport;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderReportAgainst;
-use App\Enum\OrderReportStatus;
-use App\Enum\OrderReportType;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -90,23 +82,23 @@ final class AdminCustomerReportControllerTest extends WebTestCase
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
-        $adminUser = $this->user('Customer Admin', self::ADMIN_EMAIL, '+639190200001', UserRole::ADMIN, $now);
+        $adminUser = $this->user('Customer Admin', self::ADMIN_EMAIL, '+639190200001', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($adminUser)->setCreatedAt($now)->setUpdatedAt($now);
-        $customerUser = $this->user('Managed Customer', self::CUSTOMER_EMAIL, '+639190200002', UserRole::CUSTOMER, $now);
+        $customerUser = $this->user('Managed Customer', self::CUSTOMER_EMAIL, '+639190200002', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())->setCustomer($customer)->setLabel('Managed Address')->setAddressLine('Managed Street')
             ->setLatitude('14.6000000')->setLongitude('120.9850000')->setCreatedAt($now)->setUpdatedAt($now);
-        $restaurantUser = $this->user('Report Owner', self::RESTAURANT_EMAIL, '+639190200003', UserRole::RESTAURANT, $now);
+        $restaurantUser = $this->user('Report Owner', self::RESTAURANT_EMAIL, '+639190200003', User::ACCOUNT_RESTAURANT, $now);
         $restaurant = (new Restaurant())->setUser($restaurantUser)->setName('Report Restaurant')->setSlug('report-restaurant')
             ->setAddress('Report Street')->setLatitude('14.5995000')->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)->setUpdatedAt($now);
         $order = (new Order())->setOrderNumber('ADMIN-REPORT-ORDER')->setCustomer($customer)->setRestaurant($restaurant)->setCustomerAddress($address)
-            ->setStatus(OrderStatus::DELIVERED)->setSubtotal('100.00')->setDeliveryFee('25.00')->setTotalAmount('125.00')
-            ->setPaymentMethod(PaymentMethod::COD)->setPlacedAt($now->modify('-1 hour'))->setDeliveredAt($now)
+            ->setStatus(Order::STATUS_DELIVERED)->setSubtotal('100.00')->setDeliveryFee('25.00')->setTotalAmount('125.00')
+            ->setPaymentMethod(Payment::METHOD_COD)->setPlacedAt($now->modify('-1 hour'))->setDeliveredAt($now)
             ->setCreatedAt($now)->setUpdatedAt($now);
-        $report = (new OrderReport())->setOrder($order)->setReportedBy($customerUser)->setAgainst(OrderReportAgainst::PLATFORM)
-            ->setType(OrderReportType::LATE_DELIVERY)->setDescription('The delivery was late.')->setStatus(OrderReportStatus::OPEN)
+        $report = (new OrderReport())->setOrder($order)->setReportedBy($customerUser)->setAgainst(OrderReport::AGAINST_PLATFORM)
+            ->setType(OrderReport::TYPE_LATE_DELIVERY)->setDescription('The delivery was late.')->setStatus(OrderReport::STATUS_OPEN)
             ->setCreatedAt($now)->setUpdatedAt($now);
         foreach ([$adminUser, $admin, $customerUser, $customer, $address, $restaurantUser, $restaurant, $order, $report] as $entity) {
             $entityManager->persist($entity);
@@ -116,10 +108,10 @@ final class AdminCustomerReportControllerTest extends WebTestCase
         return [(string) $customer->getId(), (string) $report->getId()];
     }
 
-    private function user(string $name, string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $name, string $email, string $phone, string $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function login(): string

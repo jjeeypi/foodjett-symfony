@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
-use App\Entity\RestaurantOperatingHour;
 use App\Entity\Restaurant;
-use App\Enum\RestaurantOperatingStatus;
+use App\Entity\RestaurantOperatingHour;
 
 final class RestaurantProfileControllerTest extends RestaurantApiTestCase
 {
@@ -41,14 +40,14 @@ final class RestaurantProfileControllerTest extends RestaurantApiTestCase
             self::assertSame($status, $this->payload()['operating_status']);
             /** @var Restaurant $restaurant */
             $restaurant = $this->fresh(Restaurant::class, (string) $this->restaurant->getId());
-            self::assertSame($status, $restaurant->getOperatingStatus()->value);
+            self::assertSame($status, $restaurant->getOperatingStatus());
         }
 
         $this->client->jsonRequest('PATCH', '/api/restaurant/operating-status', ['operating_status' => 'busy'], server: $this->auth());
         self::assertResponseStatusCodeSame(422);
         /** @var Restaurant $restaurant */
         $restaurant = $this->fresh(Restaurant::class, (string) $this->restaurant->getId());
-        self::assertSame(RestaurantOperatingStatus::OPEN, $restaurant->getOperatingStatus());
+        self::assertSame(Restaurant::OPERATING_OPEN, $restaurant->getOperatingStatus());
     }
 
     public function testOperatingHoursPersistUpsertAndRejectDuplicateDayPayload(): void

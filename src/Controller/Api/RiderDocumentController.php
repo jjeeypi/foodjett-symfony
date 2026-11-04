@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\RestaurantDocument;
 use App\Entity\RiderDocument;
-use App\Enum\DocumentStatus;
-use App\Enum\RiderDocumentType;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\UploadStorage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,13 +36,13 @@ final class RiderDocumentController extends AbstractRiderController
     #[Route('', name: 'store', methods: ['POST'])]
     public function store(Request $request): JsonResponse
     {
-        $type = RiderDocumentType::tryFrom((string) $request->request->get('type', ''));
+        $type = (in_array((string) $request->request->get('type', ''), RiderDocument::TYPES, true) ? (string) $request->request->get('type', '') : null);
         $file = $request->files->get('file');
         if (null === $type || null === $file) {
             return $this->json(['message' => 'A valid document type and file are required.'], 422);
         }
         $document = $this->entityManager->getRepository(RiderDocument::class)->findOneBy(['rider' => $this->rider(), 'type' => $type]);
-        if ($document instanceof RiderDocument && DocumentStatus::REJECTED !== $document->getStatus()) {
+        if ($document instanceof RiderDocument && RiderDocument::STATUS_REJECTED !== $document->getStatus()) {
             return $this->json(['message' => 'This document type has already been submitted. Only rejected documents can be replaced.'], 409);
         }
         try { $path = $this->uploads->store($file, 'riders/documents', self::MIME_TYPES); }
@@ -51,7 +50,7 @@ final class RiderDocumentController extends AbstractRiderController
         $oldPath = $document?->getFilePath();
         $now = new \DateTimeImmutable();
         $document ??= (new RiderDocument())->setRider($this->rider())->setType($type)->setCreatedAt($now);
-        $document->setFilePath($path)->setStatus(DocumentStatus::PENDING)->setRejectionReason(null)->setUpdatedAt($now);
+        $document->setFilePath($path)->setStatus(RestaurantDocument::STATUS_PENDING)->setRejectionReason(null)->setUpdatedAt($now);
         $this->entityManager->persist($document);
         $this->entityManager->flush();
         $this->uploads->delete($oldPath);
@@ -62,8 +61,8 @@ final class RiderDocumentController extends AbstractRiderController
     /** @return array<string, mixed> */
     private function documentData(RiderDocument $document): array
     {
-        return ['id' => $document->getId(), 'type' => $document->getType()->value, 'file_path' => $document->getFilePath(),
-            'status' => $document->getStatus()->value, 'rejection_reason' => $document->getRejectionReason(),
+        return ['id' => $document->getId(), 'type' => $document->getType(), 'file_path' => $document->getFilePath(),
+            'status' => $document->getStatus(), 'rejection_reason' => $document->getRejectionReason(),
             'created_at' => $document->getCreatedAt()?->format(\DateTimeInterface::ATOM), 'updated_at' => $document->getUpdatedAt()?->format(\DateTimeInterface::ATOM)];
     }
 }

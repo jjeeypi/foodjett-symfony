@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\UserRole;
 use App\Repository\ConversationRepository;
 use App\Repository\OrderRepository;
 use App\Repository\RestaurantRepository;
@@ -57,10 +56,10 @@ final class MercureAuthorizationController extends AbstractController
     private function subscriberTopics(User $user): array
     {
         $topics = match ($user->getRole()) {
-            UserRole::ADMIN => $this->adminTopics(),
-            UserRole::RESTAURANT => $this->restaurantTopics($user),
-            UserRole::RIDER => $this->riderTopics($user),
-            UserRole::CUSTOMER => $this->customerTopics($user),
+            User::ACCOUNT_ADMIN => $this->adminTopics(),
+            User::ACCOUNT_RESTAURANT => $this->restaurantTopics($user),
+            User::ACCOUNT_RIDER => $this->riderTopics($user),
+            User::ACCOUNT_CUSTOMER => $this->customerTopics($user),
         };
 
         $topics = array_values(array_unique($topics));
@@ -114,7 +113,7 @@ final class MercureAuthorizationController extends AbstractController
             sprintf('users/%s/notifications', $user->getId()),
         ];
 
-        if (ApprovalStatus::APPROVED === $rider->getApprovalStatus()) {
+        if (Rider::APPROVAL_APPROVED === $rider->getApprovalStatus()) {
             $topics[] = 'orders/pool';
         }
 

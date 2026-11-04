@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
+use App\Entity\Restaurant;
+use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\UserRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -28,9 +28,9 @@ final class ApprovedAccountVoter extends Voter
         }
 
         return match ($user->getRole()) {
-            UserRole::ADMIN, UserRole::CUSTOMER => true,
-            UserRole::RESTAURANT => ApprovalStatus::APPROVED === $user->getRestaurant()?->getApprovalStatus(),
-            UserRole::RIDER => ApprovalStatus::APPROVED === $user->getRider()?->getApprovalStatus(),
+            User::ACCOUNT_ADMIN, User::ACCOUNT_CUSTOMER => true,
+            User::ACCOUNT_RESTAURANT => Restaurant::APPROVAL_APPROVED === $user->getRestaurant()?->getApprovalStatus(),
+            User::ACCOUNT_RIDER => Rider::APPROVAL_APPROVED === $user->getRider()?->getApprovalStatus(),
         };
     }
 }

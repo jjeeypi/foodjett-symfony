@@ -7,7 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\User;
-use App\Enum\UserStatus;
 use App\Repository\AuditLogRepository;
 use App\Repository\CustomerRepository;
 use App\Repository\OrderRepository;
@@ -55,7 +54,7 @@ final class AdminCustomerController extends AbstractController
                 'id' => $order->getId(),
                 'order_number' => $order->getOrderNumber(),
                 'restaurant_name' => $order->getRestaurant()->getName(),
-                'status' => $order->getStatus()->value,
+                'status' => $order->getStatus(),
                 'total_amount' => $order->getTotalAmount(),
                 'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
             ], $recent),
@@ -65,16 +64,16 @@ final class AdminCustomerController extends AbstractController
     #[Route('/{id}/suspend', name: 'suspend', methods: ['POST'])]
     public function suspend(Customer $customer): JsonResponse
     {
-        return $this->setStatus($customer, UserStatus::SUSPENDED);
+        return $this->setStatus($customer, User::STATUS_SUSPENDED);
     }
 
     #[Route('/{id}/reactivate', name: 'reactivate', methods: ['POST'])]
     public function reactivate(Customer $customer): JsonResponse
     {
-        return $this->setStatus($customer, UserStatus::ACTIVE);
+        return $this->setStatus($customer, User::STATUS_ACTIVE);
     }
 
-    private function setStatus(Customer $customer, UserStatus $status): JsonResponse
+    private function setStatus(Customer $customer, string $status): JsonResponse
     {
         $before = $customer->getUser()->getStatus();
         $customer->getUser()->setStatus($status)->setUpdatedAt(new \DateTimeImmutable());
@@ -82,8 +81,8 @@ final class AdminCustomerController extends AbstractController
         if (!$admin instanceof User) {
             throw $this->createAccessDeniedException();
         }
-        $this->audit->record($admin, 'customer.'.(UserStatus::ACTIVE === $status ? 'reactivated' : 'suspended'), 'customer', (string) $customer->getId(), [
-            'user_status' => ['from' => $before->value, 'to' => $status->value],
+        $this->audit->record($admin, 'customer.'.(User::STATUS_ACTIVE === $status ? 'reactivated' : 'suspended'), 'customer', (string) $customer->getId(), [
+            'user_status' => ['from' => $before, 'to' => $status],
         ]);
         $this->entityManager->flush();
 
@@ -99,7 +98,7 @@ final class AdminCustomerController extends AbstractController
             'email' => $customer->getUser()->getEmail(),
             'phone' => $customer->getUser()->getPhone(),
             'avatar_path' => $customer->getUser()->getAvatarPath(),
-            'status' => $customer->getUser()->getStatus()->value,
+            'status' => $customer->getUser()->getStatus(),
             'created_at' => $customer->getCreatedAt()?->format(\DateTimeInterface::ATOM),
         ];
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api;
 
 use App\Entity\RestaurantDocument;
-use App\Enum\DocumentStatus;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class RestaurantDocumentControllerTest extends RestaurantApiTestCase
@@ -22,7 +21,7 @@ final class RestaurantDocumentControllerTest extends RestaurantApiTestCase
         /** @var RestaurantDocument $document */
         $document = $this->fresh(RestaurantDocument::class, (string) $documentData['id']);
         self::assertSame($this->restaurant->getId(), $document->getRestaurant()->getId());
-        self::assertSame(DocumentStatus::PENDING, $document->getStatus());
+        self::assertSame(RestaurantDocument::STATUS_PENDING, $document->getStatus());
     }
 
     public function testRejectedDocumentCanBeReuploadedAndReturnsToPending(): void
@@ -33,7 +32,7 @@ final class RestaurantDocumentControllerTest extends RestaurantApiTestCase
         $this->uploadedPaths[] = $original['file_path'];
         /** @var RestaurantDocument $document */
         $document = $this->fresh(RestaurantDocument::class, (string) $original['id']);
-        $document->setStatus(DocumentStatus::REJECTED)->setRejectionReason('Unreadable scan');
+        $document->setStatus(RestaurantDocument::STATUS_REJECTED)->setRejectionReason('Unreadable scan');
         $this->entityManager->flush();
 
         $this->client->request('POST', '/api/restaurant/documents/'.$document->getId(), files: ['file' => $this->pdf('replacement.pdf')], server: $this->auth());
@@ -46,7 +45,7 @@ final class RestaurantDocumentControllerTest extends RestaurantApiTestCase
         self::assertNull($replacement['rejection_reason']);
         /** @var RestaurantDocument $fresh */
         $fresh = $this->fresh(RestaurantDocument::class, (string) $document->getId());
-        self::assertSame(DocumentStatus::PENDING, $fresh->getStatus());
+        self::assertSame(RestaurantDocument::STATUS_PENDING, $fresh->getStatus());
         self::assertNull($fresh->getRejectionReason());
     }
 
@@ -64,13 +63,13 @@ final class RestaurantDocumentControllerTest extends RestaurantApiTestCase
 
         /** @var RestaurantDocument $document */
         $document = $this->fresh(RestaurantDocument::class, (string) $document->getId());
-        $document->setStatus(DocumentStatus::VERIFIED);
+        $document->setStatus(RestaurantDocument::STATUS_VERIFIED);
         $this->entityManager->flush();
         $this->client->request('POST', '/api/restaurant/documents/'.$document->getId(), files: ['file' => $this->pdf('verified.pdf')], server: $this->auth());
         self::assertResponseStatusCodeSame(409);
         /** @var RestaurantDocument $fresh */
         $fresh = $this->fresh(RestaurantDocument::class, (string) $document->getId());
-        self::assertSame(DocumentStatus::VERIFIED, $fresh->getStatus());
+        self::assertSame(RestaurantDocument::STATUS_VERIFIED, $fresh->getStatus());
     }
 
     private function upload(string $type): void

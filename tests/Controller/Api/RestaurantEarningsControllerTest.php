@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
+use App\Entity\Order;
 use App\Entity\RestaurantPayout;
-use App\Enum\OrderStatus;
-use App\Enum\PayoutStatus;
 
 final class RestaurantEarningsControllerTest extends RestaurantApiTestCase
 {
@@ -19,10 +18,10 @@ final class RestaurantEarningsControllerTest extends RestaurantApiTestCase
             [$now->modify('-10 days'), 300.0, 45.0],
         ];
         foreach ($samples as [$deliveredAt, $subtotal, $commission]) {
-            $this->createOrder($this->restaurant, OrderStatus::DELIVERED, number_format($subtotal, 2, '.', ''), number_format($subtotal + 35, 2, '.', ''), $deliveredAt, $deliveredAt, number_format($commission, 2, '.', ''));
+            $this->createOrder($this->restaurant, Order::STATUS_DELIVERED, number_format($subtotal, 2, '.', ''), number_format($subtotal + 35, 2, '.', ''), $deliveredAt, $deliveredAt, number_format($commission, 2, '.', ''));
         }
-        $this->createOrder($this->restaurant, OrderStatus::PLACED, '500.00', '535.00', $now);
-        $this->createOrder($this->otherRestaurant, OrderStatus::DELIVERED, '999.00', '1034.00', $now, $now, '149.85');
+        $this->createOrder($this->restaurant, Order::STATUS_PLACED, '500.00', '535.00', $now);
+        $this->createOrder($this->otherRestaurant, Order::STATUS_DELIVERED, '999.00', '1034.00', $now, $now, '149.85');
         $this->entityManager->flush();
 
         $this->client->request('GET', '/api/restaurant/earnings/summary', server: $this->auth());
@@ -63,7 +62,7 @@ final class RestaurantEarningsControllerTest extends RestaurantApiTestCase
         self::assertResponseStatusCodeSame(405);
         /** @var RestaurantPayout $fresh */
         $fresh = $this->fresh(RestaurantPayout::class, (string) $own->getId());
-        self::assertSame(PayoutStatus::PENDING, $fresh->getStatus());
+        self::assertSame(RestaurantPayout::STATUS_PENDING, $fresh->getStatus());
     }
 
     private function payout(\App\Entity\Restaurant $restaurant, string $gross, \DateTimeImmutable $now): RestaurantPayout
@@ -72,7 +71,7 @@ final class RestaurantEarningsControllerTest extends RestaurantApiTestCase
 
         return (new RestaurantPayout())->setRestaurant($restaurant)->setPeriodStart($now->modify('-7 days'))->setPeriodEnd($now)
             ->setGrossSales($gross)->setCommissionDeducted(number_format($commission, 2, '.', ''))
-            ->setNetAmount(number_format((float) $gross - $commission, 2, '.', ''))->setStatus(PayoutStatus::PENDING)
+            ->setNetAmount(number_format((float) $gross - $commission, 2, '.', ''))->setStatus(RestaurantPayout::STATUS_PENDING)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }
 }

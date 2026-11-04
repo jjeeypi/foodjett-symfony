@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\Rider;
 use App\Entity\RiderPayout;
-use App\Enum\PayoutStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -28,13 +27,13 @@ class RiderPayoutRepository extends ServiceEntityRepository
     }
 
     /** Every rider payout for the admin list, latest period first, optionally filtered. */
-    public function createAdminListQuery(?PayoutStatus $status = null, string $riderId = ''): QueryBuilder
+    public function createAdminListQuery(?string $status = null, string $riderId = ''): QueryBuilder
     {
         $query = $this->createQueryBuilder('payout')
             ->innerJoin('payout.rider', 'rider')->addSelect('rider')->innerJoin('rider.user', 'riderUser')->addSelect('riderUser')
             ->orderBy('payout.periodEnd', 'DESC')->addOrderBy('payout.id', 'DESC');
         if (null !== $status) {
-            $query->andWhere('payout.status = :status')->setParameter('status', $status->value);
+            $query->andWhere('payout.status = :status')->setParameter('status', $status);
         }
         if ('' !== $riderId) {
             $query->andWhere('rider.id = :riderId')->setParameter('riderId', $riderId);

@@ -7,9 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\UserStatus;
 use App\Repository\AuditLogRepository;
 use App\Repository\RestaurantRepository;
 use App\Service\ApiPaginator;
@@ -37,7 +34,7 @@ final class AdminRestaurantController extends AbstractController
     {
         $approval = null;
         if ('' !== ($status = trim((string) $request->query->get('approval_status', '')))) {
-            $approval = ApprovalStatus::tryFrom($status);
+            $approval = (in_array($status, Restaurant::APPROVAL_STATUSES, true) ? $status : null);
             if (null === $approval) {
                 return $this->json(['message' => 'Invalid approval_status.'], 422);
             }
@@ -65,9 +62,9 @@ final class AdminRestaurantController extends AbstractController
     public function approve(Restaurant $restaurant): JsonResponse
     {
         $before = $restaurant->getApprovalStatus();
-        $restaurant->setApprovalStatus(ApprovalStatus::APPROVED)->setRejectionReason(null)->setUpdatedAt(new \DateTimeImmutable());
+        $restaurant->setApprovalStatus(Restaurant::APPROVAL_APPROVED)->setRejectionReason(null)->setUpdatedAt(new \DateTimeImmutable());
         $this->audit->record($this->admin(), 'restaurant.approved', 'restaurant', (string) $restaurant->getId(), [
-            'approval_status' => ['from' => $before->value, 'to' => ApprovalStatus::APPROVED->value],
+            'approval_status' => ['from' => $before, 'to' => Restaurant::APPROVAL_APPROVED],
         ]);
         $this->entityManager->flush();
 
@@ -82,9 +79,9 @@ final class AdminRestaurantController extends AbstractController
             return $reason;
         }
         $before = $restaurant->getApprovalStatus();
-        $restaurant->setApprovalStatus(ApprovalStatus::REJECTED)->setRejectionReason($reason)->setUpdatedAt(new \DateTimeImmutable());
+        $restaurant->setApprovalStatus(Restaurant::APPROVAL_REJECTED)->setRejectionReason($reason)->setUpdatedAt(new \DateTimeImmutable());
         $this->audit->record($this->admin(), 'restaurant.rejected', 'restaurant', (string) $restaurant->getId(), [
-            'approval_status' => ['from' => $before->value, 'to' => ApprovalStatus::REJECTED->value],
+            'approval_status' => ['from' => $before, 'to' => Restaurant::APPROVAL_REJECTED],
             'rejection_reason' => $reason,
         ]);
         $this->entityManager->flush();
@@ -95,13 +92,13 @@ final class AdminRestaurantController extends AbstractController
     #[Route('/{id}/suspend', name: 'suspend', methods: ['POST'])]
     public function suspend(Restaurant $restaurant): JsonResponse
     {
-        return $this->setUserStatus($restaurant, UserStatus::SUSPENDED);
+        return $this->setUserStatus($restaurant, User::STATUS_SUSPENDED);
     }
 
     #[Route('/{id}/reactivate', name: 'reactivate', methods: ['POST'])]
     public function reactivate(Restaurant $restaurant): JsonResponse
     {
-        return $this->setUserStatus($restaurant, UserStatus::ACTIVE);
+        return $this->setUserStatus($restaurant, User::STATUS_ACTIVE);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PATCH'])]
@@ -161,11 +158,11 @@ final class AdminRestaurantController extends AbstractController
             $restaurant->setDefaultPrepTimeMinutes($value);
         }
         if (array_key_exists('operating_status', $data)) {
-            $status = RestaurantOperatingStatus::tryFrom((string) $data['operating_status']);
+            $status = (in_array((string) $data['operating_status'], Restaurant::OPERATING_STATUSES, true) ? (string) $data['operating_status'] : null);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid operating_status.'], 422);
             }
-            $changes['operating_status'] = ['from' => $restaurant->getOperatingStatus()->value, 'to' => $status->value];
+            $changes['operating_status'] = ['from' => $restaurant->getOperatingStatus(), 'to' => $status];
             $restaurant->setOperatingStatus($status);
         }
         if ([] === $changes) {
@@ -178,12 +175,12 @@ final class AdminRestaurantController extends AbstractController
         return $this->json(['restaurant' => $this->normalize($restaurant, true)]);
     }
 
-    private function setUserStatus(Restaurant $restaurant, UserStatus $status): JsonResponse
+    private function setUserStatus(Restaurant $restaurant, string $status): JsonResponse
     {
         $before = $restaurant->getUser()->getStatus();
         $restaurant->getUser()->setStatus($status)->setUpdatedAt(new \DateTimeImmutable());
-        $this->audit->record($this->admin(), 'restaurant.'.(UserStatus::ACTIVE === $status ? 'reactivated' : 'suspended'), 'restaurant', (string) $restaurant->getId(), [
-            'user_status' => ['from' => $before->value, 'to' => $status->value],
+        $this->audit->record($this->admin(), 'restaurant.'.(User::STATUS_ACTIVE === $status ? 'reactivated' : 'suspended'), 'restaurant', (string) $restaurant->getId(), [
+            'user_status' => ['from' => $before, 'to' => $status],
         ]);
         $this->entityManager->flush();
 
@@ -203,9 +200,9 @@ final class AdminRestaurantController extends AbstractController
             'address' => $restaurant->getAddress(),
             'latitude' => $restaurant->getLatitude(),
             'longitude' => $restaurant->getLongitude(),
-            'approval_status' => $restaurant->getApprovalStatus()->value,
+            'approval_status' => $restaurant->getApprovalStatus(),
             'rejection_reason' => $restaurant->getRejectionReason(),
-            'operating_status' => $restaurant->getOperatingStatus()->value,
+            'operating_status' => $restaurant->getOperatingStatus(),
             'commission_rate' => $restaurant->getCommissionRate(),
             'min_order_amount' => $restaurant->getMinOrderAmount(),
             'default_prep_time_minutes' => $restaurant->getDefaultPrepTimeMinutes(),
@@ -215,16 +212,16 @@ final class AdminRestaurantController extends AbstractController
                 'email' => $restaurant->getUser()->getEmail(),
                 'phone' => $restaurant->getUser()->getPhone(),
                 'avatar_path' => $restaurant->getUser()->getAvatarPath(),
-                'status' => $restaurant->getUser()->getStatus()->value,
+                'status' => $restaurant->getUser()->getStatus(),
             ],
             'created_at' => $restaurant->getCreatedAt()?->format(\DateTimeInterface::ATOM),
         ];
         if ($withDocuments) {
             $data['documents'] = array_map(static fn (RestaurantDocument $document): array => [
                 'id' => $document->getId(),
-                'type' => $document->getType()->value,
+                'type' => $document->getType(),
                 'file_path' => $document->getFilePath(),
-                'status' => $document->getStatus()->value,
+                'status' => $document->getStatus(),
                 'rejection_reason' => $document->getRejectionReason(),
             ], $restaurant->getDocuments()->toArray());
         }

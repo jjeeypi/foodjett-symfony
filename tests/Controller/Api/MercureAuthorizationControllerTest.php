@@ -9,18 +9,10 @@ use App\Entity\Conversation;
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
 use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\ConversationType;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentMethod;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserRole;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -52,36 +44,36 @@ final class MercureAuthorizationControllerTest extends WebTestCase
         $this->marker = 'MERCURE-'.bin2hex(random_bytes(5));
         $now = new \DateTimeImmutable();
 
-        $this->customerUser = $this->user('customer', UserRole::CUSTOMER, $now);
+        $this->customerUser = $this->user('customer', User::ACCOUNT_CUSTOMER, $now);
         $customer = (new Customer())->setUser($this->customerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $address = (new CustomerAddress())->setCustomer($customer)->setLabel('Home')->setAddressLine('Test address')
             ->setLatitude('14.6000000')->setLongitude('120.9800000')->setIsDefault(true)->setCreatedAt($now)->setUpdatedAt($now);
 
-        $this->otherCustomerUser = $this->user('other-customer', UserRole::CUSTOMER, $now);
+        $this->otherCustomerUser = $this->user('other-customer', User::ACCOUNT_CUSTOMER, $now);
         $otherCustomer = (new Customer())->setUser($this->otherCustomerUser)->setCreatedAt($now)->setUpdatedAt($now);
         $otherAddress = (new CustomerAddress())->setCustomer($otherCustomer)->setLabel('Other')->setAddressLine('Other address')
             ->setLatitude('14.7000000')->setLongitude('121.0000000')->setIsDefault(true)->setCreatedAt($now)->setUpdatedAt($now);
 
-        $this->restaurantUser = $this->user('restaurant', UserRole::RESTAURANT, $now);
+        $this->restaurantUser = $this->user('restaurant', User::ACCOUNT_RESTAURANT, $now);
         $this->restaurant = (new Restaurant())->setUser($this->restaurantUser)->setName($this->marker.' Kitchen')
             ->setSlug(strtolower($this->marker).'-kitchen')->setAddress('Pickup address')->setLatitude('14.5995000')->setLongitude('120.9842000')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setOperatingStatus(RestaurantOperatingStatus::OPEN)
+            ->setApprovalStatus(Restaurant::APPROVAL_APPROVED)->setOperatingStatus(Restaurant::OPERATING_OPEN)
             ->setCreatedAt($now)->setUpdatedAt($now);
 
-        $this->riderUser = $this->user('rider', UserRole::RIDER, $now);
-        $rider = (new Rider())->setUser($this->riderUser)->setVehicleType(VehicleType::MOTORCYCLE)->setPlateNumber('MC-100')
-            ->setApprovalStatus(ApprovalStatus::APPROVED)->setAvailabilityStatus(RiderAvailabilityStatus::AVAILABLE)
+        $this->riderUser = $this->user('rider', User::ACCOUNT_RIDER, $now);
+        $rider = (new Rider())->setUser($this->riderUser)->setVehicleType(Rider::VEHICLE_MOTORCYCLE)->setPlateNumber('MC-100')
+            ->setApprovalStatus(Rider::APPROVAL_APPROVED)->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)
             ->setCreatedAt($now)->setUpdatedAt($now);
 
-        $this->adminUser = $this->user('admin', UserRole::ADMIN, $now);
+        $this->adminUser = $this->user('admin', User::ACCOUNT_ADMIN, $now);
         $admin = (new Admin())->setUser($this->adminUser)->setCreatedAt($now)->setUpdatedAt($now);
 
-        $this->activeOrder = $this->order($customer, $address, $rider, OrderStatus::RIDER_ASSIGNED, 'ACTIVE', $now);
-        $this->terminalOrder = $this->order($customer, $address, $rider, OrderStatus::DELIVERED, 'DONE', $now);
-        $otherOrder = $this->order($otherCustomer, $otherAddress, null, OrderStatus::PLACED, 'OTHER', $now);
-        $this->conversation = (new Conversation())->setOrder($this->activeOrder)->setType(ConversationType::CUSTOMER_RIDER)
+        $this->activeOrder = $this->order($customer, $address, $rider, Order::STATUS_RIDER_ASSIGNED, 'ACTIVE', $now);
+        $this->terminalOrder = $this->order($customer, $address, $rider, Order::STATUS_DELIVERED, 'DONE', $now);
+        $otherOrder = $this->order($otherCustomer, $otherAddress, null, Order::STATUS_PLACED, 'OTHER', $now);
+        $this->conversation = (new Conversation())->setOrder($this->activeOrder)->setType(Conversation::TYPE_CUSTOMER_RIDER)
             ->setCreatedAt($now)->setUpdatedAt($now);
-        $otherConversation = (new Conversation())->setOrder($otherOrder)->setType(ConversationType::CUSTOMER_RESTAURANT)
+        $otherConversation = (new Conversation())->setOrder($otherOrder)->setType(Conversation::TYPE_CUSTOMER_RESTAURANT)
             ->setCreatedAt($now)->setUpdatedAt($now);
 
         foreach ([
@@ -205,24 +197,24 @@ final class MercureAuthorizationControllerTest extends WebTestCase
         return json_decode((string) base64_decode($encoded, true), true, flags: JSON_THROW_ON_ERROR);
     }
 
-    private function user(string $label, UserRole $role, \DateTimeImmutable $now): User
+    private function user(string $label, string $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($this->marker.' '.$label)->setEmail(strtolower($this->marker)."-$label@foodjett.test")
             ->setPhone('+639'.random_int(100000000, 999999999))->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setRole($role)->setStatus(User::STATUS_ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 
     private function order(
         Customer $customer,
         CustomerAddress $address,
         ?Rider $rider,
-        OrderStatus $status,
+        string $status,
         string $suffix,
         \DateTimeImmutable $now,
     ): Order {
         return (new Order())->setOrderNumber($this->marker.'-'.$suffix)->setCustomer($customer)->setRestaurant($this->restaurant)
             ->setCustomerAddress($address)->setRider($rider)->setStatus($status)->setSubtotal('100.00')->setDeliveryFee('35.00')
             ->setServiceFee('0.00')->setDiscountAmount('0.00')->setTipAmount('0.00')->setTotalAmount('135.00')
-            ->setCommissionAmount('15.00')->setPaymentMethod(PaymentMethod::COD)->setPlacedAt($now)->setCreatedAt($now)->setUpdatedAt($now);
+            ->setCommissionAmount('15.00')->setPaymentMethod(Payment::METHOD_COD)->setPlacedAt($now)->setCreatedAt($now)->setUpdatedAt($now);
     }
 }

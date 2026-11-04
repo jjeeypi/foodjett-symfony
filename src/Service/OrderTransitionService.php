@@ -21,18 +21,6 @@ use App\Entity\RiderPoolDecline;
 use App\Entity\RiderPoolOffer;
 use App\Entity\Voucher;
 use App\Entity\VoucherRedemption;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderActor;
-use App\Enum\OrderStatus;
-use App\Enum\PaymentActor;
-use App\Enum\PaymentMethod;
-use App\Enum\PaymentStatus;
-use App\Enum\RestaurantOperatingStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\RiderPoolDeclineAction;
-use App\Enum\RiderPoolEscalationStage;
-use App\Enum\VoucherScope;
-use App\Enum\VoucherType;
 use App\Message\OrderStatusChanged;
 use App\Message\OrderUpdated;
 use App\Message\RiderPoolOfferCreated;
@@ -62,7 +50,7 @@ final class OrderTransitionService
      * Statuses this service set and has not yet seen flushed, keyed by entity. Shared by every
      * instance in the process; a WeakMap so entries disappear together with their entities.
      *
-     * @var \WeakMap<Order, OrderStatus>|null
+     * @var \WeakMap<Order, string>|null
      */
     private static ?\WeakMap $authorizedStatuses = null;
 
@@ -86,7 +74,7 @@ final class OrderTransitionService
     /**
      * Whether this service set $order's status to $status; a matching authorization is used up.
      */
-    public function consumeAuthorizedStatus(Order $order, OrderStatus $status): bool
+    public function consumeAuthorizedStatus(Order $order, string $status): bool
     {
         if ((self::$authorizedStatuses[$order] ?? null) !== $status) {
             return false;
@@ -101,8 +89,8 @@ final class OrderTransitionService
      */
     public function transition(
         Order $order,
-        OrderStatus $to,
-        OrderActor $changedBy,
+        string $to,
+        string $changedBy,
         ?string $note = null,
         ?callable $applyChanges = null,
     ): Order {
@@ -113,14 +101,14 @@ final class OrderTransitionService
      * Atomically records a sequence such as accepted -> preparing -> finding_rider.
      * Events are deliberately dispatched only after wrapInTransaction() commits.
      *
-     * @param non-empty-list<OrderStatus>                   $statuses
+     * @param non-empty-list<string>                   $statuses
      * @param list<?string>                                 $notes
      * @param null|callable(Order, \DateTimeImmutable): void $applyChanges
      */
     public function transitionSequence(
         Order $order,
         array $statuses,
-        OrderActor $changedBy,
+        string $changedBy,
         array $notes = [],
         ?callable $applyChanges = null,
     ): Order {
@@ -156,8 +144,8 @@ final class OrderTransitionService
 
             foreach ($statuses as $index => $status) {
                 $from = $locked->getStatus();
-                if (!$from->canTransitionTo($status)) {
-                    throw new \DomainException(sprintf('Order cannot transition from "%s" to "%s".', $from->value, $status->value));
+                if (!Order::canTransition($from, $status)) {
+                    throw new \DomainException(sprintf('Order cannot transition from "%s" to "%s".', $from, $status));
                 }
 
                 $note = $notes[$index] ?? null;
@@ -169,7 +157,7 @@ final class OrderTransitionService
 
                 $history = (new OrderStatusHistory())
                     ->setOrder($locked)
-                    ->setStatus($status->value)
+                    ->setStatus($status)
                     ->setChangedBy($changedBy)
                     ->setNote($note)
                     ->setCreatedAt($now);
@@ -193,12 +181,12 @@ final class OrderTransitionService
 
         foreach ($events as $event) {
             $this->bus->dispatch($event);
-            if (OrderStatus::FINDING_RIDER === $event->currentStatus) {
+            if (Order::STATUS_FINDING_RIDER === $event->currentStatus) {
                 $this->bus->dispatch(new RiderPoolOfferCreated($event->orderId, $event->changedAt));
-            } elseif (OrderStatus::FINDING_RIDER === $event->previousStatus) {
+            } elseif (Order::STATUS_FINDING_RIDER === $event->previousStatus) {
                 $this->bus->dispatch(new RiderPoolOfferTaken(
                     $event->orderId,
-                    $event->currentStatus->value,
+                    $event->currentStatus,
                     $event->changedAt,
                 ));
             }
@@ -215,11 +203,11 @@ final class OrderTransitionService
      */
     public function recordUpdate(
         Order $order,
-        OrderActor $changedBy,
+        string $changedBy,
         string $kind,
         ?string $note,
         callable $applyChanges,
-        ?OrderStatus $historyStatus = null,
+        ?string $historyStatus = null,
     ): Order {
         if (null === $order->getId()) {
             throw new \InvalidArgumentException('An order must be persisted before it can be updated.');
@@ -244,7 +232,7 @@ final class OrderTransitionService
             $locked->setUpdatedAt($changedAt);
             $history = (new OrderStatusHistory())
                 ->setOrder($locked)
-                ->setStatus(($historyStatus ?? $locked->getStatus())->value)
+                ->setStatus(($historyStatus ?? $locked->getStatus()))
                 ->setChangedBy($changedBy)
                 ->setNote($note)
                 ->setCreatedAt($changedAt);
@@ -267,9 +255,9 @@ final class OrderTransitionService
         return $updatedOrder;
     }
 
-    private function applyStatusSideEffects(Order $order, OrderStatus $status, \DateTimeImmutable $now): void
+    private function applyStatusSideEffects(Order $order, string $status, \DateTimeImmutable $now): void
     {
-        if (OrderStatus::FINDING_RIDER === $status) {
+        if (Order::STATUS_FINDING_RIDER === $status) {
             if (null === $order->getRiderSearchStartedAt()) {
                 $order->setRiderSearchStartedAt($now);
             }
@@ -278,7 +266,7 @@ final class OrderTransitionService
                 $offer = (new RiderPoolOffer())
                     ->setOrder($order)
                     ->setSearchRadiusKm(number_format($radius, 1, '.', ''))
-                    ->setEscalationStage(RiderPoolEscalationStage::INITIAL)
+                    ->setEscalationStage(RiderPoolOffer::STAGE_INITIAL)
                     ->setCreatedAt($now)
                     ->setUpdatedAt($now);
                 $order->setRiderPoolOffer($offer);
@@ -286,7 +274,7 @@ final class OrderTransitionService
             }
         }
 
-        if (OrderStatus::RIDER_ASSIGNED === $status) {
+        if (Order::STATUS_RIDER_ASSIGNED === $status) {
             if (null === $order->getRider()) {
                 throw new \DomainException('A rider must be assigned before entering rider_assigned status.');
             }
@@ -295,17 +283,17 @@ final class OrderTransitionService
                 ->setPickupCode((string) random_int(1000, 9999));
         }
 
-        if (OrderStatus::DELIVERED === $status) {
+        if (Order::STATUS_DELIVERED === $status) {
             $order->setDeliveredAt($now);
         }
     }
 
-    /** @param list<OrderStatus> $statuses */
-    private function assertValidSequence(OrderStatus $from, array $statuses): void
+    /** @param list<string> $statuses */
+    private function assertValidSequence(string $from, array $statuses): void
     {
         foreach ($statuses as $status) {
-            if (!$from->canTransitionTo($status)) {
-                throw new \DomainException(sprintf('Order cannot transition from "%s" to "%s".', $from->value, $status->value));
+            if (!Order::canTransition($from, $status)) {
+                throw new \DomainException(sprintf('Order cannot transition from "%s" to "%s".', $from, $status));
             }
             $from = $status;
         }
@@ -371,7 +359,7 @@ final class OrderTransitionService
                 ->setCustomer($lockedCustomer)
                 ->setRestaurant($restaurant)
                 ->setCustomerAddress($address)
-                ->setStatus(OrderStatus::PLACED)
+                ->setStatus(Order::STATUS_PLACED)
                 ->setSubtotal($quote['subtotal'])
                 ->setDeliveryFee($quote['delivery_fee'])
                 ->setServiceFee($quote['service_fee'])
@@ -413,21 +401,21 @@ final class OrderTransitionService
 
             $orderHistory = (new OrderStatusHistory())
                 ->setOrder($order)
-                ->setStatus(OrderStatus::PLACED->value)
-                ->setChangedBy(OrderActor::CUSTOMER)
+                ->setStatus(Order::STATUS_PLACED)
+                ->setChangedBy(Order::ACTOR_CUSTOMER)
                 ->setNote('Order placed by customer.')
                 ->setCreatedAt($now);
             $order->addStatusHistory($orderHistory);
             $this->entityManager->persist($orderHistory);
 
-            $paymentStatus = PaymentMethod::COD === $paymentMethod ? PaymentStatus::PENDING : PaymentStatus::PAID;
+            $paymentStatus = Payment::METHOD_COD === $paymentMethod ? Payment::STATUS_PENDING : Payment::STATUS_PAID;
             $payment = (new Payment())
                 ->setOrder($order)
                 ->setMethod($paymentMethod)
                 ->setStatus($paymentStatus)
                 ->setAmount($quote['total'])
-                ->setPaidAt(PaymentStatus::PAID === $paymentStatus ? $now : null)
-                ->setTransactionReference(PaymentStatus::PAID === $paymentStatus ? 'SIMULATED-'.strtoupper(bin2hex(random_bytes(8))) : null)
+                ->setPaidAt(Payment::STATUS_PAID === $paymentStatus ? $now : null)
+                ->setTransactionReference(Payment::STATUS_PAID === $paymentStatus ? 'SIMULATED-'.strtoupper(bin2hex(random_bytes(8))) : null)
                 ->setCreatedAt($now)
                 ->setUpdatedAt($now);
             $order->setPayment($payment);
@@ -436,8 +424,8 @@ final class OrderTransitionService
                 ->setPayment($payment)
                 ->setFromStatus(null)
                 ->setToStatus($paymentStatus)
-                ->setChangedBy(PaymentActor::SYSTEM)
-                ->setNote(PaymentStatus::PAID === $paymentStatus ? 'Simulated payment completed.' : 'COD payment awaiting collection.')
+                ->setChangedBy(Payment::ACTOR_SYSTEM)
+                ->setNote(Payment::STATUS_PAID === $paymentStatus ? 'Simulated payment completed.' : 'COD payment awaiting collection.')
                 ->setCreatedAt($now);
             $payment->addStatusHistory($paymentHistory);
             $this->entityManager->persist($paymentHistory);
@@ -463,8 +451,8 @@ final class OrderTransitionService
             $this->bus->dispatch(new OrderStatusChanged(
                 orderId: (string) $result['order']->getId(),
                 previousStatus: null,
-                currentStatus: OrderStatus::PLACED,
-                changedBy: OrderActor::CUSTOMER,
+                currentStatus: Order::STATUS_PLACED,
+                changedBy: Order::ACTOR_CUSTOMER,
                 note: 'Order placed by customer.',
                 changedAt: $result['order']->getPlacedAt(),
             ));
@@ -512,7 +500,7 @@ final class OrderTransitionService
             'restaurant_id' => $quote['restaurant']->getId(),
             'customer_address_id' => $quote['address']->getId(),
             'address_covered' => true,
-            'payment_method' => $quote['payment_method']->value,
+            'payment_method' => $quote['payment_method'],
             'items' => $items,
             'subtotal' => $quote['subtotal'],
             'delivery_fee' => $quote['delivery_fee'],
@@ -528,7 +516,7 @@ final class OrderTransitionService
      * @return array{
      *     restaurant: Restaurant,
      *     address: CustomerAddress,
-     *     payment_method: PaymentMethod,
+     *     payment_method: string,
      *     tip: numeric-string,
      *     notes: ?string,
      *     item_rows: list<array{item: MenuItem, variant: ?MenuItemVariant, addons: list<MenuItemAddon>, quantity: int, unit_price: numeric-string, instructions: ?string}>,
@@ -635,10 +623,10 @@ final class OrderTransitionService
         return $address;
     }
 
-    private function paymentMethod(mixed $value): PaymentMethod
+    private function paymentMethod(mixed $value): string
     {
-        $method = is_string($value) ? PaymentMethod::tryFrom($value) : null;
-        if (!$method instanceof PaymentMethod) {
+        $method = is_string($value) ? (in_array($value, Payment::METHODS, true) ? $value : null) : null;
+        if (null === $method) {
             throw new UnprocessableEntityHttpException('payment_method must be cod, gcash, or card.');
         }
 
@@ -647,10 +635,10 @@ final class OrderTransitionService
 
     private function assertRestaurantCanAcceptOrders(Restaurant $restaurant, \DateTimeImmutable $now): void
     {
-        if (ApprovalStatus::APPROVED !== $restaurant->getApprovalStatus()) {
+        if (Restaurant::APPROVAL_APPROVED !== $restaurant->getApprovalStatus()) {
             throw new UnprocessableEntityHttpException('This restaurant is not approved for orders.');
         }
-        if (RestaurantOperatingStatus::OPEN !== $restaurant->getOperatingStatus()) {
+        if (Restaurant::OPERATING_OPEN !== $restaurant->getOperatingStatus()) {
             throw new UnprocessableEntityHttpException('This restaurant is currently closed.');
         }
 
@@ -798,7 +786,7 @@ final class OrderTransitionService
         if (-1 === bccomp($subtotal, $voucher->getMinOrderAmount(), 2)) {
             throw new UnprocessableEntityHttpException('The order does not meet the voucher minimum.');
         }
-        if (VoucherScope::RESTAURANT === $voucher->getScope() && $voucher->getRestaurant() !== $restaurant) {
+        if (Voucher::SCOPE_RESTAURANT === $voucher->getScope() && $voucher->getRestaurant() !== $restaurant) {
             throw new UnprocessableEntityHttpException('Voucher does not apply to this restaurant.');
         }
 
@@ -817,13 +805,13 @@ final class OrderTransitionService
         }
 
         $discount = match ($voucher->getType()) {
-            VoucherType::PERCENTAGE => bcround(bcdiv(bcmul($subtotal, 1 === bccomp($value, '100', 2) ? '100' : $value, 6), '100', 6), 2),
-            VoucherType::FIXED => bcround($value, 2),
-            VoucherType::FREE_DELIVERY => $deliveryFee,
+            Voucher::TYPE_PERCENTAGE => bcround(bcdiv(bcmul($subtotal, 1 === bccomp($value, '100', 2) ? '100' : $value, 6), '100', 6), 2),
+            Voucher::TYPE_FIXED => bcround($value, 2),
+            Voucher::TYPE_FREE_DELIVERY => $deliveryFee,
         };
 
         // A voucher never discounts more than the food subtotal (free delivery is bounded by the fee itself).
-        return VoucherType::FREE_DELIVERY !== $voucher->getType() && 1 === bccomp($discount, $subtotal, 2) ? $subtotal : $discount;
+        return Voucher::TYPE_FREE_DELIVERY !== $voucher->getType() && 1 === bccomp($discount, $subtotal, 2) ? $subtotal : $discount;
     }
 
     /**
@@ -875,7 +863,7 @@ final class OrderTransitionService
      */
     public function visiblePoolOrders(Rider $rider): array
     {
-        if (RiderAvailabilityStatus::AVAILABLE !== $rider->getAvailabilityStatus()
+        if (Rider::AVAILABILITY_AVAILABLE !== $rider->getAvailabilityStatus()
             || null === $rider->getCurrentLatitude()
             || null === $rider->getCurrentLongitude()) {
             return [];
@@ -889,7 +877,7 @@ final class OrderTransitionService
             if (!$offer instanceof RiderPoolOffer || $this->riderSkippedOrder($order, $rider)) {
                 continue;
             }
-            if (PaymentMethod::COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
+            if (Payment::METHOD_COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
                 continue;
             }
 
@@ -924,8 +912,8 @@ final class OrderTransitionService
                 'pay_breakdown' => $pay,
                 'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
                 'search_radius_km' => $offer->getSearchRadiusKm(),
-                'escalation_stage' => $offer->getEscalationStage()->value,
-                'payment_method' => $order->getPaymentMethod()->value,
+                'escalation_stage' => $offer->getEscalationStage(),
+                'payment_method' => $order->getPaymentMethod(),
             ];
         }
 
@@ -950,7 +938,7 @@ final class OrderTransitionService
             if (!$offer instanceof RiderPoolOffer || $this->riderSkippedOrder($order, $rider)) {
                 continue;
             }
-            if (PaymentMethod::COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
+            if (Payment::METHOD_COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
                 $codBlocked = true;
                 continue;
             }
@@ -990,22 +978,22 @@ final class OrderTransitionService
 
         return $this->transition(
             $order,
-            OrderStatus::RIDER_ASSIGNED,
-            $adminOverride ? OrderActor::ADMIN : OrderActor::RIDER,
+            Order::STATUS_RIDER_ASSIGNED,
+            $adminOverride ? Order::ACTOR_ADMIN : Order::ACTOR_RIDER,
             $adminOverride ? 'Rider manually assigned by admin.' : 'Rider accepted the pool offer.',
             function (Order $lockedOrder, \DateTimeImmutable $now) use ($rider, $adminOverride): void {
                 $lockedRider = $this->entityManager->find(Rider::class, $rider->getId(), LockMode::PESSIMISTIC_WRITE);
                 if (!$lockedRider instanceof Rider) {
                     throw new NotFoundHttpException('Rider profile not found.');
                 }
-                if (OrderStatus::FINDING_RIDER !== $lockedOrder->getStatus() || null !== $lockedOrder->getRider()) {
+                if (Order::STATUS_FINDING_RIDER !== $lockedOrder->getStatus() || null !== $lockedOrder->getRider()) {
                     throw new ConflictHttpException('This order was just taken by another rider.');
                 }
 
                 $pickupDistance = $this->assertRiderEligible($lockedOrder, $lockedRider, $adminOverride);
                 $lockedOrder->setRider($lockedRider);
                 $lockedRider
-                    ->setAvailabilityStatus(RiderAvailabilityStatus::BUSY)
+                    ->setAvailabilityStatus(Rider::AVAILABILITY_BUSY)
                     ->setUpdatedAt($now);
                 $lockedOrder->getRiderPoolOffer()?->setAcceptedPickupDistanceKm(
                     number_format(round($pickupDistance, 4), 4, '.', ''),
@@ -1030,7 +1018,7 @@ final class OrderTransitionService
             if (!$lockedOrder instanceof Order || !$lockedRider instanceof Rider) {
                 throw new NotFoundHttpException('Order or rider no longer exists.');
             }
-            if (OrderStatus::FINDING_RIDER !== $lockedOrder->getStatus() || null !== $lockedOrder->getRider()) {
+            if (Order::STATUS_FINDING_RIDER !== $lockedOrder->getStatus() || null !== $lockedOrder->getRider()) {
                 throw new ConflictHttpException('This order was just taken by another rider.');
             }
             $this->assertRiderEligible($lockedOrder, $lockedRider, false, checkActiveOrder: false, checkCodLimit: false);
@@ -1046,7 +1034,7 @@ final class OrderTransitionService
                     ->setCreatedAt(new \DateTimeImmutable());
                 $this->entityManager->persist($decline);
             }
-            $decline->setAction(RiderPoolDeclineAction::SKIPPED);
+            $decline->setAction(RiderPoolDecline::ACTION_SKIPPED);
             $this->entityManager->flush();
 
             return $decline;
@@ -1062,7 +1050,7 @@ final class OrderTransitionService
         bool $checkActiveOrder = true,
         bool $checkCodLimit = true,
     ): float {
-        if (ApprovalStatus::APPROVED !== $rider->getApprovalStatus()) {
+        if (Rider::APPROVAL_APPROVED !== $rider->getApprovalStatus()) {
             throw new UnprocessableEntityHttpException('Only approved riders can be assigned to orders.');
         }
         if (null === $rider->getCurrentLatitude() || null === $rider->getCurrentLongitude()) {
@@ -1084,10 +1072,10 @@ final class OrderTransitionService
         if ($checkActiveOrder && $this->orders->riderHasOtherActiveOrder($rider, $order->getId())) {
             throw new ConflictHttpException('Finish your current delivery before accepting another order.');
         }
-        if ($checkCodLimit && PaymentMethod::COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
+        if ($checkCodLimit && Payment::METHOD_COD === $order->getPaymentMethod() && $this->hasReachedCashLimit($rider)) {
             throw new ConflictHttpException('Remit cash before accepting another COD order.');
         }
-        if (!$adminOverride && RiderAvailabilityStatus::AVAILABLE !== $rider->getAvailabilityStatus()) {
+        if (!$adminOverride && Rider::AVAILABILITY_AVAILABLE !== $rider->getAvailabilityStatus()) {
             throw new ConflictHttpException('Go online before accepting an order.');
         }
 
@@ -1099,7 +1087,7 @@ final class OrderTransitionService
         return $this->entityManager->getRepository(RiderPoolDecline::class)->findOneBy([
             'order' => $order,
             'rider' => $rider,
-            'action' => RiderPoolDeclineAction::SKIPPED,
+            'action' => RiderPoolDecline::ACTION_SKIPPED,
         ]) instanceof RiderPoolDecline;
     }
 
@@ -1135,15 +1123,15 @@ final class OrderTransitionService
         $now ??= new \DateTimeImmutable();
         $startedAt = $order->getRiderSearchStartedAt();
         $offer = $order->getRiderPoolOffer();
-        if (OrderStatus::FINDING_RIDER !== $order->getStatus() || null !== $order->getRider() || null === $startedAt || null === $offer) {
+        if (Order::STATUS_FINDING_RIDER !== $order->getStatus() || null !== $order->getRider() || null === $startedAt || null === $offer) {
             return false;
         }
 
         $elapsedSeconds = max(0, $now->getTimestamp() - $startedAt->getTimestamp());
         $changed = false;
-        while (OrderStatus::FINDING_RIDER === $order->getStatus() && null === $order->getRider()) {
+        while (Order::STATUS_FINDING_RIDER === $order->getStatus() && null === $order->getRider()) {
             $stage = $offer->getEscalationStage();
-            if (RiderPoolEscalationStage::AUTO_CANCELLED === $stage) {
+            if (RiderPoolOffer::STAGE_AUTO_CANCELLED === $stage) {
                 return $this->autoCancelNoRider($order) || $changed;
             }
 
@@ -1153,19 +1141,19 @@ final class OrderTransitionService
                 break;
             }
 
-            if (RiderPoolEscalationStage::AUTO_CANCELLED === $next) {
+            if (RiderPoolOffer::STAGE_AUTO_CANCELLED === $next) {
                 return $this->autoCancelNoRider($order) || $changed;
             }
 
             try {
                 $order = $this->recordUpdate(
                     $order,
-                    OrderActor::SYSTEM,
+                    Order::ACTOR_SYSTEM,
                     'rider_pool_escalated',
-                    sprintf('Rider pool escalated from %s to %s.', $stage->value, $next->value),
+                    sprintf('Rider pool escalated from %s to %s.', $stage, $next),
                     function (Order $locked, \DateTimeImmutable $changedAt) use ($stage, $next): void {
                         $lockedOffer = $locked->getRiderPoolOffer();
-                        if (OrderStatus::FINDING_RIDER !== $locked->getStatus()
+                        if (Order::STATUS_FINDING_RIDER !== $locked->getStatus()
                             || null !== $locked->getRider()
                             || null === $lockedOffer
                             || $stage !== $lockedOffer->getEscalationStage()) {
@@ -1175,10 +1163,10 @@ final class OrderTransitionService
                         $lockedOffer
                             ->setEscalationStage($next)
                             ->setUpdatedAt($changedAt);
-                        if (RiderPoolEscalationStage::WIDENED === $next) {
+                        if (RiderPoolOffer::STAGE_WIDENED === $next) {
                             $radius = max(0.1, $this->settings->float('rider_search_widen_radius_km', 8.0));
                             $lockedOffer->setSearchRadiusKm(number_format($radius, 1, '.', ''));
-                        } elseif (RiderPoolEscalationStage::INCENTIVIZED === $next) {
+                        } elseif (RiderPoolOffer::STAGE_INCENTIVIZED === $next) {
                             $incentive = max(0.0, $this->settings->float('rider_incentive_amount', 20.0));
                             $lockedOffer->setIncentiveAmount(number_format($incentive, 2, '.', ''));
                         }
@@ -1197,16 +1185,16 @@ final class OrderTransitionService
         return $changed;
     }
 
-    /** @return array{RiderPoolEscalationStage, string, float} */
-    private function nextEscalationStage(RiderPoolEscalationStage $stage): array
+    /** @return array{string, string, float} */
+    private function nextEscalationStage(string $stage): array
     {
         return match ($stage) {
-            RiderPoolEscalationStage::INITIAL => [RiderPoolEscalationStage::WIDENED, 'rider_search_widen_after_minutes', 2.0],
-            RiderPoolEscalationStage::WIDENED => [RiderPoolEscalationStage::INCENTIVIZED, 'rider_incentive_after_minutes', 4.0],
-            RiderPoolEscalationStage::INCENTIVIZED => [RiderPoolEscalationStage::ADMIN_ALERTED, 'admin_alert_after_minutes', 6.0],
-            RiderPoolEscalationStage::ADMIN_ALERTED => [RiderPoolEscalationStage::CUSTOMER_NOTIFIED, 'customer_notify_after_minutes', 8.0],
-            RiderPoolEscalationStage::CUSTOMER_NOTIFIED => [RiderPoolEscalationStage::AUTO_CANCELLED, 'auto_cancel_after_minutes', 15.0],
-            RiderPoolEscalationStage::AUTO_CANCELLED => throw new \LogicException('An auto-cancelled offer has no next stage.'),
+            RiderPoolOffer::STAGE_INITIAL => [RiderPoolOffer::STAGE_WIDENED, 'rider_search_widen_after_minutes', 2.0],
+            RiderPoolOffer::STAGE_WIDENED => [RiderPoolOffer::STAGE_INCENTIVIZED, 'rider_incentive_after_minutes', 4.0],
+            RiderPoolOffer::STAGE_INCENTIVIZED => [RiderPoolOffer::STAGE_ADMIN_ALERTED, 'admin_alert_after_minutes', 6.0],
+            RiderPoolOffer::STAGE_ADMIN_ALERTED => [RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED, 'customer_notify_after_minutes', 8.0],
+            RiderPoolOffer::STAGE_CUSTOMER_NOTIFIED => [RiderPoolOffer::STAGE_AUTO_CANCELLED, 'auto_cancel_after_minutes', 15.0],
+            RiderPoolOffer::STAGE_AUTO_CANCELLED => throw new \LogicException('An auto-cancelled offer has no next stage.'),
         };
     }
 
@@ -1215,21 +1203,21 @@ final class OrderTransitionService
         try {
             $this->transition(
                 $order,
-                OrderStatus::CANCELLED_NO_RIDER,
-                OrderActor::SYSTEM,
+                Order::STATUS_CANCELLED_NO_RIDER,
+                Order::ACTOR_SYSTEM,
                 'No rider accepted the order before the search deadline.',
                 function (Order $locked, \DateTimeImmutable $now): void {
-                    if (OrderStatus::FINDING_RIDER !== $locked->getStatus() || null !== $locked->getRider()) {
+                    if (Order::STATUS_FINDING_RIDER !== $locked->getStatus() || null !== $locked->getRider()) {
                         throw new ConflictHttpException('The rider pool offer changed while escalating.');
                     }
                     $locked
                         ->setCancellationReason('No rider was found before the search deadline.')
-                        ->setCancelledBy(OrderActor::SYSTEM);
-                    $locked->getRiderPoolOffer()?->setEscalationStage(RiderPoolEscalationStage::AUTO_CANCELLED)->setUpdatedAt($now);
+                        ->setCancelledBy(Order::ACTOR_SYSTEM);
+                    $locked->getRiderPoolOffer()?->setEscalationStage(RiderPoolOffer::STAGE_AUTO_CANCELLED)->setUpdatedAt($now);
                     if (null !== $locked->getPayment()) {
                         $this->payments->cancelOrRefund(
                             $locked->getPayment(),
-                            PaymentActor::SYSTEM,
+                            Payment::ACTOR_SYSTEM,
                             'Order automatically cancelled because no rider was found.',
                             $now,
                         );

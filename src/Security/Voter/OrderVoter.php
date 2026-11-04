@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Entity\Order;
+use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\OrderStatus;
-use App\Enum\UserRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -39,7 +37,7 @@ final class OrderVoter extends Voter
         }
 
         // This mirrors the Laravel policy's global admin override, including operational actions.
-        if (UserRole::ADMIN === $user->getRole()) {
+        if (User::ACCOUNT_ADMIN === $user->getRole()) {
             return true;
         }
 
@@ -72,7 +70,7 @@ final class OrderVoter extends Voter
             return $order->getRider() === $rider;
         }
 
-        return OrderStatus::FINDING_RIDER === $order->getStatus()
-            && ApprovalStatus::APPROVED === $rider->getApprovalStatus();
+        return Order::STATUS_FINDING_RIDER === $order->getStatus()
+            && Rider::APPROVAL_APPROVED === $rider->getApprovalStatus();
     }
 }

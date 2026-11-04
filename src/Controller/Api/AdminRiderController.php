@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Entity\RiderDocument;
 use App\Entity\User;
-use App\Enum\ApprovalStatus;
-use App\Enum\RiderAvailabilityStatus;
-use App\Enum\UserStatus;
-use App\Enum\VehicleType;
 use App\Repository\AuditLogRepository;
 use App\Repository\RiderRepository;
 use App\Service\ApiPaginator;
@@ -38,7 +35,7 @@ final class AdminRiderController extends AbstractController
     {
         $approval = null;
         if ('' !== ($status = trim((string) $request->query->get('approval_status', '')))) {
-            $approval = ApprovalStatus::tryFrom($status);
+            $approval = (in_array($status, Restaurant::APPROVAL_STATUSES, true) ? $status : null);
             if (null === $approval) {
                 return $this->json(['message' => 'Invalid approval_status.'], 422);
             }
@@ -66,9 +63,9 @@ final class AdminRiderController extends AbstractController
     public function approve(Rider $rider): JsonResponse
     {
         $before = $rider->getApprovalStatus();
-        $rider->setApprovalStatus(ApprovalStatus::APPROVED)->setRejectionReason(null)->setUpdatedAt(new \DateTimeImmutable());
+        $rider->setApprovalStatus(Rider::APPROVAL_APPROVED)->setRejectionReason(null)->setUpdatedAt(new \DateTimeImmutable());
         $this->audit->record($this->admin(), 'rider.approved', 'rider', (string) $rider->getId(), [
-            'approval_status' => ['from' => $before->value, 'to' => ApprovalStatus::APPROVED->value],
+            'approval_status' => ['from' => $before, 'to' => Restaurant::APPROVAL_APPROVED],
         ]);
         $this->entityManager->flush();
 
@@ -88,9 +85,9 @@ final class AdminRiderController extends AbstractController
             return $this->json(['message' => 'A rejection_reason of at most 2000 characters is required.'], 422);
         }
         $before = $rider->getApprovalStatus();
-        $rider->setApprovalStatus(ApprovalStatus::REJECTED)->setRejectionReason($reason)->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE)->setUpdatedAt(new \DateTimeImmutable());
+        $rider->setApprovalStatus(Rider::APPROVAL_REJECTED)->setRejectionReason($reason)->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE)->setUpdatedAt(new \DateTimeImmutable());
         $this->audit->record($this->admin(), 'rider.rejected', 'rider', (string) $rider->getId(), [
-            'approval_status' => ['from' => $before->value, 'to' => ApprovalStatus::REJECTED->value],
+            'approval_status' => ['from' => $before, 'to' => Restaurant::APPROVAL_REJECTED],
             'rejection_reason' => $reason,
         ]);
         $this->entityManager->flush();
@@ -101,13 +98,13 @@ final class AdminRiderController extends AbstractController
     #[Route('/{id}/suspend', name: 'suspend', methods: ['POST'])]
     public function suspend(Rider $rider): JsonResponse
     {
-        return $this->setUserStatus($rider, UserStatus::SUSPENDED);
+        return $this->setUserStatus($rider, User::STATUS_SUSPENDED);
     }
 
     #[Route('/{id}/reactivate', name: 'reactivate', methods: ['POST'])]
     public function reactivate(Rider $rider): JsonResponse
     {
-        return $this->setUserStatus($rider, UserStatus::ACTIVE);
+        return $this->setUserStatus($rider, User::STATUS_ACTIVE);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PATCH'])]
@@ -120,11 +117,11 @@ final class AdminRiderController extends AbstractController
         }
         $changes = [];
         if (array_key_exists('vehicle_type', $data)) {
-            $vehicle = VehicleType::tryFrom((string) $data['vehicle_type']);
+            $vehicle = (in_array((string) $data['vehicle_type'], Rider::VEHICLE_TYPES, true) ? (string) $data['vehicle_type'] : null);
             if (null === $vehicle) {
                 return $this->json(['message' => 'Invalid vehicle_type.'], 422);
             }
-            $changes['vehicle_type'] = ['from' => $rider->getVehicleType()->value, 'to' => $vehicle->value];
+            $changes['vehicle_type'] = ['from' => $rider->getVehicleType(), 'to' => $vehicle];
             $rider->setVehicleType($vehicle);
         }
         if (array_key_exists('plate_number', $data)) {
@@ -153,15 +150,15 @@ final class AdminRiderController extends AbstractController
         return $this->json(['rider' => $this->normalize($rider, true)]);
     }
 
-    private function setUserStatus(Rider $rider, UserStatus $status): JsonResponse
+    private function setUserStatus(Rider $rider, string $status): JsonResponse
     {
         $before = $rider->getUser()->getStatus();
         $rider->getUser()->setStatus($status)->setUpdatedAt(new \DateTimeImmutable());
-        if (UserStatus::SUSPENDED === $status) {
-            $rider->setAvailabilityStatus(RiderAvailabilityStatus::OFFLINE)->setUpdatedAt(new \DateTimeImmutable());
+        if (User::STATUS_SUSPENDED === $status) {
+            $rider->setAvailabilityStatus(Rider::AVAILABILITY_OFFLINE)->setUpdatedAt(new \DateTimeImmutable());
         }
-        $this->audit->record($this->admin(), 'rider.'.(UserStatus::ACTIVE === $status ? 'reactivated' : 'suspended'), 'rider', (string) $rider->getId(), [
-            'user_status' => ['from' => $before->value, 'to' => $status->value],
+        $this->audit->record($this->admin(), 'rider.'.(User::STATUS_ACTIVE === $status ? 'reactivated' : 'suspended'), 'rider', (string) $rider->getId(), [
+            'user_status' => ['from' => $before, 'to' => $status],
         ]);
         $this->entityManager->flush();
 
@@ -173,11 +170,11 @@ final class AdminRiderController extends AbstractController
     {
         $data = [
             'id' => $rider->getId(),
-            'vehicle_type' => $rider->getVehicleType()->value,
+            'vehicle_type' => $rider->getVehicleType(),
             'plate_number' => $rider->getPlateNumber(),
-            'approval_status' => $rider->getApprovalStatus()->value,
+            'approval_status' => $rider->getApprovalStatus(),
             'rejection_reason' => $rider->getRejectionReason(),
-            'availability_status' => $rider->getAvailabilityStatus()->value,
+            'availability_status' => $rider->getAvailabilityStatus(),
             'cash_on_hand' => $rider->getCashOnHand(),
             'cash_remit_limit' => $rider->getCashRemitLimit(),
             'owner' => [
@@ -186,16 +183,16 @@ final class AdminRiderController extends AbstractController
                 'email' => $rider->getUser()->getEmail(),
                 'phone' => $rider->getUser()->getPhone(),
                 'avatar_path' => $rider->getUser()->getAvatarPath(),
-                'status' => $rider->getUser()->getStatus()->value,
+                'status' => $rider->getUser()->getStatus(),
             ],
             'created_at' => $rider->getCreatedAt()?->format(\DateTimeInterface::ATOM),
         ];
         if ($withDocuments) {
             $data['documents'] = array_map(static fn (RiderDocument $document): array => [
                 'id' => $document->getId(),
-                'type' => $document->getType()->value,
+                'type' => $document->getType(),
                 'file_path' => $document->getFilePath(),
-                'status' => $document->getStatus()->value,
+                'status' => $document->getStatus(),
                 'rejection_reason' => $document->getRejectionReason(),
             ], $rider->getDocuments()->toArray());
         }
