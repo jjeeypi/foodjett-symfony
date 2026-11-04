@@ -1,54 +1,69 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, restaurant_card %}
 
 {% block title %}Restaurants | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Restaurants</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">A little hungry? You’re in the right place.</div>
+            <h1>Good eats <span>near you.</span></h1>
+            <p>Your neighborhood favorites, delivered fresh to your door.</p>
+        </div>
+        <a class="btn btn-light" href="{{ path('app_search') }}">{{ icon('search', 'icon-sm') }} Search dishes</a>
+    </div>
 
-    <form method="get" action="{{ path('app_restaurants') }}">
-        <label for="kind">Type</label>
-        <select id="kind" name="kind">
-            <option value="">All</option>
-            {% for value, label in kinds %}
-                <option value="{{ value }}" {{ filters.kind == value ? 'selected' }}>{{ label }}</option>
-            {% endfor %}
-        </select>
+    <div class="filter-bar">
+        <form method="get" action="{{ path('app_restaurants') }}">
+            <label class="search" for="cuisine">
+                {{ icon('search', 'icon-sm') }}
+                <span class="sr-only">Cuisine</span>
+                <input type="search" id="cuisine" name="cuisine" value="{{ filters.cuisine }}" placeholder="Cuisine, like Filipino or pizza">
+            </label>
+            <label class="chip" for="kind"><span class="sr-only">Type</span>
+                <select id="kind" name="kind">
+                    <option value="">All types</option>
+                    {% for value, label in kinds %}
+                        <option value="{{ value }}" {{ filters.kind == value ? 'selected' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="chip" for="rating">{{ icon('star', 'icon-sm') }}<span class="sr-only">Minimum rating</span>
+                <select id="rating" name="rating">
+                    <option value="">Any rating</option>
+                    {% for stars in 1..5 %}
+                        <option value="{{ stars }}" {{ filters.rating == stars ~ '' ? 'selected' }}>{{ stars }}+ stars</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="chip" for="open_now">
+                <input type="checkbox" id="open_now" name="open_now" value="1" {{ filters.open_now ? 'checked' }}>
+                Open now
+            </label>
+            <button type="submit">{{ icon('tune', 'icon-sm') }} Filter</button>
+        </form>
+    </div>
 
-        <label for="cuisine">Cuisine</label>
-        <input type="text" id="cuisine" name="cuisine" value="{{ filters.cuisine }}">
-
-        <label for="rating">Minimum rating</label>
-        <select id="rating" name="rating">
-            <option value="">Any</option>
-            {% for stars in 1..5 %}
-                <option value="{{ stars }}" {{ filters.rating == stars ~ '' ? 'selected' }}>{{ stars }}+</option>
-            {% endfor %}
-        </select>
-
-        <input type="checkbox" id="open_now" name="open_now" value="1" {{ filters.open_now ? 'checked' }}>
-        <label for="open_now">Open now</label>
-
-        <button type="submit">Filter</button>
-    </form>
-
-    <p><a href="{{ path('app_search') }}">Search dishes</a></p>
+    <div class="list-head">
+        <div>
+            <h2>{{ filters.kind ? kinds[filters.kind] : 'All restaurants' }} <span class="badge badge-green"><i class="dot"></i> Delivering now</span></h2>
+            <p>{{ pagination.totalItemCount }} {{ pagination.totalItemCount == 1 ? 'place' : 'places' }} ready to make your day a little tastier</p>
+        </div>
+    </div>
 
     {% if pagination.totalItemCount == 0 %}
-        <p>No restaurants match these filters.</p>
+        <div class="empty">
+            {{ icon('search') }}
+            <h2>No restaurants here yet</h2>
+            <p>Try another craving, or clear the filters.</p>
+            <a class="btn btn-light" href="{{ path('app_restaurants') }}">Clear filters</a>
+        </div>
     {% else %}
-        <ul>
+        <div class="restaurant-grid">
             {% for row in pagination %}
-                {% set restaurant = row.restaurant %}
-                <li>
-                    {% if restaurant.coverPhotoPath %}<img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="160" height="90" loading="lazy">{% endif %}
-                    <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a>
-                    · {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}
-                    · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }})
-                    · {{ restaurant.openNow ? 'Open now' : 'Closed' }}
-                    {% if row.distance is not null %}· {{ row.distance|number_format(1) }} km{% endif %}
-                </li>
+                {{ restaurant_card(row.restaurant, favoriteIds, row.distance) }}
             {% endfor %}
-        </ul>
+        </div>
         {{ knp_pagination_render(pagination) }}
     {% endif %}
 {% endblock %}

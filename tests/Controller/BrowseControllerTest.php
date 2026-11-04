@@ -60,7 +60,7 @@ class BrowseControllerTest extends CustomerWebTestCase
         $this->entityManager->clear();
 
         $crawler = $this->client->request('GET', '/restaurants');
-        self::assertCount(1, $crawler->filter('main li img[src="/images/catalog/covers/pictured.webp"]'));
+        self::assertCount(1, $crawler->filter('.restaurant-card img[src="/images/catalog/covers/pictured.webp"]'));
 
         $crawler = $this->client->request('GET', '/restaurants/'.$this->restaurant->getSlug());
         self::assertCount(1, $crawler->filter('main img[src="/images/catalog/covers/pictured.webp"]'));
@@ -126,7 +126,7 @@ class BrowseControllerTest extends CustomerWebTestCase
         $crawler = $this->client->request('GET', $url);
         self::assertResponseIsSuccessful();
 
-        return $crawler->filter('main ul li > a')->each(fn ($link) => $link->text());
+        return $crawler->filter('.restaurant-card h3')->each(fn ($title) => $title->text());
     }
 
     /** @return list<string> */

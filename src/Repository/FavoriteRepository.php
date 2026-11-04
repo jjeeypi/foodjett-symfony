@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\Customer;
 use App\Entity\Favorite;
+use App\Entity\Restaurant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +18,42 @@ class FavoriteRepository extends ServiceEntityRepository
         parent::__construct($registry, Favorite::class);
     }
 
-//    /**
-//     * @return Favorite[] Returns an array of Favorite objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('f')
-//            ->andWhere('f.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('f.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * The approved restaurants a customer saved, most recent first.
+     *
+     * @return list<Restaurant>
+     */
+    public function findRestaurantsFor(Customer $customer): array
+    {
+        return array_map(static fn (Favorite $f) => $f->getRestaurant(), $this->createQueryBuilder('f')
+            ->addSelect('r')
+            ->join('f.restaurant', 'r')
+            ->andWhere('f.customer = :customer')
+            ->andWhere('r.approvalStatus = :approved')
+            ->setParameter('customer', $customer)
+            ->setParameter('approved', Restaurant::APPROVAL_APPROVED)
+            ->orderBy('f.createdAt', 'DESC')
+            ->addOrderBy('f.id', 'DESC')
+            ->getQuery()
+            ->getResult());
+    }
 
-//    public function findOneBySomeField($value): ?Favorite
-//    {
-//        return $this->createQueryBuilder('f')
-//            ->andWhere('f.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /**
+     * Ids of the restaurants a customer saved, for drawing filled hearts.
+     *
+     * @return list<string>
+     */
+    public function findRestaurantIdsFor(?Customer $customer): array
+    {
+        if (null === $customer) {
+            return [];
+        }
+
+        return array_map('strval', array_column($this->createQueryBuilder('f')
+            ->select('IDENTITY(f.restaurant) AS id')
+            ->andWhere('f.customer = :customer')
+            ->setParameter('customer', $customer)
+            ->getQuery()
+            ->getScalarResult(), 'id'));
+    }
 }

@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Restaurant;
+use App\Entity\User;
 use App\Repository\DeliveryZoneRepository;
+use App\Repository\FavoriteRepository;
 use App\Repository\RestaurantRepository;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class BrowseController extends AbstractController
 {
     #[Route('/restaurants', name: 'app_restaurants', methods: ['GET'])]
-    public function index(Request $request, RestaurantRepository $restaurants, PaginatorInterface $paginator): Response
+    public function index(Request $request, RestaurantRepository $restaurants, FavoriteRepository $favorites, PaginatorInterface $paginator): Response
     {
         $kind = $request->query->getString('kind');
         $kind = array_key_exists($kind, Restaurant::KINDS) ? $kind : '';
@@ -53,6 +55,7 @@ final class BrowseController extends AbstractController
 
         return $this->render('browse/index.html.twig', [
             'pagination' => $paginator->paginate($rows, $request->query->getInt('page', 1), 20),
+            'favoriteIds' => $favorites->findRestaurantIdsFor($this->getUser() instanceof User ? $this->getUser()->getCustomer() : null),
             'kinds' => Restaurant::KINDS,
             'filters' => ['kind' => $kind, 'cuisine' => $cuisine, 'rating' => $rating, 'open_now' => $openOnly],
         ]);
