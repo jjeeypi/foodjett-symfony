@@ -15,8 +15,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
- * Opens the order conversation the new status calls for, then publishes the
- * status change (and, for a new order, the restaurant notice) to Mercure.
+ * Opens the order conversation the new status calls for, then tells the pages
+ * following the order and the restaurant's queue to refresh.
  */
 #[AsMessageHandler]
 final class OrderStatusChangedHandler
@@ -83,48 +83,11 @@ final class OrderStatusChangedHandler
         }
     }
 
+    /** Pages showing the order, and the restaurant's queue (which also learns of new orders this way), refresh. */
     private function publishStatus(Order $order, OrderStatusChanged $message): void
     {
-        $rider = $order->getRider();
-
-        $this->hub->publish(new Update(
-            sprintf('orders/%s/status', $message->orderId),
-            json_encode([
-                'event' => 'order.status_changed',
-                'order_id' => $message->orderId,
-                'order_number' => $order->getOrderNumber(),
-                'previous_status' => $message->previousStatus,
-                'status' => $message->currentStatus,
-                'changed_by' => $message->changedBy,
-                'note' => $message->note,
-                'changed_at' => $message->changedAt->format(\DateTimeInterface::ATOM),
-                'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
-                'rider' => null === $rider ? null : [
-                    'id' => (string) $rider->getId(),
-                    'name' => $rider->getUser()->getName(),
-                    'vehicle_type' => $rider->getVehicleType(),
-                ],
-            ], JSON_THROW_ON_ERROR),
-            true,
-            type: 'order.status_changed',
-        ));
-
-        if (null !== $message->previousStatus) {
-            return;
-        }
-
-        $this->hub->publish(new Update(
-            sprintf('restaurant/%s/orders', $order->getRestaurant()->getId()),
-            json_encode([
-                'event' => 'order.placed',
-                'order_id' => $message->orderId,
-                'order_number' => $order->getOrderNumber(),
-                'customer_name' => $order->getCustomer()->getUser()->getName(),
-                'total_amount' => $order->getTotalAmount(),
-                'placed_at' => $order->getPlacedAt()->format(\DateTimeInterface::ATOM),
-            ], JSON_THROW_ON_ERROR),
-            true,
-            type: 'order.placed',
-        ));
+        $refresh = '<turbo-stream action="refresh"></turbo-stream>';
+        $this->hub->publish(new Update(sprintf('orders/%s/status', $message->orderId), $refresh, true));
+        $this->hub->publish(new Update(sprintf('restaurant/%s/orders', $order->getRestaurant()->getId()), $refresh, true));
     }
 }

@@ -5,7 +5,6 @@ namespace App\Tests\Controller;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use App\Entity\RestaurantOperatingHour;
-use App\Entity\User;
 use App\Tests\Controller\Api\RestaurantApiTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Filesystem;

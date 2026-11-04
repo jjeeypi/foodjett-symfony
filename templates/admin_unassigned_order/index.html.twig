@@ -3,6 +3,7 @@
 {% block title %}Waiting for a rider | Foodjett admin{% endblock %}
 
 {% block body %}
+    <div id="live" {{ turbo_stream_listen('orders/pool') }} hidden></div>
     <p><a href="{{ path('app_admin_order') }}">All orders</a></p>
     <h1>Waiting for a rider</h1>
     <p>Orders the rider pool could not place in time. Open one to hand it to a rider.</p>

@@ -70,10 +70,12 @@ class CheckoutControllerTest extends WebTestCase
 
         $updates = self::getContainer()->get(RecordingMercureHub::class)->updates();
         self::assertCount(2, $updates);
-        self::assertSame(['orders/'.$order->getId().'/status'], $updates[0]->getTopics());
-        self::assertSame('order.status_changed', $updates[0]->getType());
-        self::assertSame(['restaurant/'.$order->getRestaurant()->getId().'/orders'], $updates[1]->getTopics());
-        self::assertSame('order.placed', $updates[1]->getType());
+        self::assertSame(['orders/'.$order->getId().'/status'], $updates[0]->getTopics(), 'Pages following the order refresh.');
+        self::assertSame(['restaurant/'.$order->getRestaurant()->getId().'/orders'], $updates[1]->getTopics(), 'The restaurant queue learns of the order.');
+        foreach ($updates as $update) {
+            self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $update->getData());
+            self::assertTrue($update->isPrivate());
+        }
     }
 
     public function testPreviewShowsTheTotalsTheOrderIsPlacedWith(): void

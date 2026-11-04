@@ -17,13 +17,6 @@ class RestaurantRepository extends ServiceEntityRepository
         parent::__construct($registry, Restaurant::class);
     }
 
-    /** @return list<int|string> */
-    public function findAllIds(): array
-    {
-        return $this->createQueryBuilder('restaurant')
-            ->select('restaurant.id')->getQuery()->getSingleColumnResult();
-    }
-
     /**
      * Approved restaurants in name order.
      *

@@ -78,9 +78,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         ));
         self::assertCount(1, $poolUpdates);
         self::assertFalse($poolUpdates[0]->isPrivate());
-        $payload = json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame('rider_pool.offer_taken', $payload['event'] ?? null);
-        self::assertSame('cancelled_no_rider', $payload['reason'] ?? null);
+        self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $poolUpdates[0]->getData(), 'The cancelled order leaves every pool page.');
     }
 
     public function testAutoCancellationMarksUncollectedCodPaymentFailed(): void

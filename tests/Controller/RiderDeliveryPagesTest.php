@@ -79,7 +79,8 @@ class RiderDeliveryPagesTest extends RiderApiTestCase
         $this->submit('/rider', 'Share location', ['location_form[latitude]' => '14.601', 'location_form[longitude]' => '120.986']);
         self::assertCount(1, $hub->updates());
         self::assertSame(['orders/'.$order->getId().'/status'], $hub->updates()[0]->getTopics());
-        self::assertSame('14.6010000', json_decode($hub->updates()[0]->getData(), true)['latitude']);
+        self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $hub->updates()[0]->getData());
+        self::assertSame('14.6010000', $this->reload(Rider::class, $this->rider->getId())->getCurrentLatitude());
 
         $this->submit('/rider', 'Share location', ['location_form[latitude]' => '14.700', 'location_form[longitude]' => '121.100']);
         self::assertCount(1, $hub->updates(), 'A second update within five seconds is ignored.');
