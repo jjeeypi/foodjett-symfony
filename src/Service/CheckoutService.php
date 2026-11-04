@@ -93,16 +93,9 @@ final readonly class CheckoutService
             $restaurant = $quote['restaurant'];
             $address = $quote['address'];
             $paymentMethod = $quote['payment_method'];
-            $tipCents = $quote['tip_cents'];
             $notes = $quote['notes'];
             $itemRows = $quote['item_rows'];
-            $subtotalCents = $quote['subtotal_cents'];
-            $deliveryFeeCents = $quote['delivery_fee_cents'];
-            $serviceFeeCents = $quote['service_fee_cents'];
             $voucher = $quote['voucher'];
-            $discountCents = $quote['discount_cents'];
-            $totalCents = $quote['total_cents'];
-            $commissionCents = $quote['commission_cents'];
             $order = (new Order())
                 ->setOrderNumber($this->newOrderNumber())
                 ->setCheckoutToken($token)
@@ -110,13 +103,13 @@ final readonly class CheckoutService
                 ->setRestaurant($restaurant)
                 ->setCustomerAddress($address)
                 ->setStatus(OrderStatus::PLACED)
-                ->setSubtotal($this->decimal($subtotalCents))
-                ->setDeliveryFee($this->decimal($deliveryFeeCents))
-                ->setServiceFee($this->decimal($serviceFeeCents))
-                ->setDiscountAmount($this->decimal($discountCents))
-                ->setTipAmount($this->decimal($tipCents))
-                ->setTotalAmount($this->decimal($totalCents))
-                ->setCommissionAmount($this->decimal($commissionCents))
+                ->setSubtotal($quote['subtotal'])
+                ->setDeliveryFee($quote['delivery_fee'])
+                ->setServiceFee($quote['service_fee'])
+                ->setDiscountAmount($quote['discount'])
+                ->setTipAmount($quote['tip'])
+                ->setTotalAmount($quote['total'])
+                ->setCommissionAmount($quote['commission'])
                 ->setPaymentMethod($paymentMethod)
                 ->setCustomerNotes($notes)
                 ->setPlacedAt($now)
@@ -130,7 +123,7 @@ final readonly class CheckoutService
                     ->setMenuItem($row['item'])
                     ->setMenuItemVariant($row['variant'])
                     ->setQuantity($row['quantity'])
-                    ->setUnitPrice($this->decimal($row['unit_price_cents']))
+                    ->setUnitPrice($row['unit_price'])
                     ->setSpecialInstructions($row['instructions'])
                     ->setCreatedAt($now)
                     ->setUpdatedAt($now);
@@ -163,7 +156,7 @@ final readonly class CheckoutService
                 ->setOrder($order)
                 ->setMethod($paymentMethod)
                 ->setStatus($paymentStatus)
-                ->setAmount($this->decimal($totalCents))
+                ->setAmount($quote['total'])
                 ->setPaidAt(PaymentStatus::PAID === $paymentStatus ? $now : null)
                 ->setTransactionReference(PaymentStatus::PAID === $paymentStatus ? 'SIMULATED-'.strtoupper(bin2hex(random_bytes(8))) : null)
                 ->setCreatedAt($now)
@@ -185,7 +178,7 @@ final readonly class CheckoutService
                     ->setVoucher($voucher)
                     ->setOrder($order)
                     ->setCustomer($lockedCustomer)
-                    ->setDiscountApplied($this->decimal($discountCents))
+                    ->setDiscountApplied($quote['discount'])
                     ->setCreatedAt($now)
                     ->setUpdatedAt($now);
                 $order->setVoucherRedemption($redemption);
@@ -223,8 +216,10 @@ final readonly class CheckoutService
         $quote = $this->quote($customer, $input, new \DateTimeImmutable(), false);
 
         $items = array_map(function (array $row): array {
-            $addonsCents = array_sum(array_map(fn (MenuItemAddon $addon): int => $this->moneyToCents($addon->getPrice()), $row['addons']));
-            $unitTotalCents = $row['unit_price_cents'] + $addonsCents;
+            $unitTotal = $row['unit_price'];
+            foreach ($row['addons'] as $addon) {
+                $unitTotal = bcadd($unitTotal, $addon->getPrice(), 2);
+            }
 
             return [
                 'menu_item_id' => $row['item']->getId(),
@@ -239,8 +234,8 @@ final readonly class CheckoutService
                     'name' => $addon->getName(),
                     'price' => $addon->getPrice(),
                 ], $row['addons']),
-                'unit_total' => $this->decimal($unitTotalCents),
-                'line_total' => $this->decimal($unitTotalCents * $row['quantity']),
+                'unit_total' => $unitTotal,
+                'line_total' => bcmul($unitTotal, (string) $row['quantity'], 2),
             ];
         }, $quote['item_rows']);
 
@@ -250,12 +245,12 @@ final readonly class CheckoutService
             'address_covered' => true,
             'payment_method' => $quote['payment_method']->value,
             'items' => $items,
-            'subtotal' => $this->decimal($quote['subtotal_cents']),
-            'delivery_fee' => $this->decimal($quote['delivery_fee_cents']),
-            'service_fee' => $this->decimal($quote['service_fee_cents']),
-            'discount_amount' => $this->decimal($quote['discount_cents']),
-            'tip_amount' => $this->decimal($quote['tip_cents']),
-            'total_amount' => $this->decimal($quote['total_cents']),
+            'subtotal' => $quote['subtotal'],
+            'delivery_fee' => $quote['delivery_fee'],
+            'service_fee' => $quote['service_fee'],
+            'discount_amount' => $quote['discount'],
+            'tip_amount' => $quote['tip'],
+            'total_amount' => $quote['total'],
         ];
     }
 
@@ -265,24 +260,26 @@ final readonly class CheckoutService
      *     restaurant: Restaurant,
      *     address: CustomerAddress,
      *     payment_method: PaymentMethod,
-     *     tip_cents: int,
+     *     tip: numeric-string,
      *     notes: ?string,
-     *     item_rows: list<array{item: MenuItem, variant: ?MenuItemVariant, addons: list<MenuItemAddon>, quantity: int, unit_price_cents: int, instructions: ?string}>,
-     *     subtotal_cents: int,
-     *     delivery_fee_cents: int,
-     *     service_fee_cents: int,
+     *     item_rows: list<array{item: MenuItem, variant: ?MenuItemVariant, addons: list<MenuItemAddon>, quantity: int, unit_price: numeric-string, instructions: ?string}>,
+     *     subtotal: numeric-string,
+     *     delivery_fee: numeric-string,
+     *     service_fee: numeric-string,
      *     voucher: ?Voucher,
-     *     discount_cents: int,
-     *     total_cents: int,
-     *     commission_cents: int
+     *     discount: numeric-string,
+     *     total: numeric-string,
+     *     commission: numeric-string
      * }
+     *
+     * Every amount is an exact decimal string with two places, computed with bcmath.
      */
     private function quote(Customer $customer, array $input, \DateTimeImmutable $now, bool $lockVoucher): array
     {
         $restaurant = $this->restaurant($input['restaurant_id'] ?? null);
         $address = $this->address($input['customer_address_id'] ?? null, $customer);
         $paymentMethod = $this->paymentMethod($input['payment_method'] ?? null);
-        $tipCents = $this->nonNegativeMoneyToCents($input['tip_amount'] ?? 0, 'tip_amount');
+        $tip = $this->nonNegativeMoney($input['tip_amount'] ?? 0, 'tip_amount');
         $notes = $this->optionalText($input['customer_notes'] ?? null, 2000, 'customer_notes');
 
         $this->assertRestaurantCanAcceptOrders($restaurant, $now);
@@ -295,8 +292,8 @@ final readonly class CheckoutService
             throw new CheckoutValidationException('At least one cart item is required.');
         }
 
-        [$itemRows, $subtotalCents] = $this->priceItems($selections, $restaurant, $now);
-        if ($subtotalCents < $this->moneyToCents($restaurant->getMinOrderAmount())) {
+        [$itemRows, $subtotal] = $this->priceItems($selections, $restaurant, $now);
+        if (-1 === bccomp($subtotal, $restaurant->getMinOrderAmount(), 2)) {
             throw new CheckoutValidationException('The order subtotal does not meet the restaurant minimum.');
         }
 
@@ -306,32 +303,40 @@ final readonly class CheckoutService
             (float) $address->getLatitude(),
             (float) $address->getLongitude(),
         );
-        $deliveryFeeCents = (int) round(($this->settings->float('delivery_base_fee', 35.0)
-            + $this->settings->float('delivery_fee_per_km', 10.0) * $distanceKm) * 100);
-        $serviceFeeCents = (int) round(max(0.0, $this->settings->float('service_fee', 0.0)) * 100);
+        // The haversine distance is a geographic measurement; it becomes an exact decimal before any money maths.
+        $distance = sprintf('%.4F', $distanceKm);
+        $deliveryFee = bcround(bcadd(
+            $this->settings->decimal('delivery_base_fee', '35.00'),
+            bcmul($this->settings->decimal('delivery_fee_per_km', '10.00'), $distance, 6),
+            6,
+        ), 2);
+        $serviceFee = $this->settings->decimal('service_fee', '0.00');
 
         $voucher = $this->voucher($input['voucher_code'] ?? null, $lockVoucher);
-        $discountCents = $voucher instanceof Voucher
-            ? $this->voucherDiscount($voucher, $customer, $restaurant, $subtotalCents, $deliveryFeeCents, $now)
-            : 0;
-        $totalCents = max(0, $subtotalCents + $deliveryFeeCents + $serviceFeeCents + $tipCents - $discountCents);
+        $discount = $voucher instanceof Voucher
+            ? $this->voucherDiscount($voucher, $customer, $restaurant, $subtotal, $deliveryFee, $now)
+            : '0.00';
+        $total = bcsub(bcadd(bcadd(bcadd($subtotal, $deliveryFee, 2), $serviceFee, 2), $tip, 2), $discount, 2);
+        if (-1 === bccomp($total, '0', 2)) {
+            $total = '0.00';
+        }
         // Commission is based on food subtotal. Voucher funding ownership is not yet modelled.
-        $commissionCents = (int) round($subtotalCents * ((float) $restaurant->getCommissionRate() / 100));
+        $commission = bcround(bcdiv(bcmul($subtotal, $restaurant->getCommissionRate(), 6), '100', 6), 2);
 
         return [
             'restaurant' => $restaurant,
             'address' => $address,
             'payment_method' => $paymentMethod,
-            'tip_cents' => $tipCents,
+            'tip' => $tip,
             'notes' => $notes,
             'item_rows' => $itemRows,
-            'subtotal_cents' => $subtotalCents,
-            'delivery_fee_cents' => $deliveryFeeCents,
-            'service_fee_cents' => $serviceFeeCents,
+            'subtotal' => $subtotal,
+            'delivery_fee' => $deliveryFee,
+            'service_fee' => $serviceFee,
             'voucher' => $voucher,
-            'discount_cents' => $discountCents,
-            'total_cents' => $totalCents,
-            'commission_cents' => $commissionCents,
+            'discount' => $discount,
+            'total' => $total,
+            'commission' => $commission,
         ];
     }
 
@@ -407,7 +412,7 @@ final readonly class CheckoutService
 
     /**
      * @param array<mixed> $selections
-     * @return array{0: list<array{item: MenuItem, variant: ?MenuItemVariant, addons: list<MenuItemAddon>, quantity: int, unit_price_cents: int, instructions: ?string}>, 1: int}
+     * @return array{0: list<array{item: MenuItem, variant: ?MenuItemVariant, addons: list<MenuItemAddon>, quantity: int, unit_price: numeric-string, instructions: ?string}>, 1: numeric-string}
      */
     private function priceItems(array $selections, Restaurant $restaurant, \DateTimeImmutable $now): array
     {
@@ -415,7 +420,7 @@ final readonly class CheckoutService
             throw new CheckoutValidationException('A checkout may contain at most 100 item rows.');
         }
         $rows = [];
-        $subtotalCents = 0;
+        $subtotal = '0.00';
         foreach ($selections as $selection) {
             if (!is_array($selection)) {
                 throw new CheckoutValidationException('Each cart item must be an object.');
@@ -453,24 +458,26 @@ final readonly class CheckoutService
                 $addons[] = $addon;
             }
 
-            $unitPriceCents = $this->moneyToCents($item->getBasePrice())
-                + ($variant instanceof MenuItemVariant ? $this->moneyToCents($variant->getPriceDelta()) : 0);
-            $addonsCents = array_sum(array_map(fn (MenuItemAddon $addon): int => $this->moneyToCents($addon->getPrice()), $addons));
-            if ($unitPriceCents < 0) {
+            $unitPrice = bcadd($item->getBasePrice(), $variant instanceof MenuItemVariant ? $variant->getPriceDelta() : '0', 2);
+            if (-1 === bccomp($unitPrice, '0', 2)) {
                 throw new CheckoutValidationException('A selected variant results in an invalid item price.');
             }
-            $subtotalCents += ($unitPriceCents + $addonsCents) * $quantity;
+            $unitTotal = $unitPrice;
+            foreach ($addons as $addon) {
+                $unitTotal = bcadd($unitTotal, $addon->getPrice(), 2);
+            }
+            $subtotal = bcadd($subtotal, bcmul($unitTotal, (string) $quantity, 2), 2);
             $rows[] = [
                 'item' => $item,
                 'variant' => $variant,
                 'addons' => $addons,
                 'quantity' => $quantity,
-                'unit_price_cents' => $unitPriceCents,
+                'unit_price' => $unitPrice,
                 'instructions' => $this->optionalText($selection['special_instructions'] ?? null, 1000, 'special_instructions'),
             ];
         }
 
-        return [$rows, $subtotalCents];
+        return [$rows, $subtotal];
     }
 
     private function isWithinTimeWindow(?\DateTimeImmutable $from, ?\DateTimeImmutable $until, \DateTimeImmutable $now): bool
@@ -512,14 +519,14 @@ final readonly class CheckoutService
         Voucher $voucher,
         Customer $customer,
         Restaurant $restaurant,
-        int $subtotalCents,
-        int $deliveryFeeCents,
+        string $subtotal,
+        string $deliveryFee,
         \DateTimeImmutable $now,
-    ): int {
+    ): string {
         if (!$voucher->isActive() || (null !== $voucher->getStartsAt() && $now < $voucher->getStartsAt()) || (null !== $voucher->getEndsAt() && $now > $voucher->getEndsAt())) {
             throw new CheckoutValidationException('Voucher is not active.');
         }
-        if ($subtotalCents < $this->moneyToCents($voucher->getMinOrderAmount())) {
+        if (-1 === bccomp($subtotal, $voucher->getMinOrderAmount(), 2)) {
             throw new CheckoutValidationException('The order does not meet the voucher minimum.');
         }
         if (VoucherScope::RESTAURANT === $voucher->getScope() && $voucher->getRestaurant() !== $restaurant) {
@@ -535,32 +542,37 @@ final readonly class CheckoutService
             throw new CheckoutValidationException('You have already reached this voucher usage limit.');
         }
 
-        $value = max(0.0, (float) ($voucher->getValue() ?? '0'));
+        $value = $voucher->getValue() ?? '0';
+        if (-1 === bccomp($value, '0', 2)) {
+            $value = '0';
+        }
 
-        return match ($voucher->getType()) {
-            VoucherType::PERCENTAGE => min($subtotalCents, (int) round($subtotalCents * min(100.0, $value) / 100)),
-            VoucherType::FIXED => min($subtotalCents, (int) round($value * 100)),
-            VoucherType::FREE_DELIVERY => $deliveryFeeCents,
+        $discount = match ($voucher->getType()) {
+            VoucherType::PERCENTAGE => bcround(bcdiv(bcmul($subtotal, 1 === bccomp($value, '100', 2) ? '100' : $value, 6), '100', 6), 2),
+            VoucherType::FIXED => bcround($value, 2),
+            VoucherType::FREE_DELIVERY => $deliveryFee,
         };
+
+        // A voucher never discounts more than the food subtotal (free delivery is bounded by the fee itself).
+        return VoucherType::FREE_DELIVERY !== $voucher->getType() && 1 === bccomp($discount, $subtotal, 2) ? $subtotal : $discount;
     }
 
-    private function nonNegativeMoneyToCents(mixed $value, string $field): int
+    /**
+     * Validates a client-supplied amount and returns it as an exact two-place decimal string.
+     *
+     * @return numeric-string
+     */
+    private function nonNegativeMoney(mixed $value, string $field): string
     {
-        if ((!is_int($value) && !is_float($value) && !is_string($value)) || !is_numeric((string) $value) || (float) $value < 0) {
+        if (!is_int($value) && !is_float($value) && !is_string($value)) {
+            throw new CheckoutValidationException(sprintf('%s must be a non-negative amount.', $field));
+        }
+        $amount = trim((string) $value);
+        if (!is_numeric($amount) || -1 === bccomp($amount, '0', 4)) {
             throw new CheckoutValidationException(sprintf('%s must be a non-negative amount.', $field));
         }
 
-        return (int) round((float) $value * 100);
-    }
-
-    private function moneyToCents(string $amount): int
-    {
-        return (int) round((float) $amount * 100);
-    }
-
-    private function decimal(int $cents): string
-    {
-        return number_format($cents / 100, 2, '.', '');
+        return bcround($amount, 2);
     }
 
     private function optionalText(mixed $value, int $maxLength, string $field): ?string
