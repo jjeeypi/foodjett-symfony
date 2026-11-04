@@ -23,6 +23,7 @@ class RestaurantType extends AbstractType
             ->add('name', TextType::class, ['empty_data' => ''])
             ->add('description', TextareaType::class, ['required' => false])
             ->add('cuisineType', TextType::class, ['label' => 'Cuisine', 'empty_data' => ''])
+            ->add('kind', ChoiceType::class, ['label' => 'Type of place', 'choices' => array_flip(Restaurant::KINDS)])
             ->add('address', TextType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'address', 'autocomplete' => 'off', 'placeholder' => 'Start typing the street, barangay or a landmark']])
             ->add('latitude', HiddenType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'latitude']])
             ->add('longitude', HiddenType::class, ['empty_data' => '', 'error_bubbling' => false, 'attr' => ['data-location-picker-target' => 'longitude']])

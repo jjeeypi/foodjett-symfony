@@ -39,6 +39,18 @@ class BrowseControllerTest extends CustomerWebTestCase
         self::assertNotContains($this->otherRestaurant->getName(), $this->listedRestaurants('/restaurants'));
     }
 
+    public function testListFiltersByKindAndShowsIt(): void
+    {
+        $this->fresh(Restaurant::class, (string) $this->otherRestaurant->getId())->setKind(Restaurant::KIND_COFFEE_TEA);
+        $this->entityManager->flush();
+
+        self::assertSame([$this->otherRestaurant->getName()], $this->listedRestaurants('/restaurants?kind=coffee_tea'));
+        self::assertSame([$this->restaurant->getName()], $this->listedRestaurants('/restaurants?kind=fast_food'));
+        self::assertCount(2, $this->listedRestaurants('/restaurants?kind=not-a-kind'), 'An unknown kind is ignored.');
+        self::assertSelectorTextContains('main', 'Fast food');
+        self::assertSelectorExists('select#kind option[value="bakery_desserts"]');
+    }
+
     public function testRestaurantPageShowsMenuHoursAndPaginatedReviews(): void
     {
         $this->addCurrentHours($this->restaurant);

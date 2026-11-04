@@ -6,6 +6,14 @@
     <h1>Restaurants</h1>
 
     <form method="get" action="{{ path('app_restaurants') }}">
+        <label for="kind">Type</label>
+        <select id="kind" name="kind">
+            <option value="">All</option>
+            {% for value, label in kinds %}
+                <option value="{{ value }}" {{ filters.kind == value ? 'selected' }}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
         <label for="cuisine">Cuisine</label>
         <input type="text" id="cuisine" name="cuisine" value="{{ filters.cuisine }}">
 
@@ -33,7 +41,7 @@
                 {% set restaurant = row.restaurant %}
                 <li>
                     <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a>
-                    · {{ restaurant.cuisineType }}
+                    · {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}
                     · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }})
                     · {{ restaurant.openNow ? 'Open now' : 'Closed' }}
                     {% if row.distance is not null %}· {{ row.distance|number_format(1) }} km{% endif %}

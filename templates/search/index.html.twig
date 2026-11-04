@@ -30,7 +30,7 @@
             <h2>Restaurants</h2>
             <ul>
                 {% for restaurant in restaurants %}
-                    <li><a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a> · {{ restaurant.cuisineType }}</li>
+                    <li><a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a> · {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}</li>
                 {% else %}
                     <li>No restaurants match.</li>
                 {% endfor %}

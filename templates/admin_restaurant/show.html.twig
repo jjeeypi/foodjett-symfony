@@ -9,6 +9,7 @@
     <table class="table">
         <tbody>
             <tr><th>Owner</th><td>{{ restaurant.user.name }} · {{ restaurant.user.email }} · {{ restaurant.user.phone }}</td></tr>
+            <tr><th>Type</th><td>{{ restaurant.kindLabel }}</td></tr>
             <tr><th>Cuisine</th><td>{{ restaurant.cuisineType }}</td></tr>
             <tr><th>Address</th><td>{{ restaurant.address }} ({{ restaurant.latitude }}, {{ restaurant.longitude }})</td></tr>
             <tr><th>Commission</th><td>{{ restaurant.commissionRate }}%</td></tr>
