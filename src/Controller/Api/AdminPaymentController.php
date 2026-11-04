@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\Payment;
-use App\Entity\PaymentStatusHistory;
 use App\Entity\User;
 use App\Enum\PaymentActor;
 use App\Enum\PaymentMethod;
@@ -13,6 +12,7 @@ use App\Enum\PaymentStatus;
 use App\Repository\PaymentRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
+use App\Service\PaymentTransitionService;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +30,7 @@ final class AdminPaymentController extends AbstractController
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
         private readonly PaymentRepository $payments,
+        private readonly PaymentTransitionService $paymentTransitions,
     ) {
     }
 
@@ -91,24 +92,9 @@ final class AdminPaymentController extends AbstractController
                 if (!$locked instanceof Payment) {
                     throw new \RuntimeException('Payment not found.');
                 }
-                if (!in_array($locked->getStatus(), [PaymentStatus::PAID, PaymentStatus::PARTIALLY_REFUNDED], true)) {
-                    throw new \DomainException('Only paid or partially refunded payments can be refunded.');
-                }
-                $remaining = bcsub($locked->getAmount(), $locked->getRefundedAmount(), 2);
-                $amount = $requested ?? $remaining;
-                if (1 !== bccomp($amount, '0', 2) || 1 === bccomp($amount, $remaining, 2)) {
-                    throw new \DomainException('The refund amount cannot exceed the remaining refundable balance.');
-                }
                 $from = $locked->getStatus();
-                $newRefunded = bcadd($locked->getRefundedAmount(), $amount, 2);
-                $to = -1 !== bccomp($newRefunded, $locked->getAmount(), 2) ? PaymentStatus::REFUNDED : PaymentStatus::PARTIALLY_REFUNDED;
-                $now = new \DateTimeImmutable();
-                $note = sprintf('Admin recorded a %s refund of PHP %s%s', PaymentStatus::REFUNDED === $to ? 'full' : 'partial', $amount, '' === $reason ? '.' : ': '.$reason);
-                $locked->setRefundedAmount($newRefunded)->setRefundedAt($now)->setStatus($to)->setUpdatedAt($now);
-                $history = (new PaymentStatusHistory())->setPayment($locked)->setFromStatus($from)->setToStatus($to)
-                    ->setChangedBy(PaymentActor::ADMIN)->setNote($note)->setCreatedAt($now);
-                $locked->addStatusHistory($history);
-                $this->entityManager->persist($history);
+                $amount = $requested ?? bcsub($locked->getAmount(), $locked->getRefundedAmount(), 2);
+                $to = $this->paymentTransitions->refund($locked, $amount, PaymentActor::ADMIN, '' === $reason ? null : $reason, new \DateTimeImmutable());
                 $this->audit->record($admin, 'payment.refunded', 'payment', (string) $locked->getId(), [
                     'status' => ['from' => $from->value, 'to' => $to->value],
                     'refund_amount' => $amount,
