@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -17,7 +18,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'users')]
 #[ORM\UniqueConstraint(name: 'users_email_unique', columns: ['email'])]
 #[ORM\UniqueConstraint(name: 'users_phone_unique', columns: ['phone'])]
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface
 {
     // Account role; getRoles() maps it to ROLE_* (ACCOUNT_ROLES)
     public const ACCOUNT_ADMIN = 'admin';
@@ -398,6 +399,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
+    }
+
+    /**
+     * The session keeps only these fields; relations are reloaded from the database on each request.
+     *
+     * @return array<string, mixed>
+     */
+    public function __serialize(): array
+    {
+        $data = (array) $this;
+        $keep = ['id', 'name', 'email', 'phone', 'password', 'role', 'status'];
+
+        return array_filter(
+            $data,
+            static fn (string $key): bool => in_array(substr($key, strrpos($key, "\0") + 1), $keep, true),
+            ARRAY_FILTER_USE_KEY,
+        );
+    }
+
+    /**
+     * Called with the user freshly loaded from the database. A changed password, role or
+     * email, or an account that is no longer active, ends the session on the next request.
+     */
+    public function isEqualTo(UserInterface $user): bool
+    {
+        return $user instanceof self
+            && $user->getId() === $this->id
+            && $user->getPassword() === $this->password
+            && $user->getUserIdentifier() === $this->getUserIdentifier()
+            && $user->getRole() === $this->role
+            && self::STATUS_ACTIVE === $user->getStatus();
     }
 
     /** @return Collection<int, OrderReport> */
