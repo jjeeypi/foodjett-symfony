@@ -3,13 +3,8 @@ set -eu
 
 cd /var/www/html
 
-mkdir -p var/cache var/log public/uploads config/jwt
-chown -R www-data:www-data var public/uploads config/jwt
-
-if [ ! -s config/jwt/private.pem ] || [ ! -s config/jwt/public.pem ]; then
-    echo "Generating JWT signing keys..."
-    gosu www-data php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
-fi
+mkdir -p var/cache var/log var/uploads public/uploads
+chown -R www-data:www-data var public/uploads
 
 if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
     echo "Running Doctrine migrations..."

@@ -6,11 +6,10 @@ use App\Entity\Customer;
 use App\Entity\Order;
 use App\Entity\SupportTicket;
 use App\Entity\User;
-use App\Tests\Controller\Api\CustomerApiTestCase;
 use Symfony\Component\Filesystem\Filesystem;
 
 /** The customer's profile page, support requests and account deletion. */
-class AccountPagesTest extends CustomerApiTestCase
+class AccountPagesTest extends CustomerWebTestCase
 {
     protected function setUp(): void
     {

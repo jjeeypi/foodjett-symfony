@@ -7,10 +7,9 @@ use App\Entity\Customer;
 use App\Entity\MenuItem;
 use App\Entity\MenuItemAddon;
 use App\Entity\User;
-use App\Tests\Controller\Api\CustomerApiTestCase;
 
 /** Cart rules: merging lines, one restaurant per cart, ownership, CSRF and roles. */
-class CartControllerTest extends CustomerApiTestCase
+class CartControllerTest extends CustomerWebTestCase
 {
     private MenuItem $meal;
     private MenuItem $otherMeal;

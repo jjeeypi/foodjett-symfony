@@ -16,21 +16,7 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
-        login:
-            pattern: ^/api/login$
-            stateless: true
-            provider: foodjett_users
-            json_login:
-                check_path: api_login
-                username_path: login
-                password_path: password
-                success_handler: lexik_jwt_authentication.handler.authentication_success
-        api:
-            pattern: ^/api
-            stateless: true
-            provider: foodjett_users
-            jwt: ~
-        # The web pages: session login with email or phone.
+        # The whole site: session login with email or phone.
         main:
             lazy: true
             provider: foodjett_users
@@ -58,9 +44,6 @@ security:
         - { path: ^/restaurant(?:/|$), roles: ROLE_RESTAURANT }
         - { path: ^/rider(?:/|$), roles: ROLE_RIDER }
         - { path: ^/(?:account|cart|checkout|orders)(?:/|$), roles: ROLE_CUSTOMER }
-        - { path: ^/api/health$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: ROLE_USER }
 
 when@test:
     security:

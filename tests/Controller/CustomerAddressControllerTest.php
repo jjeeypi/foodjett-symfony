@@ -3,10 +3,9 @@
 namespace App\Tests\Controller;
 
 use App\Entity\CustomerAddress;
-use App\Tests\Controller\Api\CustomerApiTestCase;
 
 /** Address book: defaults, ownership and addresses kept for order history. */
-class CustomerAddressControllerTest extends CustomerApiTestCase
+class CustomerAddressControllerTest extends CustomerWebTestCase
 {
     protected function setUp(): void
     {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Controller\Api;
+namespace App\Tests\Controller;
 
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-abstract class RiderApiTestCase extends WebTestCase
+abstract class RiderWebTestCase extends WebTestCase
 {
     protected const PASSWORD = 'TestPassword123!';
     protected KernelBrowser $client;
@@ -30,7 +30,6 @@ abstract class RiderApiTestCase extends WebTestCase
     protected string $marker;
     /** @var list<string> */
     protected array $uploadedPaths = [];
-    private ?string $token = null;
     private int $orderSequence = 0;
 
     protected function setUp(): void
@@ -67,19 +66,6 @@ abstract class RiderApiTestCase extends WebTestCase
         parent::tearDown();
     }
 
-    /** @return array<string, string> */
-    protected function auth(): array
-    {
-        if (null === $this->token) {
-            $this->client->jsonRequest('POST', '/api/login', ['login' => $this->riderUser->getEmail(), 'password' => self::PASSWORD]);
-            self::assertResponseIsSuccessful();
-            $this->token = (string) $this->payload()['token'];
-        }
-        return ['HTTP_AUTHORIZATION' => 'Bearer '.$this->token];
-    }
-
-    /** @return array<string, mixed> */
-    protected function payload(): array { return json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR); }
     protected function persist(object ...$entities): void { foreach ($entities as $entity) { $this->entityManager->persist($entity); } }
 
     protected function createOrder(string $status, ?Rider $rider = null, string $method = Payment::METHOD_CARD, ?\DateTimeImmutable $at = null): Order

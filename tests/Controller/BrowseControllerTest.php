@@ -5,10 +5,9 @@ namespace App\Tests\Controller;
 use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
-use App\Tests\Controller\Api\CustomerApiTestCase;
 
 /** Restaurant list, restaurant page and search, rendered as pages. */
-class BrowseControllerTest extends CustomerApiTestCase
+class BrowseControllerTest extends CustomerWebTestCase
 {
     public function testManualOpenStatusIsUsedWhenNoOperatingHoursAreConfigured(): void
     {

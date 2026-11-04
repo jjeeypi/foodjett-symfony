@@ -6,11 +6,10 @@ use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Order;
 use App\Entity\User;
-use App\Tests\Controller\Api\CustomerApiTestCase;
 use App\Tests\Double\RecordingMercureHub;
 
 /** Order chats as pages, for the customer, the restaurant and the rider. */
-class ConversationPagesTest extends CustomerApiTestCase
+class ConversationPagesTest extends CustomerWebTestCase
 {
     public function testListAndMessagesAreScopedAndInOrder(): void
     {

@@ -9,12 +9,11 @@ use App\Entity\RiderDocument;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
 use App\Entity\User;
-use App\Tests\Controller\Api\RiderApiTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Filesystem;
 
 /** The rider's profile, documents, earnings and cash remittances. */
-class RiderAccountPagesTest extends RiderApiTestCase
+class RiderAccountPagesTest extends RiderWebTestCase
 {
     private string $pdf;
 

@@ -10,10 +10,9 @@ use App\Entity\OrderReport;
 use App\Entity\OrderStatusHistory;
 use App\Entity\RestaurantReview;
 use App\Entity\RiderReview;
-use App\Tests\Controller\Api\CustomerApiTestCase;
 
 /** The customer's order list and order page: detail, rider visibility, reorder, reviews and reports. */
-class OrderPagesTest extends CustomerApiTestCase
+class OrderPagesTest extends CustomerWebTestCase
 {
     protected function setUp(): void
     {

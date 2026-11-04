@@ -5,12 +5,11 @@ namespace App\Tests\Controller;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use App\Entity\RestaurantOperatingHour;
-use App\Tests\Controller\Api\RestaurantApiTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Filesystem;
 
 /** Restaurant profile, open/closed switch, weekly hours and documents. */
-class RestaurantProfilePagesTest extends RestaurantApiTestCase
+class RestaurantProfilePagesTest extends RestaurantWebTestCase
 {
     private string $pdf;
 

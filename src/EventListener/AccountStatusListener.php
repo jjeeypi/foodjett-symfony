@@ -8,7 +8,7 @@ use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusExce
 use Symfony\Component\Security\Http\Event\CheckPassportEvent;
 
 /**
- * Blocks suspended and banned accounts on every authentication (password login and JWT).
+ * Blocks suspended and banned accounts at sign-in, with email or phone, and on remember-me logins.
  * Priority 256 matches Symfony's own user checker, so this runs before the password check.
  */
 final class AccountStatusListener

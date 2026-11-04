@@ -1,6 +1,6 @@
 {
     "name": "foodjett/api",
-    "description": "Stateless Symfony JSON API for the Foodjett platform.",
+    "description": "Foodjett food delivery platform: server-rendered Symfony pages for customers, restaurants, riders and admins.",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
@@ -14,8 +14,6 @@
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.7",
         "knplabs/knp-paginator-bundle": "^6.11",
-        "lexik/jwt-authentication-bundle": "^3.2",
-        "nelmio/cors-bundle": "^2.6",
         "phpdocumentor/reflection-docblock": "^6.0",
         "phpstan/phpdoc-parser": "^2.3",
         "symfony/asset": "7.4.*",

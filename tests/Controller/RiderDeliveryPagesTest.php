@@ -10,13 +10,12 @@ use App\Entity\Rider;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPoolOffer;
 use App\Repository\DeliveryZoneRepository;
-use App\Tests\Controller\Api\RiderApiTestCase;
 use App\Tests\Double\RecordingMercureHub;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Filesystem;
 
 /** The rider dashboard (availability, location) and the delivery steps. */
-class RiderDeliveryPagesTest extends RiderApiTestCase
+class RiderDeliveryPagesTest extends RiderWebTestCase
 {
     private string $photo;
 
