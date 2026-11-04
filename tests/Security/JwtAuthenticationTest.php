@@ -96,6 +96,42 @@ final class JwtAuthenticationTest extends WebTestCase
         );
     }
 
+    public function testWrongPasswordAndUnknownLoginGetTheSameGenericMessage(): void
+    {
+        foreach ([self::ACTIVE_EMAIL, 'nobody@foodjett.test'] as $login) {
+            $this->client->jsonRequest('POST', '/api/login', [
+                'login' => $login,
+                'password' => 'not-the-password',
+            ]);
+
+            self::assertResponseStatusCodeSame(401);
+            $payload = json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+            self::assertSame(['message' => 'Invalid login credentials.'], $payload);
+        }
+    }
+
+    public function testIssuedJwtStopsWorkingOnceTheAccountIsSuspended(): void
+    {
+        $this->client->jsonRequest('POST', '/api/login', [
+            'login' => self::ACTIVE_EMAIL,
+            'password' => self::PASSWORD,
+        ]);
+        self::assertResponseIsSuccessful();
+        $token = json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['token'];
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $entityManager->getRepository(User::class)->findOneBy(['email' => self::ACTIVE_EMAIL]);
+        self::assertInstanceOf(User::class, $user);
+        $user->setStatus(UserStatus::SUSPENDED);
+        $entityManager->flush();
+
+        $this->client->request('GET', '/api/me', server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
+
+        self::assertResponseStatusCodeSame(401);
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('Your account is suspended. Contact support for assistance.', $payload['message'] ?? null);
+    }
+
     private function createUser(EntityManagerInterface $entityManager, string $email, UserStatus $status): void
     {
         $now = new \DateTimeImmutable();
