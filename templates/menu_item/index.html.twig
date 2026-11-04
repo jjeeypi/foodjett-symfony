@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}MenuItem index{% endblock %}
+
+{% block body %}
+    <h1>MenuItem index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>PhotoPath</th>
+                <th>BasePrice</th>
+                <th>IsAvailable</th>
+                <th>AvailableFrom</th>
+                <th>AvailableUntil</th>
+                <th>IsFeatured</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for menu_item in menu_items %}
+            <tr>
+                <td>{{ menu_item.id }}</td>
+                <td>{{ menu_item.name }}</td>
+                <td>{{ menu_item.description }}</td>
+                <td>{{ menu_item.photoPath }}</td>
+                <td>{{ menu_item.basePrice }}</td>
+                <td>{{ menu_item.isAvailable ? 'Yes' : 'No' }}</td>
+                <td>{{ menu_item.availableFrom ? menu_item.availableFrom|date('H:i:s') : '' }}</td>
+                <td>{{ menu_item.availableUntil ? menu_item.availableUntil|date('H:i:s') : '' }}</td>
+                <td>{{ menu_item.isFeatured ? 'Yes' : 'No' }}</td>
+                <td>{{ menu_item.createdAt ? menu_item.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ menu_item.updatedAt ? menu_item.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">show</a>
+                    <a href="{{ path('app_menu_item_edit', {'id': menu_item.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="12">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_menu_item_new') }}">Create new</a>
+{% endblock %}

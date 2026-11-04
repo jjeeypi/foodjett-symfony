@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}MenuItemAddon index{% endblock %}
+
+{% block body %}
+    <h1>MenuItemAddon index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>IsAvailable</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for menu_item_addon in menu_item_addons %}
+            <tr>
+                <td>{{ menu_item_addon.id }}</td>
+                <td>{{ menu_item_addon.name }}</td>
+                <td>{{ menu_item_addon.price }}</td>
+                <td>{{ menu_item_addon.isAvailable ? 'Yes' : 'No' }}</td>
+                <td>{{ menu_item_addon.createdAt ? menu_item_addon.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ menu_item_addon.updatedAt ? menu_item_addon.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_menu_item_addon_show', {'id': menu_item_addon.id}) }}">show</a>
+                    <a href="{{ path('app_menu_item_addon_edit', {'id': menu_item_addon.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="7">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_menu_item_addon_new') }}">Create new</a>
+{% endblock %}

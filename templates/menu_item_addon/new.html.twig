@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New MenuItemAddon{% endblock %}
+
+{% block body %}
+    <h1>Create new MenuItemAddon</h1>
+
+    {{ include('menu_item_addon/_form.html.twig') }}
+
+    <a href="{{ path('app_menu_item_addon_index') }}">back to list</a>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}MenuItemVariant index{% endblock %}
+
+{% block body %}
+    <h1>MenuItemVariant index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>PriceDelta</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for menu_item_variant in menu_item_variants %}
+            <tr>
+                <td>{{ menu_item_variant.id }}</td>
+                <td>{{ menu_item_variant.name }}</td>
+                <td>{{ menu_item_variant.priceDelta }}</td>
+                <td>{{ menu_item_variant.createdAt ? menu_item_variant.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ menu_item_variant.updatedAt ? menu_item_variant.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_menu_item_variant_show', {'id': menu_item_variant.id}) }}">show</a>
+                    <a href="{{ path('app_menu_item_variant_edit', {'id': menu_item_variant.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_menu_item_variant_new') }}">Create new</a>
+{% endblock %}
