@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -18,6 +19,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'users')]
 #[ORM\UniqueConstraint(name: 'users_email_unique', columns: ['email'])]
 #[ORM\UniqueConstraint(name: 'users_phone_unique', columns: ['phone'])]
+#[UniqueEntity(fields: ['email'], message: 'This email address is already registered.')]
+#[UniqueEntity(fields: ['phone'], message: 'This phone number is already registered.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface
 {
     // Account role; getRoles() maps it to ROLE_* (ACCOUNT_ROLES)
@@ -51,12 +54,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
     private ?string $id = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $name;
 
+    #[Assert\NotBlank]
+    #[Assert\Email]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255, unique: true, nullable: true)]
     private ?string $email = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^\+?[0-9]{7,20}$/', message: 'Enter a valid phone number.')]
     #[ORM\Column(length: 255, unique: true, nullable: true)]
     private ?string $phone = null;
 
@@ -164,9 +174,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
         return $this->email;
     }
 
+    /** Emails are stored trimmed and lower-cased, so uniqueness and login ignore case. */
     public function setEmail(?string $email): self
     {
-        $this->email = $email;
+        $this->email = null === $email ? null : mb_strtolower(trim($email));
 
         return $this;
     }
@@ -178,7 +189,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
 
     public function setPhone(?string $phone): self
     {
-        $this->phone = $phone;
+        $this->phone = null === $phone ? null : trim($phone);
 
         return $this;
     }

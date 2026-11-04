@@ -99,4 +99,16 @@ class RestaurantRepository extends ServiceEntityRepository
             ->setParameter('start', $start)->setParameter('end', $end)
             ->getQuery()->getSingleScalarResult();
     }
+
+    /** $base, or $base-2, $base-3... whichever no restaurant uses yet. */
+    public function nextFreeSlug(string $base): string
+    {
+        $base = '' !== $base ? $base : 'restaurant';
+        $slug = $base;
+        for ($suffix = 2; null !== $this->findOneBy(['slug' => $slug]); ++$suffix) {
+            $slug = $base.'-'.$suffix;
+        }
+
+        return $slug;
+    }
 }

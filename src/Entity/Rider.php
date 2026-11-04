@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: RiderRepository::class)]
 #[ORM\Table(name: 'riders')]
@@ -72,10 +73,12 @@ class Rider
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, unique: true, onDelete: 'RESTRICT')]
     private User $user;
 
+    #[Assert\NotBlank]
     #[Assert\Choice(choices: Rider::VEHICLE_TYPES)]
     #[ORM\Column(length: 32)]
     private string $vehicleType;
 
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $plateNumber = null;
 
@@ -200,6 +203,17 @@ class Rider
         $this->plateNumber = $plateNumber;
 
         return $this;
+    }
+
+    /** Motor vehicles need a plate number; bicycles do not. */
+    #[Assert\Callback]
+    public function validatePlateNumber(ExecutionContextInterface $context): void
+    {
+        if (isset($this->vehicleType) && self::VEHICLE_BICYCLE !== $this->vehicleType &&(null === $this->plateNumber || '' === trim($this->plateNumber))) {
+            $context->buildViolation('A plate number is required for this vehicle type.')
+                ->atPath('plateNumber')
+                ->addViolation();
+        }
     }
 
     public function getApprovalStatus(): string
