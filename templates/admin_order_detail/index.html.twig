@@ -1,20 +1,91 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminOrderDetailController!{% endblock %}
+{% block title %}Order {{ order.orderNumber }} | Foodjett admin{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_admin_order') }}">All orders</a></p>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <h1>Order {{ order.orderNumber }}</h1>
+    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
+    {% if order.rejectionReason %}<p>Rejected by the restaurant: {{ order.rejectionReason }}</p>{% endif %}
+    {% if order.cancellationReason %}<p id="cancellation">Cancelled by {{ order.cancelledBy }}: {{ order.cancellationReason }}</p>{% endif %}
 
-    This friendly message is coming from:
+    <table class="table">
+        <tbody>
+            <tr><th>Restaurant</th><td><a href="{{ path('app_admin_restaurant_show', {id: order.restaurant.id}) }}">{{ order.restaurant.name }}</a></td></tr>
+            <tr><th>Customer</th><td><a href="{{ path('app_admin_customer_show', {id: order.customer.id}) }}">{{ order.customer.user.name }}</a> · {{ order.customer.user.phone }}</td></tr>
+            <tr><th>Deliver to</th><td id="address">{{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} ({{ order.customerAddress.landmark }}){% endif %}{% if order.customerAddress.deliveryInstructions %} · {{ order.customerAddress.deliveryInstructions }}{% endif %}</td></tr>
+            <tr><th>Rider</th><td id="rider">{% if order.rider %}<a href="{{ path('app_admin_rider_show', {id: order.rider.id}) }}">{{ order.rider.user.name }}</a>{% if order.riderPoolOffer and order.riderPoolOffer.adminAssigned %} (assigned by an admin){% endif %}{% else %}none yet{% endif %}</td></tr>
+            <tr><th>Placed</th><td>{{ order.placedAt|date('M j, Y g:i A') }}</td></tr>
+            {% if order.deliveredAt %}<tr><th>Delivered</th><td>{{ order.deliveredAt|date('M j, Y g:i A') }}</td></tr>{% endif %}
+        </tbody>
+    </table>
+
+    <h2>Items</h2>
     <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/AdminOrderDetailController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/admin_order_detail/index.html.twig</code></li>
+        {% for item in order.items %}
+            <li>
+                {{ item.quantity }} × {{ item.menuItem.name }}
+                {% if item.menuItemVariant %}({{ item.menuItemVariant.name }}){% endif %}
+                · PHP {{ item.unitPrice }}
+                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }} PHP {{ addon.price }}{% endfor %}
+                {% if item.specialInstructions %}<br>Note: {{ item.specialInstructions }}{% endif %}
+            </li>
+        {% else %}
+            <li>No items.</li>
+        {% endfor %}
     </ul>
-</div>
+    {% if order.customerNotes %}<p>Customer notes: {{ order.customerNotes }}</p>{% endif %}
+
+    <h2>Money</h2>
+    <dl id="money">
+        <dt>Subtotal</dt><dd>PHP {{ order.subtotal }}</dd>
+        <dt>Delivery fee</dt><dd>PHP {{ order.deliveryFee }}</dd>
+        <dt>Service fee</dt><dd>PHP {{ order.serviceFee }}</dd>
+        <dt>Discount</dt><dd>PHP {{ order.discountAmount }}</dd>
+        <dt>Tip</dt><dd>PHP {{ order.tipAmount }}</dd>
+        <dt>Total</dt><dd>PHP {{ order.totalAmount }}</dd>
+        <dt>Commission</dt><dd>PHP {{ order.commissionAmount }}</dd>
+    </dl>
+    {% if order.payment %}
+        <p id="payment">
+            Payment: {{ order.payment.method|upper }}, <strong>{{ order.payment.status|replace({'_': ' '}) }}</strong>,
+            PHP {{ order.payment.amount }}{% if order.payment.refundedAmount > 0 %}, PHP {{ order.payment.refundedAmount }} refunded{% endif %}
+            {% if order.payment.transactionReference %}· ref {{ order.payment.transactionReference }}{% endif %}
+        </p>
+    {% endif %}
+
+    {% if order.riderPoolOffer %}
+        <p id="pool">
+            Rider search: {{ order.riderPoolOffer.escalationStage|replace({'_': ' '}) }}, radius {{ order.riderPoolOffer.searchRadiusKm }} km,
+            incentive PHP {{ order.riderPoolOffer.incentiveAmount }}{% if order.riderSearchStartedAt %}, since {{ order.riderSearchStartedAt|date('g:i A') }}{% endif %}
+        </p>
+    {% endif %}
+
+    {% if assign_form %}
+        <h2>Assign a rider</h2>
+        <p>Nobody took this order from the pool. The rider must be within the search radius and free of another delivery.</p>
+        {{ form_start(assign_form, {action: path('app_admin_order_assign', {id: order.id})}) }}
+            {{ form_widget(assign_form) }}
+            <button type="submit">Assign rider</button>
+        {{ form_end(assign_form) }}
+    {% endif %}
+
+    {% if cancel_form %}
+        <h2>Cancel</h2>
+        <p>Cancelling refunds any online payment in full.</p>
+        {{ form_start(cancel_form, {action: path('app_admin_order_cancel', {id: order.id})}) }}
+            {{ form_widget(cancel_form) }}
+            <button type="submit">Cancel order</button>
+        {{ form_end(cancel_form) }}
+    {% endif %}
+
+    <h2>Timeline</h2>
+    <ol id="timeline">
+        {% for entry in history %}
+            <li>{{ entry.createdAt|date('M j, g:i A') }}: {{ entry.status|replace({'_': ' '}) }} by {{ entry.changedBy }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
+        {% else %}
+            <li>No status changes yet.</li>
+        {% endfor %}
+    </ol>
 {% endblock %}

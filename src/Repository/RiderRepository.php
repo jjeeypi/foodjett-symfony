@@ -45,6 +45,16 @@ class RiderRepository extends ServiceEntityRepository
             ->orderBy('rider.createdAt', 'ASC');
     }
 
+    /** Approved riders with an active account an admin may hand an order to, by name. */
+    public function createAssignableQuery(): QueryBuilder
+    {
+        return $this->createQueryBuilder('rider')
+            ->innerJoin('rider.user', 'account')->addSelect('account')
+            ->andWhere('rider.approvalStatus = :approved')->setParameter('approved', Rider::APPROVAL_APPROVED)
+            ->andWhere('account.status = :active')->setParameter('active', 'active')
+            ->orderBy('account.name', 'ASC');
+    }
+
     /** Approved riders who are available or busy and whose account is active. */
     public function countOnline(): int
     {

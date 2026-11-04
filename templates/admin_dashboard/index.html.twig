@@ -9,6 +9,13 @@
         | <a href="{{ path('app_admin_rider_index', {approval: 'pending'}) }}">Rider applications</a>
         | <a href="{{ path('app_admin_customer_index') }}">Customers</a>
     </p>
+    <p>
+        <a href="{{ path('app_admin_order') }}">Orders</a>
+        | <a href="{{ path('app_admin_unassigned_order') }}">Waiting for a rider</a>
+        | <a href="{{ path('app_admin_order_report') }}">Order reports</a>
+        | <a href="{{ path('app_admin_payment') }}">Payments</a>
+        | <a href="{{ path('app_admin_support_ticket') }}">Support tickets</a>
+    </p>
 
     {% for section, values in stats %}
         {% if values is iterable %}

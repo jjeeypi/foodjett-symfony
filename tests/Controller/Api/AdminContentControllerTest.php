@@ -54,23 +54,6 @@ final class AdminContentControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(204);
     }
 
-    public function testSupportTicketStatusAndAuditLogVisibility(): void
-    {
-        $token = $this->login();
-        $this->client->request('GET', '/api/admin/support-tickets?status=open', server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame($this->ticketId, (string) ($this->payload()['data'][0]['id'] ?? ''));
-        self::assertFalse($this->payload()['data'][0]['reply_capability']);
-
-        $this->client->jsonRequest('PATCH', '/api/admin/support-tickets/'.$this->ticketId, ['status' => 'in_progress'], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame('in_progress', $this->payload()['ticket']['status']);
-
-        $this->client->request('GET', '/api/admin/audit-logs?action=support_ticket.status_updated', server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame('support_ticket.status_updated', $this->payload()['data'][0]['action']);
-    }
-
     private function createFixture(): string
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);

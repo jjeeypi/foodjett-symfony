@@ -1,20 +1,30 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminUnassignedOrderController!{% endblock %}
+{% block title %}Waiting for a rider | Foodjett admin{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_admin_order') }}">All orders</a></p>
+    <h1>Waiting for a rider</h1>
+    <p>Orders the rider pool could not place in time. Open one to hand it to a rider.</p>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
-
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/AdminUnassignedOrderController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/admin_unassigned_order/index.html.twig</code></li>
-    </ul>
-</div>
+    <table class="table">
+        <thead>
+            <tr><th>Order</th><th>Restaurant</th><th>Searching</th><th>Stage</th><th>Radius</th><th>Incentive</th></tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+            <tr id="order-{{ order.id }}">
+                <td><a href="{{ path('app_admin_order_detail', {id: order.id}) }}">{{ order.orderNumber }}</a></td>
+                <td>{{ order.restaurant.name }}</td>
+                <td class="minutes">{{ order.riderSearchStartedAt ? ((now.timestamp - order.riderSearchStartedAt.timestamp) / 60)|round(0, 'floor') : 0 }} min</td>
+                <td>{{ order.riderPoolOffer.escalationStage|replace({'_': ' '}) }}</td>
+                <td>{{ order.riderPoolOffer.searchRadiusKm }} km</td>
+                <td>PHP {{ order.riderPoolOffer.incentiveAmount }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6">Every order has a rider.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(orders) }}
 {% endblock %}

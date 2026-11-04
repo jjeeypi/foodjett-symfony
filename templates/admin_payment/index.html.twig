@@ -1,20 +1,56 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminPaymentController!{% endblock %}
+{% block title %}Payments | Foodjett admin{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Payments</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <form method="get">
+        <label for="method">Method</label>
+        <select id="method" name="method">
+            <option value="">All</option>
+            {% for value in methods %}<option value="{{ value }}" {{ method == value ? 'selected' }}>{{ value|upper }}</option>{% endfor %}
+        </select>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>{% endfor %}
+        </select>
+        <label for="from">Paid from</label>
+        <input type="date" id="from" name="from" value="{{ from ? from|date('Y-m-d') }}">
+        <label for="to">to</label>
+        <input type="date" id="to" name="to" value="{{ to ? to|date('Y-m-d') }}">
+        <button type="submit">Filter</button>
+    </form>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/AdminPaymentController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/admin_payment/index.html.twig</code></li>
-    </ul>
-</div>
+    <table class="table">
+        <thead>
+            <tr><th>Order</th><th>Customer</th><th>Method</th><th>Status</th><th>Amount</th><th>Refunded</th><th>Paid</th><th>Refund</th></tr>
+        </thead>
+        <tbody>
+        {% for payment in payments %}
+            <tr id="payment-{{ payment.id }}">
+                <td><a href="{{ path('app_admin_order_detail', {id: payment.order.id}) }}">{{ payment.order.orderNumber }}</a><br>{{ payment.order.restaurant.name }}</td>
+                <td>{{ payment.order.customer.user.name }}</td>
+                <td>{{ payment.method|upper }}</td>
+                <td class="status">{{ payment.status|replace({'_': ' '}) }}</td>
+                <td>PHP {{ payment.amount }}</td>
+                <td class="refunded">PHP {{ payment.refundedAmount }}</td>
+                <td>{{ payment.paidAt ? payment.paidAt|date('M j, Y g:i A') : '-' }}</td>
+                <td>
+                    {% if forms[payment.id] is defined %}
+                        {{ form_start(forms[payment.id], {action: path('app_admin_payment_refund', {id: payment.id})}) }}
+                            {{ form_widget(forms[payment.id]) }}
+                            <button type="submit">Refund</button>
+                        {{ form_end(forms[payment.id]) }}
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="8">no records found</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(payments) }}
 {% endblock %}
