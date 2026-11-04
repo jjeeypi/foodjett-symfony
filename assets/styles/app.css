@@ -541,3 +541,26 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
 .order-card .order-restaurant { font-size: 13px; color: #5f6b52; }
 .order-card .amount { font-weight: 700; white-space: nowrap; }
 @media (max-width: 600px) { .order-card { flex-wrap: wrap; } .order-card .badge { order: 5; } }
+/* make:crud delete forms confirm first; they read as a quiet danger action */
+form[onsubmit^="return confirm"] { display: inline-block; margin: 0; }
+form[onsubmit^="return confirm"] button { background: var(--surface); color: var(--danger); border: 1px solid var(--danger-line); min-height: 34px; padding: 7px 12px; font-size: 12px; }
+form[onsubmit^="return confirm"] button:hover { background: var(--danger-bg); filter: none; }
+a.line { color: var(--text); }
+a.line:hover { text-decoration: none; background: #fafcf6; }
+.content > h2 + .result-list { margin-top: 0; }
+.result-list { list-style: none; padding: 0; margin: 0 0 26px; display: grid; gap: 10px; }
+.result-list > li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; }
+.result-list a { font-weight: 650; color: var(--text); }
+.result-list .grow { flex: 1; min-width: 0; }
+.dishes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .dishes { grid-template-columns: 1fr; } }
+/* Generic pages (make:crud and simple pages): title spacing, key/value tables, plain links as buttons */
+.content > h1:first-child, .content > p:first-child + h1 { margin-bottom: 22px; }
+.content > p:first-child > a:only-child { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #7d8a6d; font-weight: 500; }
+table.table > tbody > tr > th { width: 32%; text-transform: none; letter-spacing: 0; font-size: 12px; color: #7a8470; background: #fafbf7; border-bottom: 1px solid #f0f2ec; }
+.content > a:not([class]), .content > form + a:not([class]) {
+    display: inline-flex; align-items: center; gap: 8px; margin: 18px 10px 0 0; min-height: 40px; padding: 9px 16px;
+    border-radius: var(--radius-sm); border: 1px solid var(--line-2); background: var(--surface); color: #5f6d50; font-size: 13px; font-weight: 600;
+}
+.content > a:not([class]):hover { background: #f5f8f0; text-decoration: none; }
+.content > table.table, .content > table:not([class]) { display: table; }

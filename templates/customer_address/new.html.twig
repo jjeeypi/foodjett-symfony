@@ -1,11 +1,19 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New address | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Add an address</h1>
+    <a class="back-link" href="{{ path('app_customer_address_index') }}">{{ icon('back', 'icon-sm') }} Your addresses</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Where should we deliver?</div>
+            <h1>Add an <span>address.</span></h1>
+            <p>Type the street, a barangay or a landmark, use your location, or tap the map.</p>
+        </div>
+    </div>
 
-    {{ include('customer_address/_form.html.twig') }}
-
-    <a href="{{ path('app_customer_address_index') }}">back to list</a>
+    <section class="panel form-card">
+        {{ include('customer_address/_form.html.twig') }}
+    </section>
 {% endblock %}

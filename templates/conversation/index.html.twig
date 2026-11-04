@@ -1,38 +1,47 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Chat for order {{ conversation.order.orderNumber }} | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('conversations/' ~ conversation.id, null, {withCredentials: true}) }} hidden></div>
-    <p><a href="{{ path('app_messages') }}">All messages</a></p>
+    <a class="back-link" href="{{ path('app_messages') }}">{{ icon('back', 'icon-sm') }} All messages</a>
 
-    <h1>Chat for order {{ conversation.order.orderNumber }}</h1>
-    <p>
-        {% if conversation.type == constant('App\\Entity\\Conversation::TYPE_CUSTOMER_RESTAURANT') %}
-            With {{ conversation.order.restaurant.name }} and the customer.
+    <section class="panel chat">
+        <div class="panel-head" style="justify-content: flex-start; gap: 13px; border-bottom: 1px solid var(--line); padding-bottom: 18px">
+            <span class="avatar">{{ icon(conversation.type == constant('App\\Entity\\Conversation::TYPE_CUSTOMER_RESTAURANT') ? 'store' : 'bike', 'icon-sm') }}</span>
+            <div>
+                <h1 style="font-size: 18px; letter-spacing: -.3px">Chat for order {{ conversation.order.orderNumber }}</h1>
+                <p class="subtle" style="margin: 2px 0 0">
+                    {% if conversation.type == constant('App\\Entity\\Conversation::TYPE_CUSTOMER_RESTAURANT') %}
+                        With {{ conversation.order.restaurant.name }} and the customer.
+                    {% else %}
+                        With the rider and the customer.
+                    {% endif %}
+                </p>
+            </div>
+            <span class="badge {{ form ? 'badge-green' : '' }}" style="margin-left: auto">{{ form ? 'Live chat' : 'Read-only' }}</span>
+        </div>
+
+        <ol id="messages" class="chat-body" style="list-style: none; padding-left: 0; margin: 0">
+            {% for message in messages %}
+                <li class="bubble{{ message.sender == app.user ? ' mine' }}">
+                    <strong>{{ message.sender.name }}</strong>
+                    <span class="body" style="display: block">{{ message.body|nl2br }}</span>
+                    <small>{{ message.createdAt|date('M j, g:i A') }}{% if message.sender == app.user and message.readAt %} · read{% endif %}</small>
+                </li>
+            {% else %}
+                <li class="subtle" style="text-align: center">No messages yet. Say hello!</li>
+            {% endfor %}
+        </ol>
+
+        {% if form %}
+            {{ form_start(form, {attr: {class: 'chat-form'}}) }}
+                {{ form_widget(form) }}
+                <button class="btn-green" type="submit">Send {{ icon('send', 'icon-sm') }}</button>
+            {{ form_end(form) }}
         {% else %}
-            With the rider and the customer.
+            <p class="note-box">This conversation is read-only.</p>
         {% endif %}
-    </p>
-
-    <ol id="messages">
-        {% for message in messages %}
-            <li>
-                <strong>{{ message.sender.name }}</strong> · {{ message.createdAt|date('M j, g:i A') }}
-                {% if message.sender == app.user and message.readAt %}· read{% endif %}
-                <br><span class="body">{{ message.body|nl2br }}</span>
-            </li>
-        {% else %}
-            <li>No messages yet.</li>
-        {% endfor %}
-    </ol>
-
-    {% if form %}
-        {{ form_start(form) }}
-            {{ form_widget(form) }}
-            <button type="submit">Send</button>
-        {{ form_end(form) }}
-    {% else %}
-        <p>This conversation is read-only.</p>
-    {% endif %}
+    </section>
 {% endblock %}

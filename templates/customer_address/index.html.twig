@@ -1,40 +1,48 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Your addresses | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_account') }}">Your account</a></p>
-    <h1>Your addresses</h1>
+    <a class="back-link" href="{{ path('app_account') }}">{{ icon('back', 'icon-sm') }} Your account</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Where should we deliver?</div>
+            <h1>Your <span>addresses.</span></h1>
+            <p>Good food starts with the right address.</p>
+        </div>
+        <a class="btn btn-green" href="{{ path('app_customer_address_new') }}">{{ icon('plus', 'icon-sm') }} Add an address</a>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Label</th>
-                <th>Address</th>
-                <th>Landmark</th>
-                <th>Default</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for customer_address in customer_addresses %}
-            <tr>
-                <td>{{ customer_address.label }}</td>
-                <td>{{ customer_address.addressLine }}</td>
-                <td>{{ customer_address.landmark }}</td>
-                <td>{{ customer_address.isDefault ? 'Yes' : 'No' }}</td>
-                <td>
-                    <a href="{{ path('app_customer_address_edit', {'id': customer_address.id}) }}">edit</a>
-                    {{ include('customer_address/_delete_form.html.twig') }}
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="5">You have no saved addresses yet.</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <a href="{{ path('app_customer_address_new') }}">Add an address</a>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Label</th>
+                    <th>Address</th>
+                    <th>Landmark</th>
+                    <th>Default</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for customer_address in customer_addresses %}
+                <tr>
+                    <td><strong>{{ customer_address.label }}</strong></td>
+                    <td>{{ customer_address.addressLine }}</td>
+                    <td>{{ customer_address.landmark }}</td>
+                    <td>{% if customer_address.isDefault %}<span class="badge badge-green">Default</span>{% else %}<span class="subtle">No</span>{% endif %}</td>
+                    <td>
+                        <a class="btn btn-light btn-sm" href="{{ path('app_customer_address_edit', {'id': customer_address.id}) }}">{{ icon('edit', 'icon-sm') }} Edit</a>
+                        {{ include('customer_address/_delete_form.html.twig') }}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5">You have no saved addresses yet.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}

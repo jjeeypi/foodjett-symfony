@@ -1,27 +1,50 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Your account | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Your account</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your Foodjett</div>
+            <h1>{{ user.name|split(' ')|first }}’s <span>account.</span></h1>
+            <p>Everything you need, right here.</p>
+        </div>
+    </div>
 
-    <ul>
-        <li><a href="{{ path('app_customer_address_index') }}">Delivery addresses</a></li>
-        <li><a href="{{ path('app_orders') }}">Orders</a></li>
-        <li><a href="{{ path('app_support_ticket_index') }}">Support requests</a></li>
-    </ul>
+    <div class="split">
+        <section class="panel">
+            <div class="panel-head" style="justify-content: flex-start; gap: 16px">
+                <span class="avatar avatar-lg">
+                    {%- if user.avatarPath %}<img src="{{ asset(user.avatarPath) }}" alt="Profile photo">{% else %}{{ user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}{% endif -%}
+                </span>
+                <div>
+                    <h2>Profile</h2>
+                    <p class="subtle" style="margin: 0">{{ user.email }}</p>
+                </div>
+            </div>
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+                <button type="submit">Save profile</button>
+            {{ form_end(form) }}
+        </section>
 
-    <h2>Profile</h2>
-    {% if user.avatarPath %}<p><img src="{{ asset(user.avatarPath) }}" alt="Profile photo" width="96"></p>{% endif %}
-    {{ form_start(form) }}
-        {{ form_widget(form) }}
-        <button type="submit">Save profile</button>
-    {{ form_end(form) }}
+        <aside class="stack">
+            <nav class="panel" aria-label="Account shortcuts">
+                <a class="line" href="{{ path('app_customer_address_index') }}"><span class="pin-box">{{ icon('pin') }}</span><span class="grow"><strong>Delivery addresses</strong><div class="subtle">Where your food goes</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_orders') }}"><span class="pin-box">{{ icon('bag') }}</span><span class="grow"><strong>Orders</strong><div class="subtle">Track and reorder</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_favorites') }}"><span class="pin-box">{{ icon('heart') }}</span><span class="grow"><strong>Favorites</strong><div class="subtle">Places you saved</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_support_ticket_index') }}"><span class="pin-box">{{ icon('help') }}</span><span class="grow"><strong>Support requests</strong><div class="subtle">We’re here to help</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+            </nav>
 
-    <h2>Delete account</h2>
-    <p>Your name, email, phone and photo are removed and you cannot sign in again. Past orders stay with the restaurants.</p>
-    <form method="post" action="{{ path('app_account_delete') }}" onsubmit="return confirm('Delete your account for good?');">
-        <input type="hidden" name="_token" value="{{ csrf_token('delete-account') }}">
-        <button type="submit">Delete my account</button>
-    </form>
+            <section class="panel">
+                <h2>Delete account</h2>
+                <p class="subtle">Your name, email, phone and photo are removed and you cannot sign in again. Past orders stay with the restaurants.</p>
+                <form method="post" action="{{ path('app_account_delete') }}" onsubmit="return confirm('Delete your account for good?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete-account') }}">
+                    <button class="btn-danger" type="submit">Delete my account</button>
+                </form>
+            </section>
+        </aside>
+    </div>
 {% endblock %}
