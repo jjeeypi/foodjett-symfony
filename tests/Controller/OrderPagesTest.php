@@ -43,6 +43,16 @@ class OrderPagesTest extends CustomerApiTestCase
         self::assertSelectorTextContains('#timeline', 'placed · Placed by checkout');
         self::assertSelectorExists('form[name="order_cancel_form"]');
 
+        // The page follows its own order live; the hub cookie lets it subscribe to that topic only.
+        $live = $this->client->getCrawler()->filter('#live');
+        self::assertSame('orders/'.$active->getId().'/status', $live->attr('data-symfony--ux-turbo--mercure-turbo-stream-topic-value'));
+        self::assertSame('true', $live->attr('data-symfony--ux-turbo--mercure-turbo-stream-with-credentials-value'));
+        $cookie = $this->client->getResponse()->headers->getCookies()[0] ?? null;
+        self::assertSame('mercure_access_token', $cookie?->getName());
+        $claims = json_decode(base64_decode(strtr(explode('.', (string) $cookie->getValue())[1], '-_', '+/')), true);
+        self::assertSame([['match' => 'orders/'.$active->getId().'/status']], $claims['authorization_details'][0]['topics']);
+        self::assertSame(['subscribe'], $claims['authorization_details'][0]['actions']);
+
         $this->client->request('GET', '/orders/'.$foreign->getId());
         self::assertResponseStatusCodeSame(404);
     }

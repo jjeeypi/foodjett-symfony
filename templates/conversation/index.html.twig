@@ -3,6 +3,7 @@
 {% block title %}Chat for order {{ conversation.order.orderNumber }} | Foodjett{% endblock %}
 
 {% block body %}
+    <div id="live" {{ turbo_stream_listen('conversations/' ~ conversation.id, null, {withCredentials: true}) }} hidden></div>
     <p><a href="{{ path('app_messages') }}">All messages</a></p>
 
     <h1>Chat for order {{ conversation.order.orderNumber }}</h1>

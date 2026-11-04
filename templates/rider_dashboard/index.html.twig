@@ -3,6 +3,7 @@
 {% block title %}Rider | Foodjett{% endblock %}
 
 {% block body %}
+    <div id="live" {% if active_order %}{{ turbo_stream_listen('orders/' ~ active_order.id ~ '/status', null, {withCredentials: true}) }}{% endif %} hidden></div>
     <h1>Hi, {{ rider.user.name }}</h1>
 
     {% if not approved %}

@@ -47,16 +47,14 @@ class RestaurantOrderPagesTest extends WebTestCase
         self::assertNotNull($order->getRiderSearchStartedAt());
         self::assertSame(20, $order->getEstimatedPrepMinutes());
         self::assertNotNull($order->getRiderPoolOffer());
-        self::assertSame(
-            ['accepted', 'preparing', 'finding_rider'],
-            array_map(static fn ($update): string => json_decode($update->getData(), true)['status'], $this->orderUpdates()),
-        );
+        self::assertCount(3, $this->orderUpdates(), 'Each step (accepted, preparing, finding a rider) refreshes the order pages.');
         $poolUpdates = array_values(array_filter(
             self::getContainer()->get(RecordingMercureHub::class)->updates(),
             static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
         ));
         self::assertCount(1, $poolUpdates);
-        self::assertSame('rider_pool.offer_created', json_decode($poolUpdates[0]->getData(), true)['event']);
+        self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $poolUpdates[0]->getData());
+        self::assertFalse($poolUpdates[0]->isPrivate(), 'Pool pages refresh for every rider; each works out its own pay.');
 
         $conversation = self::getContainer()->get(EntityManagerInterface::class)->getRepository(Conversation::class)
             ->findOneBy(['order' => $this->orderId, 'type' => Conversation::TYPE_CUSTOMER_RESTAURANT]);
@@ -66,10 +64,10 @@ class RestaurantOrderPagesTest extends WebTestCase
         self::assertStringStartsWith('Thank you for ordering from Restaurant Orders Test!', $message->getBody());
 
         $this->submit('Add time', ['extend[minutes]' => '5']);
-        self::assertSame('prep_time_extended', json_decode($this->orderUpdates()[0]->getData(), true)['kind']);
+        self::assertCount(1, $this->orderUpdates(), 'More prep time refreshes the order pages.');
 
         $this->submit('Food is ready');
-        self::assertSame('food_ready', json_decode($this->orderUpdates()[0]->getData(), true)['kind']);
+        self::assertCount(1, $this->orderUpdates(), 'Food ready refreshes the order pages.');
         $order = $this->order();
         self::assertSame(Order::STATUS_FINDING_RIDER, $order->getStatus(), 'The rider search keeps going.');
         self::assertNotNull($order->getReadyAt());

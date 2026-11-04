@@ -3,6 +3,7 @@
 {% block title %}Order {{ order.orderNumber }} | Foodjett admin{% endblock %}
 
 {% block body %}
+    <div id="live" {{ turbo_stream_listen('orders/' ~ order.id ~ '/status', null, {withCredentials: true}) }} hidden></div>
     <p><a href="{{ path('app_admin_order') }}">All orders</a></p>
 
     <h1>Order {{ order.orderNumber }}</h1>

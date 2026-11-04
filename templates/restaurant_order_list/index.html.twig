@@ -3,6 +3,7 @@
 {% block title %}Orders | Foodjett{% endblock %}
 
 {% block body %}
+    <div id="live" {{ turbo_stream_listen('restaurant/' ~ app.user.restaurant.id ~ '/orders', null, {withCredentials: true}) }} hidden></div>
     <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
     <h1>Orders</h1>
 

@@ -108,7 +108,7 @@ class AdminOrderPagesTest extends WebTestCase
             static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
         ));
         self::assertCount(1, $poolUpdates);
-        self::assertSame($this->poolOrderId, json_decode($poolUpdates[0]->getData(), true, flags: JSON_THROW_ON_ERROR)['order_id'] ?? null);
+        self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $poolUpdates[0]->getData(), 'The assigned order leaves every pool page.');
 
         $this->page($url);
         self::assertSelectorTextContains('#rider', 'assigned by an admin');

@@ -3,6 +3,7 @@
 {% block title %}{{ restaurant.name }} | Foodjett{% endblock %}
 
 {% block body %}
+    <div id="live" {% if stats %}{{ turbo_stream_listen('restaurant/' ~ restaurant.id ~ '/orders', null, {withCredentials: true}) }}{% endif %} hidden></div>
     <h1>{{ restaurant.name }}</h1>
 
     {% if stats is null %}

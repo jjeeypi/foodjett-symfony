@@ -49,6 +49,7 @@ class RiderPoolPageTest extends WebTestCase
         self::assertSelectorTextContains('#offer-'.$card->getId(), 'Pool Test Restaurant');
         self::assertSelectorTextContains('#offer-'.$card->getId(), 'paid online');
         self::assertMatchesRegularExpression('/Earn about PHP \d+\.\d{2}/', $crawler->filter('#offer-'.$card->getId())->text());
+        self::assertSame('orders/pool', $crawler->filter('#live')->attr('data-symfony--ux-turbo--mercure-turbo-stream-topic-value'), 'The pool refreshes as offers come and go.');
     }
 
     public function testOfflineRiderIsToldToGoOnline(): void
@@ -88,8 +89,7 @@ class RiderPoolPageTest extends WebTestCase
             static fn ($update): bool => ['orders/pool'] === $update->getTopics(),
         ));
         self::assertCount(1, $poolUpdates);
-        self::assertSame('rider_pool.offer_taken', $poolUpdates[0]->getType());
-        self::assertSame('rider_assigned', json_decode($poolUpdates[0]->getData(), true)['reason']);
+        self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $poolUpdates[0]->getData(), 'Other riders see the order leave the pool.');
 
         $this->entityManager()->clear();
         $second = $this->rider(self::SECOND_RIDER_EMAIL);

@@ -56,10 +56,10 @@ class ConversationPagesTest extends CustomerApiTestCase
 
         $updates = $hub->updates();
         self::assertCount(2, $updates);
-        self::assertSame(['conversations/'.$conversation->getId()], $updates[0]->getTopics());
-        self::assertSame('message.sent', json_decode($updates[0]->getData(), true)['event']);
-        self::assertSame(['users/'.$this->restaurant->getUser()->getId().'/notifications'], $updates[1]->getTopics());
-        self::assertSame(2, json_decode($updates[1]->getData(), true)['unread_count']);
+        self::assertSame(['conversations/'.$conversation->getId()], $updates[0]->getTopics(), 'The open chat refreshes.');
+        self::assertSame(['users/'.$this->restaurant->getUser()->getId().'/notifications'], $updates[1]->getTopics(), "The recipient's inbox refreshes.");
+        self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $updates[1]->getData());
+        self::assertTrue($updates[1]->isPrivate());
 
         // The restaurant owner can read and reply in the same chat.
         $this->client->loginUser($this->fresh(User::class, (string) $this->restaurant->getUser()->getId()), 'main');

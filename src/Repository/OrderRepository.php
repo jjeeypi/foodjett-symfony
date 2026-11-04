@@ -21,41 +21,6 @@ class OrderRepository extends ServiceEntityRepository
         parent::__construct($registry, Order::class);
     }
 
-    /** @return list<int|string> */
-    public function findIdsForCustomer(Customer $customer): array
-    {
-        return $this->createQueryBuilder('orders')
-            ->select('orders.id')
-            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
-            ->getQuery()->getSingleColumnResult();
-    }
-
-    /**
-     * IDs of the rider's orders that have not reached a terminal status.
-     *
-     * @return list<int|string>
-     */
-    public function findActiveIdsForRider(Rider $rider): array
-    {
-        $terminalStatuses = array_map(
-            static fn (string $status): string => $status,
-            Order::TERMINAL_STATUSES,
-        );
-
-        return $this->createQueryBuilder('orders')
-            ->select('orders.id')
-            ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('orders.status NOT IN (:terminalStatuses)')->setParameter('terminalStatuses', $terminalStatuses)
-            ->getQuery()->getSingleColumnResult();
-    }
-
-    /** @return list<int|string> */
-    public function findAllIds(): array
-    {
-        return $this->createQueryBuilder('orders')
-            ->select('orders.id')->getQuery()->getSingleColumnResult();
-    }
-
     /**
      * Orders still searching for a rider, oldest search first, with their pool offer,
      * restaurant and delivery address loaded for the rider pool.

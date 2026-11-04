@@ -3,6 +3,7 @@
 {% block title %}Order pool | Foodjett{% endblock %}
 
 {% block body %}
+    <div id="live" {{ turbo_stream_listen('orders/pool') }} hidden></div>
     <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
     <h1>Orders near you</h1>
 

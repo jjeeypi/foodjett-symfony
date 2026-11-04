@@ -7,6 +7,7 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+/** The rider moved: pages tracking their current order refresh to show the new position. */
 #[AsMessageHandler]
 final class RiderLocationUpdatedHandler
 {
@@ -18,16 +19,8 @@ final class RiderLocationUpdatedHandler
     {
         $this->hub->publish(new Update(
             sprintf('orders/%s/status', $message->orderId),
-            json_encode([
-                'event' => 'rider.location_updated',
-                'order_id' => $message->orderId,
-                'rider_id' => $message->riderId,
-                'latitude' => $message->latitude,
-                'longitude' => $message->longitude,
-                'timestamp' => $message->occurredAt->format(\DateTimeInterface::ATOM),
-            ], JSON_THROW_ON_ERROR),
+            '<turbo-stream action="refresh"></turbo-stream>',
             true,
-            type: 'rider.location_updated',
         ));
     }
 }

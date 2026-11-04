@@ -3,6 +3,7 @@
 {% block title %}Messages | Foodjett{% endblock %}
 
 {% block body %}
+    <div id="live" {{ turbo_stream_listen('users/' ~ app.user.id ~ '/notifications', null, {withCredentials: true}) }} hidden></div>
     <h1>Messages</h1>
 
     <table>

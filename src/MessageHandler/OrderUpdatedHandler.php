@@ -9,6 +9,10 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+/**
+ * An order changed without changing status (more prep time, food ready): the pages
+ * showing it, and the restaurant's queue, refresh.
+ */
 #[AsMessageHandler]
 final class OrderUpdatedHandler
 {
@@ -25,28 +29,8 @@ final class OrderUpdatedHandler
             return;
         }
 
-        $rider = $order->getRider();
-
-        $this->hub->publish(new Update(
-            sprintf('orders/%s/status', $message->orderId),
-            json_encode([
-                'event' => 'order.updated',
-                'kind' => $message->kind,
-                'order_id' => $message->orderId,
-                'order_number' => $order->getOrderNumber(),
-                'status' => $message->currentStatus,
-                'changed_by' => $message->changedBy,
-                'note' => $message->note,
-                'changed_at' => $message->changedAt->format(\DateTimeInterface::ATOM),
-                'estimated_ready_at' => $order->getEstimatedReadyAt()?->format(\DateTimeInterface::ATOM),
-                'rider' => null === $rider ? null : [
-                    'id' => (string) $rider->getId(),
-                    'name' => $rider->getUser()->getName(),
-                    'vehicle_type' => $rider->getVehicleType(),
-                ],
-            ], JSON_THROW_ON_ERROR),
-            true,
-            type: 'order.updated',
-        ));
+        $refresh = '<turbo-stream action="refresh"></turbo-stream>';
+        $this->hub->publish(new Update(sprintf('orders/%s/status', $message->orderId), $refresh, true));
+        $this->hub->publish(new Update(sprintf('restaurant/%s/orders', $order->getRestaurant()->getId()), $refresh, true));
     }
 }
