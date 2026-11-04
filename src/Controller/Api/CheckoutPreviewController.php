@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\User;
-use App\Service\CheckoutService;
+use App\Service\OrderTransitionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_CUSTOMER')]
 final class CheckoutPreviewController extends AbstractController
 {
-    public function __construct(private readonly CheckoutService $checkout)
+    public function __construct(private readonly OrderTransitionService $transitions)
     {
     }
 
@@ -35,7 +35,7 @@ final class CheckoutPreviewController extends AbstractController
         }
 
         try {
-            $quote = $this->checkout->preview($user->getCustomer(), $input);
+            $quote = $this->transitions->previewCheckout($user->getCustomer(), $input);
         } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         }

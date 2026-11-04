@@ -11,7 +11,7 @@ use App\Enum\OrderStatus;
 use App\Enum\RiderAvailabilityStatus;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Security\Voter\OrderVoter;
-use App\Service\RiderPoolService;
+use App\Service\OrderTransitionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -23,7 +23,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your rider account is awaiting approval.')]
 final class RiderPoolController extends AbstractController
 {
-    public function __construct(private readonly RiderPoolService $pool)
+    public function __construct(private readonly OrderTransitionService $transitions)
     {
     }
 
@@ -48,8 +48,8 @@ final class RiderPoolController extends AbstractController
             ]);
         }
 
-        $orders = $this->pool->visibleOrders($rider);
-        $reason = [] === $orders ? $this->pool->emptyPoolReason($rider) : null;
+        $orders = $this->transitions->visiblePoolOrders($rider);
+        $reason = [] === $orders ? $this->transitions->emptyPoolReason($rider) : null;
 
         return $this->json([
             'orders' => $orders,
@@ -68,7 +68,7 @@ final class RiderPoolController extends AbstractController
         $rider = $this->rider();
 
         try {
-            $order = $this->pool->accept($order, $rider);
+            $order = $this->transitions->acceptPoolOrder($order, $rider);
         } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (\DomainException) {
@@ -96,7 +96,7 @@ final class RiderPoolController extends AbstractController
         $this->denyAccessUnlessGranted(OrderVoter::UPDATE_AS_RIDER, $order);
 
         try {
-            $decline = $this->pool->decline($order, $this->rider());
+            $decline = $this->transitions->declinePoolOrder($order, $this->rider());
         } catch (HttpException $exception) {
             return $this->json(['message' => $exception->getMessage()], $exception->getStatusCode());
         }

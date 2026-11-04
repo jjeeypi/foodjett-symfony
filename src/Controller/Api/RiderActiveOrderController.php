@@ -22,7 +22,6 @@ use App\Repository\PlatformSettingRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
-use App\Service\RiderPayCalculator;
 use App\Service\UploadStorage;
 use Doctrine\DBAL\LockMode;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -41,7 +40,6 @@ final class RiderActiveOrderController extends AbstractRiderController
         \Doctrine\ORM\EntityManagerInterface $entityManager,
         private readonly OrderTransitionService $transitions,
         private readonly PaymentTransitionService $payments,
-        private readonly RiderPayCalculator $payCalculator,
         private readonly PlatformSettingRepository $settings,
         private readonly UploadStorage $uploads,
     ) {
@@ -137,7 +135,7 @@ final class RiderActiveOrderController extends AbstractRiderController
                     if (null !== $locked->getRiderArrivedRestaurantAt() && null !== $locked->getPickedUpAt()) {
                         $waitMinutes = max(0.0, ($locked->getPickedUpAt()->getTimestamp() - $locked->getRiderArrivedRestaurantAt()->getTimestamp()) / 60);
                     }
-                    $pay = $this->payCalculator->earning($locked, $waitMinutes);
+                    $pay = $this->transitions->riderEarning($locked, $waitMinutes);
                     if (null === $locked->getRiderEarning()) {
                         $earning = (new RiderEarning())->setRider($rider)->setOrder($locked)->setBasePay($pay['base_pay'])
                             ->setDistancePay($pay['distance_pay'])->setWaitingPay($pay['waiting_pay'])->setIncentivePay($pay['incentive_pay'])
