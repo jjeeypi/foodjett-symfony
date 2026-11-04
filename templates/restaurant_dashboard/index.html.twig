@@ -1,20 +1,44 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RestaurantDashboardController!{% endblock %}
+{% block title %}{{ restaurant.name }} | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <h1>{{ restaurant.name }}</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    {% if stats is null %}
+        <section id="approval">
+            <h2>Application status: {{ restaurant.approvalStatus }}</h2>
+            {% if restaurant.approvalStatus == 'rejected' %}
+                <p>Your application was not approved.{% if restaurant.rejectionReason %} Reason: {{ restaurant.rejectionReason }}{% endif %}</p>
+            {% else %}
+                <p>An admin is reviewing your documents. You can set up your restaurant once it is approved.</p>
+            {% endif %}
+        </section>
+    {% else %}
+        <p>
+            You are {{ restaurant.openNow ? 'open' : 'closed' }} for orders.
+            <a href="{{ path('app_restaurant_orders', {status: 'placed'}) }}">{{ stats.waiting }} waiting for you</a>.
+        </p>
+        <dl id="today">
+            <dt>Orders today</dt><dd>{{ stats.orders_today }}</dd>
+            <dt>Delivered sales today</dt><dd>PHP {{ stats.revenue_today }}</dd>
+        </dl>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RestaurantDashboardController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/restaurant_dashboard/index.html.twig</code></li>
-    </ul>
-</div>
+        <h2>Recent orders</h2>
+        <ul>
+            {% for order in stats.recent %}
+                <li>
+                    <a href="{{ path('app_restaurant_order_detail', {id: order.id}) }}">{{ order.orderNumber }}</a>
+                    · {{ order.status|replace({'_': ' '}) }} · PHP {{ order.totalAmount }} · {{ order.placedAt|date('M j, g:i A') }}
+                </li>
+            {% else %}
+                <li>No orders yet.</li>
+            {% endfor %}
+        </ul>
+
+        <p>
+            <a href="{{ path('app_restaurant_orders') }}">All orders</a>
+            | <a href="{{ path('app_menu_item_index') }}">Menu</a>
+        </p>
+    {% endif %}
 {% endblock %}

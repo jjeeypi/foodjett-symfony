@@ -12,23 +12,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class ApprovalStatusController extends AbstractController
 {
-    #[Route('/api/restaurant/approval-status', name: 'api_restaurant_approval_status', methods: ['GET'])]
-    #[IsGranted('ROLE_RESTAURANT')]
-    public function restaurantStatus(): JsonResponse
-    {
-        $user = $this->authenticatedUser();
-        $restaurant = $user->getRestaurant();
-
-        if (null === $restaurant) {
-            return $this->json(['message' => 'Restaurant profile not found.'], 404);
-        }
-
-        return $this->json([
-            'approval_status' => $restaurant->getApprovalStatus(),
-            'rejection_reason' => $restaurant->getRejectionReason(),
-        ]);
-    }
-
     #[Route('/api/rider/approval-status', name: 'api_rider_approval_status', methods: ['GET'])]
     #[IsGranted('ROLE_RIDER')]
     public function riderStatus(): JsonResponse

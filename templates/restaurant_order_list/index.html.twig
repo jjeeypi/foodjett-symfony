@@ -1,20 +1,48 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RestaurantOrderListController!{% endblock %}
+{% block title %}Orders | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
+    <h1>Orders</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <form method="get" action="{{ path('app_restaurant_orders') }}">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            {% for value in statuses %}
+                <option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>
+            {% endfor %}
+        </select>
+        <label for="search">Order number or customer</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Filter</button>
+    </form>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RestaurantOrderListController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/restaurant_order_list/index.html.twig</code></li>
-    </ul>
-</div>
+    <table>
+        <thead>
+            <tr><th>Order</th><th>Customer</th><th>Items</th><th>Status</th><th>Total</th><th>Placed</th></tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+                <tr>
+                    <td><a href="{{ path('app_restaurant_order_detail', {id: order.id}) }}">{{ order.orderNumber }}</a></td>
+                    <td>{{ order.customer.user.name }}</td>
+                    <td>
+                        {% for item in order.items %}
+                            {{ item.quantity }} × {{ item.menuItem.name }}{% if item.menuItemVariant %} ({{ item.menuItemVariant.name }}){% endif %}
+                            {% if item.specialInstructions %}· {{ item.specialInstructions }}{% endif %}<br>
+                        {% endfor %}
+                        {% if order.customerNotes %}Notes: {{ order.customerNotes }}{% endif %}
+                    </td>
+                    <td>{{ order.status|replace({'_': ' '}) }}</td>
+                    <td>PHP {{ order.totalAmount }}</td>
+                    <td>{{ order.placedAt|date('M j, g:i A') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No orders match.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(orders) }}
 {% endblock %}

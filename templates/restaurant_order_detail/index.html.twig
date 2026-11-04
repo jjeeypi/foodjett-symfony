@@ -1,20 +1,76 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RestaurantOrderDetailController!{% endblock %}
+{% block title %}Order {{ order.orderNumber }} | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_restaurant_orders') }}">All orders</a></p>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <h1>Order {{ order.orderNumber }}</h1>
+    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
+    <p>
+        For {{ order.customer.user.name }}, placed {{ order.placedAt|date('M j, Y g:i A') }}.
+        {% if order.estimatedReadyAt %}Ready by {{ order.estimatedReadyAt|date('g:i A') }}{% if order.prepExtendedMinutes %} (extended {{ order.prepExtendedMinutes }} min){% endif %}.{% endif %}
+        {% if order.readyAt %}Food ready since {{ order.readyAt|date('g:i A') }}.{% endif %}
+    </p>
+    {% if order.rejectionReason %}<p>Rejected: {{ order.rejectionReason }}</p>{% endif %}
+    {% if order.cancellationReason %}<p>Cancelled: {{ order.cancellationReason }}</p>{% endif %}
 
-    This friendly message is coming from:
+    {% if order.rider %}
+        <p id="rider">
+            Rider: {{ order.rider.user.name }} ({{ order.rider.vehicleType }})
+            · Pickup code <strong>{{ order.pickupCode }}</strong>: ask the rider for it before handing over the food.
+        </p>
+    {% endif %}
+
+    <h2>Items</h2>
     <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RestaurantOrderDetailController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/restaurant_order_detail/index.html.twig</code></li>
+        {% for item in order.items %}
+            <li>
+                {{ item.quantity }} × {{ item.menuItem.name }}
+                {% if item.menuItemVariant %}({{ item.menuItemVariant.name }}){% endif %}
+                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }}{% endfor %}
+                {% if item.specialInstructions %}<br>Note: {{ item.specialInstructions }}{% endif %}
+            </li>
+        {% endfor %}
     </ul>
-</div>
+    {% if order.customerNotes %}<p>Customer notes: {{ order.customerNotes }}</p>{% endif %}
+    <p>Subtotal PHP {{ order.subtotal }} · paid by {{ order.paymentMethod|upper }}</p>
+
+    {% if accept_form %}
+        <h2>Accept</h2>
+        {{ form_start(accept_form, {action: path('app_restaurant_order_accept', {id: order.id})}) }}
+            {{ form_widget(accept_form) }}
+            <button type="submit">Accept order</button>
+        {{ form_end(accept_form) }}
+    {% endif %}
+
+    {% if reject_form %}
+        <h2>Reject</h2>
+        {{ form_start(reject_form, {action: path('app_restaurant_order_reject', {id: order.id})}) }}
+            {{ form_widget(reject_form) }}
+            <button type="submit">Reject order</button>
+        {{ form_end(reject_form) }}
+    {% endif %}
+
+    {% if extend_form %}
+        <h2>Need more time?</h2>
+        {{ form_start(extend_form, {action: path('app_restaurant_order_extend', {id: order.id})}) }}
+            {{ form_widget(extend_form) }}
+            <button type="submit">Add time</button>
+        {{ form_end(extend_form) }}
+    {% endif %}
+
+    {% if can_mark_ready %}
+        <form method="post" action="{{ path('app_restaurant_order_ready', {id: order.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('ready' ~ order.id) }}">
+            <button type="submit">Food is ready</button>
+        </form>
+    {% endif %}
+
+    <h2>Timeline</h2>
+    <ol id="timeline">
+        {% for entry in history %}
+            <li>{{ entry.createdAt|date('M j, g:i A') }}: {{ entry.status|replace({'_': ' '}) }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
+        {% endfor %}
+    </ol>
 {% endblock %}

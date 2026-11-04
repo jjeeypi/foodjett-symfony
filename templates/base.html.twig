@@ -25,6 +25,8 @@
                     | <a href="{{ path('app_account') }}">Account</a>
                 {% endif %}
                 {% if is_granted('ROLE_RESTAURANT') %}
+                    | <a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a>
+                    | <a href="{{ path('app_restaurant_orders') }}">Orders</a>
                     | <a href="{{ path('app_menu_item_index') }}">Menu</a>
                 {% endif %}
                 {% if app.user %}

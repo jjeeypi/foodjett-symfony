@@ -109,6 +109,7 @@ class RestaurantMenuPagesTest extends RestaurantApiTestCase
             self::assertResponseStatusCodeSame(404, $url);
         }
         self::assertNotNull($own->getId());
+
     }
 
     public function testAnOrderedItemIsMarkedUnavailableInsteadOfDeleted(): void
