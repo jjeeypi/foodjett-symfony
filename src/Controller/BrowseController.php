@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Restaurant;
 use App\Repository\DeliveryZoneRepository;
 use App\Repository\RestaurantRepository;
 use Knp\Component\Pager\PaginatorInterface;
@@ -10,12 +11,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-/** The public restaurant list, with cuisine, rating and open-now filters. */
+/** The public restaurant list, with kind, cuisine, rating and open-now filters. */
 final class BrowseController extends AbstractController
 {
     #[Route('/restaurants', name: 'app_restaurants', methods: ['GET'])]
     public function index(Request $request, RestaurantRepository $restaurants, PaginatorInterface $paginator): Response
     {
+        $kind = $request->query->getString('kind');
+        $kind = array_key_exists($kind, Restaurant::KINDS) ? $kind : '';
         $cuisine = mb_strtolower(trim($request->query->getString('cuisine')));
         $rating = $request->query->getString('rating');
         $minimumRating = is_numeric($rating) ? max(0.0, min(5.0, (float) $rating)) : null;
@@ -24,6 +27,9 @@ final class BrowseController extends AbstractController
 
         $rows = [];
         foreach ($restaurants->findApproved() as $restaurant) {
+            if ('' !== $kind && $restaurant->getKind() !== $kind) {
+                continue;
+            }
             if ('' !== $cuisine && !str_contains(mb_strtolower((string) $restaurant->getCuisineType()), $cuisine)) {
                 continue;
             }
@@ -47,7 +53,8 @@ final class BrowseController extends AbstractController
 
         return $this->render('browse/index.html.twig', [
             'pagination' => $paginator->paginate($rows, $request->query->getInt('page', 1), 20),
-            'filters' => ['cuisine' => $cuisine, 'rating' => $rating, 'open_now' => $openOnly],
+            'kinds' => Restaurant::KINDS,
+            'filters' => ['kind' => $kind, 'cuisine' => $cuisine, 'rating' => $rating, 'open_now' => $openOnly],
         ]);
     }
 

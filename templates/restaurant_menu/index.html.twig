@@ -7,7 +7,7 @@
 
     <h1>{{ restaurant.name }}</h1>
     <p>
-        {{ restaurant.cuisineType }}
+        {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}
         · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }} reviews)
         · {{ restaurant.openNow ? 'Open now' : 'Closed' }}
     </p>

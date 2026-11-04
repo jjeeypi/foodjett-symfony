@@ -52,6 +52,20 @@ class Restaurant
         self::OPERATING_TEMPORARILY_CLOSED,
     ];
 
+    // What kind of place it is, for browsing (KINDS)
+    public const KIND_FAST_FOOD = 'fast_food';
+    public const KIND_CASUAL_DINING = 'casual_dining';
+    public const KIND_BAKERY_DESSERTS = 'bakery_desserts';
+    public const KIND_COFFEE_TEA = 'coffee_tea';
+
+    /** @var array<string, string> value => label */
+    public const KINDS = [
+        self::KIND_FAST_FOOD => 'Fast food',
+        self::KIND_CASUAL_DINING => 'Casual dining',
+        self::KIND_BAKERY_DESSERTS => 'Bakery & desserts',
+        self::KIND_COFFEE_TEA => 'Coffee & tea',
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -164,6 +178,9 @@ class Restaurant
     #[ORM\OneToMany(mappedBy: 'restaurant', targetEntity: RestaurantReview::class, cascade: ['persist'])]
     private Collection $reviews;
 
+    #[Assert\Choice(choices: [self::KIND_FAST_FOOD, self::KIND_CASUAL_DINING, self::KIND_BAKERY_DESSERTS, self::KIND_COFFEE_TEA])]
+    #[ORM\Column(length: 32, options: ['default' => self::KIND_FAST_FOOD])]
+    private string $kind = self::KIND_FAST_FOOD;
     public function __construct()
     {
         $this->documents = new ArrayCollection();
@@ -570,5 +587,22 @@ class Restaurant
         }
 
         return round($sum / $count, 2);
+    }
+
+    public function getKind(): string
+    {
+        return $this->kind;
+    }
+
+    public function getKindLabel(): string
+    {
+        return self::KINDS[$this->kind] ?? $this->kind;
+    }
+
+    public function setKind(string $kind): self
+    {
+        $this->kind = $kind;
+
+        return $this;
     }
 }

@@ -60,6 +60,7 @@ class RegistrationControllerTest extends WebTestCase
         $this->fillAccount($form, 'restaurant_registration_form[user]', 'register-restaurant@foodjett.test', '+639180000002');
         $form['restaurant_registration_form[name]'] = 'Test Kitchen';
         $form['restaurant_registration_form[cuisineType]'] = 'Filipino';
+        $form['restaurant_registration_form[kind]'] = Restaurant::KIND_BAKERY_DESSERTS;
         $form['restaurant_registration_form[address]'] = '1 Test Street, Manila';
         $form['restaurant_registration_form[latitude]'] = '14.5995';
         $form['restaurant_registration_form[longitude]'] = '120.9842';
@@ -74,6 +75,7 @@ class RegistrationControllerTest extends WebTestCase
         self::assertSame(Restaurant::APPROVAL_PENDING, $restaurant->getApprovalStatus());
         self::assertSame(Restaurant::OPERATING_CLOSED, $restaurant->getOperatingStatus());
         self::assertStringStartsWith('test-kitchen', $restaurant->getSlug());
+        self::assertSame(Restaurant::KIND_BAKERY_DESSERTS, $restaurant->getKind());
         self::assertCount(count(RestaurantDocument::TYPES), $restaurant->getDocuments());
         foreach ($restaurant->getDocuments() as $document) {
             self::assertFileExists($this->uploadDir.'/'.$document->getFilePath());
