@@ -66,7 +66,7 @@ final class CheckoutController extends AbstractController
                 $cart->removeAllForCustomer($customer);
                 $this->addFlash('success', sprintf('Order %s was placed. Thank you!', $result['order']->getOrderNumber()));
 
-                return $this->redirectToRoute('app_home');
+                return $this->redirectToRoute('app_order_detail', ['id' => $result['order']->getId()]);
             } catch (HttpException|\DomainException $exception) {
                 $error = $exception->getMessage();
             }

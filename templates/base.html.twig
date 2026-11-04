@@ -21,6 +21,7 @@
                 | <a href="{{ path('app_search') }}">Search</a>
                 {% if is_granted('ROLE_CUSTOMER') %}
                     | <a href="{{ path('app_cart') }}">Cart</a>
+                    | <a href="{{ path('app_orders') }}">Orders</a>
                 {% endif %}
                 {% if app.user %}
                     | Signed in as {{ app.user.name }} ({{ app.user.role }})
