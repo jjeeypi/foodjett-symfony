@@ -642,26 +642,8 @@ final class OrderTransitionService
             throw new UnprocessableEntityHttpException('This restaurant is currently closed.');
         }
 
-        // Operating hours are optional until the restaurant configures a
-        // schedule. In that state, the explicit open/closed toggle is the
-        // source of truth instead of silently making an open store unusable.
-        if ($restaurant->getOperatingHours()->isEmpty()) {
+        if ($restaurant->isWithinOperatingHours($now)) {
             return;
-        }
-
-        $today = (int) $now->format('w');
-        $previousDay = (6 + $today) % 7;
-        $time = $now->format('H:i:s');
-        foreach ($restaurant->getOperatingHours() as $hours) {
-            $opens = $hours->getOpensAt()->format('H:i:s');
-            $closes = $hours->getClosesAt()->format('H:i:s');
-            $overnight = $opens > $closes;
-            if ($hours->getDayOfWeek() === $today && ((!$overnight && $time >= $opens && $time <= $closes) || ($overnight && $time >= $opens))) {
-                return;
-            }
-            if ($overnight && $hours->getDayOfWeek() === $previousDay && $time <= $closes) {
-                return;
-            }
         }
 
         throw new UnprocessableEntityHttpException('This restaurant is outside its operating hours.');
@@ -686,7 +668,7 @@ final class OrderTransitionService
             if (!$item instanceof MenuItem || $item->getMenuCategory()->getRestaurant() !== $restaurant) {
                 throw new UnprocessableEntityHttpException('A selected menu item does not belong to this restaurant.');
             }
-            if (!$item->isAvailable() || !$this->isWithinTimeWindow($item->getAvailableFrom(), $item->getAvailableUntil(), $now)) {
+            if (!$item->isAvailable() || !$item->isOfferedAt($now)) {
                 throw new UnprocessableEntityHttpException(sprintf('%s is not currently available.', $item->getName()));
             }
             $quantity = filter_var($selection['quantity'] ?? null, FILTER_VALIDATE_INT);
@@ -735,24 +717,6 @@ final class OrderTransitionService
         }
 
         return [$rows, $subtotal];
-    }
-
-    private function isWithinTimeWindow(?\DateTimeImmutable $from, ?\DateTimeImmutable $until, \DateTimeImmutable $now): bool
-    {
-        if (null === $from && null === $until) {
-            return true;
-        }
-        $time = $now->format('H:i:s');
-        $start = $from?->format('H:i:s');
-        $end = $until?->format('H:i:s');
-        if (null === $start) {
-            return $time <= $end;
-        }
-        if (null === $end) {
-            return $time >= $start;
-        }
-
-        return $start <= $end ? $time >= $start && $time <= $end : $time >= $start || $time <= $end;
     }
 
     private function checkoutVoucher(mixed $code, bool $lock): ?Voucher

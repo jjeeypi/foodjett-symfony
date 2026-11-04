@@ -1,20 +1,69 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RestaurantMenuController!{% endblock %}
+{% block title %}{{ restaurant.name }} | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_restaurants') }}">All restaurants</a></p>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <h1>{{ restaurant.name }}</h1>
+    <p>
+        {{ restaurant.cuisineType }}
+        · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }} reviews)
+        · {{ restaurant.openNow ? 'Open now' : 'Closed' }}
+    </p>
+    {% if restaurant.description %}<p>{{ restaurant.description }}</p>{% endif %}
+    <p>{{ restaurant.address }}</p>
+    <p>
+        Prep time about {{ restaurant.defaultPrepTimeMinutes }} minutes.
+        {% if restaurant.minOrderAmount > 0 %}Minimum order PHP {{ restaurant.minOrderAmount }}.{% endif %}
+    </p>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RestaurantMenuController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/restaurant_menu/index.html.twig</code></li>
-    </ul>
-</div>
+    {% if restaurant.operatingHours is not empty %}
+        <h2>Hours</h2>
+        <ul>
+            {% for hours in restaurant.operatingHours %}
+                <li>{{ days[hours.dayOfWeek] }}: {{ hours.opensAt|date('H:i') }} to {{ hours.closesAt|date('H:i') }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <h2>Menu</h2>
+    {% for category in restaurant.menuCategories %}
+        <section>
+            <h3>{{ category.name }}</h3>
+            <ul>
+                {% for item in category.items %}
+                    <li id="item-{{ item.id }}">
+                        <strong>{{ item.name }}</strong> · PHP {{ item.basePrice }}
+                        {% if not item.orderableNow %}<em>(not available right now)</em>{% endif %}
+                        {% if item.description %}<br>{{ item.description }}{% endif %}
+                        {% if item.variants is not empty %}
+                            <br>Options:
+                            {% for variant in item.variants %}{{ variant.name }} ({{ variant.priceDelta >= 0 ? '+' : '' }}{{ variant.priceDelta }}){{ not loop.last ? ', ' }}{% endfor %}
+                        {% endif %}
+                        {% if item.addons is not empty %}
+                            <br>Add-ons:
+                            {% for addon in item.addons|filter(a => a.available) %}{{ addon.name }} (+{{ addon.price }}){{ not loop.last ? ', ' }}{% endfor %}
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li>No items yet.</li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% else %}
+        <p>This restaurant has not published a menu yet.</p>
+    {% endfor %}
+
+    <h2>Reviews</h2>
+    {% for review in reviews %}
+        <article>
+            <p><strong>{{ review.rating }} ★</strong> by {{ review.customer.user.name }} on {{ review.createdAt|date('M j, Y') }}</p>
+            {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+            {% if review.restaurantReply %}<p>Reply from {{ restaurant.name }}: {{ review.restaurantReply }}</p>{% endif %}
+        </article>
+    {% else %}
+        <p>No reviews yet.</p>
+    {% endfor %}
+    {{ knp_pagination_render(reviews) }}
 {% endblock %}

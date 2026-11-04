@@ -44,6 +44,14 @@ class RestaurantRepository extends ServiceEntityRepository
             ->getQuery()->getOneOrNullResult();
     }
 
+    public function findOneApprovedBySlug(string $slug): ?Restaurant
+    {
+        return $this->createQueryBuilder('restaurant')
+            ->andWhere('restaurant.slug = :slug')->setParameter('slug', $slug)
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
+            ->getQuery()->getOneOrNullResult();
+    }
+
     /** Restaurants with their owners, newest first, optionally filtered by approval and name search. */
     public function createAdminListQuery(?string $approval = null, string $search = ''): QueryBuilder
     {

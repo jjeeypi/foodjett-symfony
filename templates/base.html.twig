@@ -17,6 +17,8 @@
         <header>
             <nav>
                 <a href="{{ path('app_home') }}">Foodjett</a>
+                | <a href="{{ path('app_restaurants') }}">Restaurants</a>
+                | <a href="{{ path('app_search') }}">Search</a>
                 {% if app.user %}
                     | Signed in as {{ app.user.name }} ({{ app.user.role }})
                     | <a href="{{ path('app_logout') }}">Log out</a>
