@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MenuItemRepository::class)]
 #[ORM\Table(name: 'menu_items')]
@@ -25,15 +26,20 @@ class MenuItem
     #[ORM\JoinColumn(name: 'menu_category_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private MenuCategory $menuCategory;
 
+    #[Assert\NotBlank(message: 'An item name is required.')]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $name;
 
+    #[Assert\Length(max: 5000)]
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photoPath = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^\d{1,8}(\.\d{1,2})?$/', message: 'Enter an amount of zero or more, like 120 or 99.50.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $basePrice;
 

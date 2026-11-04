@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit menu item | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Edit menu item</h1>
+
+    {{ include('menu_item/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">back</a>
+
+{% endblock %}

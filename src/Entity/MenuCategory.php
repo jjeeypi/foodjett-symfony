@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MenuCategoryRepository::class)]
 #[ORM\Table(name: 'menu_categories')]
@@ -24,9 +25,12 @@ class MenuCategory
     #[ORM\JoinColumn(name: 'restaurant_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private Restaurant $restaurant;
 
+    #[Assert\NotBlank(message: 'A category name is required.')]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $name;
 
+    #[Assert\PositiveOrZero]
     #[ORM\Column(type: Types::INTEGER, options: ['unsigned' => true, 'default' => 0])]
     private int $sortOrder = 0;
 

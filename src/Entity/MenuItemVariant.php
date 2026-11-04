@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MenuItemVariantRepository::class)]
 #[ORM\Table(name: 'menu_item_variants')]
@@ -24,9 +25,13 @@ class MenuItemVariant
     #[ORM\JoinColumn(name: 'menu_item_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private MenuItem $menuItem;
 
+    #[Assert\NotBlank(message: 'A name is required.')]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $name;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^-?\d{1,8}(\.\d{1,2})?$/', message: 'Enter an amount, like 20, -10 or 15.50.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $priceDelta = '0.00';
 

@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New option | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Add an option to {{ menu_item.name }}</h1>
+
+    {{ include('menu_item_variant/_form.html.twig') }}
+
+    <a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">back</a>
+{% endblock %}

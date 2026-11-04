@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Menu items | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_menu_category_index') }}">Menu categories</a></p>
+    <h1>Menu items</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Available</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for menu_item in menu_items %}
+            <tr id="item-{{ menu_item.id }}">
+                <td><a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">{{ menu_item.name }}</a></td>
+                <td>{{ menu_item.menuCategory.name }}</td>
+                <td>PHP {{ menu_item.basePrice }}</td>
+                <td>
+                    {{ menu_item.available ? 'Yes' : 'No' }}
+                    <form method="post" action="{{ path('app_menu_item_toggle', {'id': menu_item.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ menu_item.id) }}">
+                        <button type="submit">{{ menu_item.available ? 'Mark unavailable' : 'Mark available' }}</button>
+                    </form>
+                </td>
+                <td><a href="{{ path('app_menu_item_edit', {'id': menu_item.id}) }}">edit</a></td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">No menu items yet.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_menu_item_new') }}">Add a menu item</a>
+{% endblock %}
