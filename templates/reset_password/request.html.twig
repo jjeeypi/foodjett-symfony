@@ -1,10 +1,11 @@
 {% extends 'base.html.twig' %}
+{% set auth_page = {eyebrow: 'It happens to the best of us', headline: 'Back to good<br>food soon.', image: 'images/catalog/covers/starbucks.webp'} %}
 
 {% block title %}Reset your password{% endblock %}
 
 {% block body %}
     {% for flash_error in app.flashes('reset_password_error') %}
-        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+        <p class="callout callout-danger" role="alert">{{ flash_error }}</p>
     {% endfor %}
     <h1>Reset your password</h1>
 
