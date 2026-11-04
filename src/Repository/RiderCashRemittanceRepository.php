@@ -2,8 +2,11 @@
 
 namespace App\Repository;
 
+use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
+use App\Enum\RemittanceStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +19,20 @@ class RiderCashRemittanceRepository extends ServiceEntityRepository
         parent::__construct($registry, RiderCashRemittance::class);
     }
 
-//    /**
-//     * @return RiderCashRemittance[] Returns an array of RiderCashRemittance objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** The rider's cash remittances, newest first. */
+    public function createForRiderQuery(Rider $rider): QueryBuilder
+    {
+        return $this->createQueryBuilder('remittance')
+            ->andWhere('remittance.rider = :rider')->setParameter('rider', $rider)
+            ->orderBy('remittance.createdAt', 'DESC');
+    }
 
-//    public function findOneBySomeField($value): ?RiderCashRemittance
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** Sum of the rider's remittances still pending review, as a decimal string. */
+    public function sumPendingForRider(Rider $rider): string
+    {
+        return (string) $this->createQueryBuilder('remittance')
+            ->select('COALESCE(SUM(remittance.amount), 0)')->andWhere('remittance.rider = :rider')->setParameter('rider', $rider)
+            ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

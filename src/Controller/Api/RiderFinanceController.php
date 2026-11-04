@@ -9,6 +9,9 @@ use App\Entity\RiderCashRemittance;
 use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
 use App\Enum\RemittanceStatus;
+use App\Repository\RiderCashRemittanceRepository;
+use App\Repository\RiderEarningRepository;
+use App\Repository\RiderPayoutRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
 use Doctrine\DBAL\LockMode;
@@ -23,8 +26,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(ApprovedAccountVoter::ACCESS, message: 'Your rider account is awaiting approval.')]
 final class RiderFinanceController extends AbstractRiderController
 {
-    public function __construct(EntityManagerInterface $entityManager, private readonly ApiPaginator $paginator)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        private readonly ApiPaginator $paginator,
+        private readonly RiderEarningRepository $earnings,
+        private readonly RiderPayoutRepository $payouts,
+        private readonly RiderCashRemittanceRepository $remittances,
+    ) {
         parent::__construct($entityManager);
     }
 
@@ -46,11 +54,7 @@ final class RiderFinanceController extends AbstractRiderController
     #[Route('/earnings', name: 'earnings', methods: ['GET'])]
     public function earnings(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RiderEarning::class)->createQueryBuilder('earning')
-            ->innerJoin('earning.order', 'orders')->addSelect('orders')
-            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-            ->andWhere('earning.rider = :rider')->setParameter('rider', $this->rider())
-            ->orderBy('earning.createdAt', 'DESC');
+        $query = $this->earnings->createForRiderQuery($this->rider());
 
         return $this->json($this->paginator->paginate($query, $request, $this->earningData(...)));
     }
@@ -58,9 +62,7 @@ final class RiderFinanceController extends AbstractRiderController
     #[Route('/payouts', name: 'payouts', methods: ['GET'])]
     public function payouts(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RiderPayout::class)->createQueryBuilder('payout')
-            ->andWhere('payout.rider = :rider')->setParameter('rider', $this->rider())
-            ->orderBy('payout.periodEnd', 'DESC');
+        $query = $this->payouts->createForRiderQuery($this->rider());
 
         return $this->json($this->paginator->paginate($query, $request, static fn (RiderPayout $payout): array => [
             'id' => $payout->getId(), 'period_start' => $payout->getPeriodStart()->format('Y-m-d'),
@@ -86,9 +88,7 @@ final class RiderFinanceController extends AbstractRiderController
     #[Route('/remittances', name: 'remittances', methods: ['GET'])]
     public function remittances(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RiderCashRemittance::class)->createQueryBuilder('remittance')
-            ->andWhere('remittance.rider = :rider')->setParameter('rider', $this->rider())
-            ->orderBy('remittance.createdAt', 'DESC');
+        $query = $this->remittances->createForRiderQuery($this->rider());
 
         return $this->json($this->paginator->paginate($query, $request, $this->remittanceData(...)));
     }
@@ -132,18 +132,13 @@ final class RiderFinanceController extends AbstractRiderController
 
     private function earningTotalSince(\DateTimeImmutable $since): string
     {
-        $value = $this->entityManager->getRepository(RiderEarning::class)->createQueryBuilder('earning')
-            ->select('COALESCE(SUM(earning.totalEarned), 0)')->andWhere('earning.rider = :rider')->setParameter('rider', $this->rider())
-            ->andWhere('earning.createdAt >= :since')->setParameter('since', $since)->getQuery()->getSingleScalarResult();
+        $value = $this->earnings->sumEarnedByRiderSince($this->rider(), $since);
         return $this->money((float) $value);
     }
 
     private function pendingRemittanceTotal(Rider $rider): float
     {
-        return (float) $this->entityManager->getRepository(RiderCashRemittance::class)->createQueryBuilder('remittance')
-            ->select('COALESCE(SUM(remittance.amount), 0)')->andWhere('remittance.rider = :rider')->setParameter('rider', $rider)
-            ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
-            ->getQuery()->getSingleScalarResult();
+        return (float) $this->remittances->sumPendingForRider($rider);
     }
 
     /** @return array<string, mixed> */

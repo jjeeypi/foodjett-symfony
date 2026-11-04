@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Rider;
 use App\Entity\RiderPayout;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +18,11 @@ class RiderPayoutRepository extends ServiceEntityRepository
         parent::__construct($registry, RiderPayout::class);
     }
 
-//    /**
-//     * @return RiderPayout[] Returns an array of RiderPayout objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?RiderPayout
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** The rider's payouts, latest period first. */
+    public function createForRiderQuery(Rider $rider): QueryBuilder
+    {
+        return $this->createQueryBuilder('payout')
+            ->andWhere('payout.rider = :rider')->setParameter('rider', $rider)
+            ->orderBy('payout.periodEnd', 'DESC');
+    }
 }

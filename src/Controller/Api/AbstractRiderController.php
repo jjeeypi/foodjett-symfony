@@ -7,16 +7,25 @@ namespace App\Controller\Api;
 use App\Entity\Order;
 use App\Entity\Rider;
 use App\Entity\User;
-use App\Enum\OrderStatus;
+use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\Service\Attribute\Required;
 
 abstract class AbstractRiderController extends AbstractController
 {
+    private OrderRepository $riderOrders;
+
     public function __construct(protected readonly EntityManagerInterface $entityManager)
     {
+    }
+
+    #[Required]
+    public function setRiderOrders(OrderRepository $riderOrders): void
+    {
+        $this->riderOrders = $riderOrders;
     }
 
     protected function rider(): Rider
@@ -41,15 +50,7 @@ abstract class AbstractRiderController extends AbstractController
 
     protected function activeOrder(bool $required = true): ?Order
     {
-        $terminal = array_map(
-            static fn (OrderStatus $status): string => $status->value,
-            array_values(array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal())),
-        );
-        $order = $this->entityManager->getRepository(Order::class)->createQueryBuilder('orders')
-            ->andWhere('orders.rider = :rider')->setParameter('rider', $this->rider())
-            ->andWhere('orders.status NOT IN (:terminal)')->setParameter('terminal', $terminal)
-            ->orderBy('orders.riderAssignedAt', 'DESC')->setMaxResults(1)
-            ->getQuery()->getOneOrNullResult();
+        $order = $this->riderOrders->findCurrentForRider($this->rider());
         if ($required && !$order instanceof Order) {
             throw $this->createNotFoundException('No active order.');
         }

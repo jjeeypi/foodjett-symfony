@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Rider;
 use App\Entity\RiderEarning;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +18,21 @@ class RiderEarningRepository extends ServiceEntityRepository
         parent::__construct($registry, RiderEarning::class);
     }
 
-//    /**
-//     * @return RiderEarning[] Returns an array of RiderEarning objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('r.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** The rider's earnings with their order and restaurant, newest first. */
+    public function createForRiderQuery(Rider $rider): QueryBuilder
+    {
+        return $this->createQueryBuilder('earning')
+            ->innerJoin('earning.order', 'orders')->addSelect('orders')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->andWhere('earning.rider = :rider')->setParameter('rider', $rider)
+            ->orderBy('earning.createdAt', 'DESC');
+    }
 
-//    public function findOneBySomeField($value): ?RiderEarning
-//    {
-//        return $this->createQueryBuilder('r')
-//            ->andWhere('r.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** Total the rider earned since the given moment, as a decimal string. */
+    public function sumEarnedByRiderSince(Rider $rider, \DateTimeImmutable $since): string
+    {
+        return (string) $this->createQueryBuilder('earning')
+            ->select('COALESCE(SUM(earning.totalEarned), 0)')->andWhere('earning.rider = :rider')->setParameter('rider', $rider)
+            ->andWhere('earning.createdAt >= :since')->setParameter('since', $since)->getQuery()->getSingleScalarResult();
+    }
 }

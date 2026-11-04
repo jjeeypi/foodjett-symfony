@@ -235,4 +235,19 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt <= :end')->setParameter('start', $start)->setParameter('end', $end)
             ->getQuery()->getResult();
     }
+
+    /** The rider's most recently assigned order that has not reached a terminal status. */
+    public function findCurrentForRider(Rider $rider): ?Order
+    {
+        $terminal = array_map(
+            static fn (OrderStatus $status): string => $status->value,
+            array_values(array_filter(OrderStatus::cases(), static fn (OrderStatus $status): bool => $status->isTerminal())),
+        );
+
+        return $this->createQueryBuilder('orders')
+            ->andWhere('orders.rider = :rider')->setParameter('rider', $rider)
+            ->andWhere('orders.status NOT IN (:terminal)')->setParameter('terminal', $terminal)
+            ->orderBy('orders.riderAssignedAt', 'DESC')->setMaxResults(1)
+            ->getQuery()->getOneOrNullResult();
+    }
 }

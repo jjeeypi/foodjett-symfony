@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Enum\PayoutMethod;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
+use App\Repository\UserRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\SensitiveDataCipher;
 use App\Service\UploadStorage;
@@ -24,8 +25,12 @@ final class RiderAccountController extends AbstractRiderController
 {
     private const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
-    public function __construct(EntityManagerInterface $entityManager, private readonly UploadStorage $uploads, private readonly SensitiveDataCipher $cipher)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        private readonly UploadStorage $uploads,
+        private readonly SensitiveDataCipher $cipher,
+        private readonly UserRepository $users,
+    ) {
         parent::__construct($entityManager);
     }
 
@@ -101,9 +106,7 @@ final class RiderAccountController extends AbstractRiderController
 
     private function phoneExists(string $phone, User $current): bool
     {
-        return null !== $this->entityManager->getRepository(User::class)->createQueryBuilder('account')->select('account.id')
-            ->andWhere('account.phone = :phone')->setParameter('phone', $phone)
-            ->andWhere('account.id != :current')->setParameter('current', $current->getId())->setMaxResults(1)->getQuery()->getOneOrNullResult();
+        return $this->users->isIdentifierTakenByAnother('phone', $phone, $current);
     }
 
     /** @return array<string, mixed> */
