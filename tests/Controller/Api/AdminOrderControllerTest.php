@@ -163,7 +163,7 @@ final class AdminOrderControllerTest extends WebTestCase
             ->setName('Admin Order Test')
             ->setEmail($email)
             ->setPhone($phone)
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
             ->setStatus(UserStatus::ACTIVE)
             ->setCreatedAt($now)

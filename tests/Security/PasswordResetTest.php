@@ -28,7 +28,7 @@ final class PasswordResetTest extends WebTestCase
             ->setName('Password Reset Test')
             ->setEmail(self::EMAIL)
             ->setPhone('+639186666666')
-            ->setPassword(password_hash(self::OLD_PASSWORD, PASSWORD_DEFAULT))
+            ->setPassword(password_hash(self::OLD_PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole(UserRole::CUSTOMER)
             ->setStatus(UserStatus::ACTIVE)
             ->setCreatedAt($now)

@@ -126,7 +126,7 @@ final class ApprovalAccessTest extends WebTestCase
             ->setName('Approval Test User')
             ->setEmail($email)
             ->setPhone('+639'.random_int(100000000, 999999999))
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)
             ->setStatus(UserStatus::ACTIVE)
             ->setCreatedAt($now)
