@@ -196,7 +196,7 @@ abstract class CustomerApiTestCase extends WebTestCase
         $suffix = bin2hex(random_bytes(3));
 
         return (new User())->setName($this->marker.' '.$label)->setEmail(strtolower($this->marker)."-$label-$suffix@foodjett.test")
-            ->setPhone('+639'.random_int(100000000, 999999999))->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))
+            ->setPhone('+639'.random_int(100000000, 999999999))->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 

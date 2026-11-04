@@ -188,7 +188,7 @@ final class AdminApprovalControllerTest extends WebTestCase
     private function user(string $name, string $email, string $phone, UserRole $role, \DateTimeImmutable $now): User
     {
         return (new User())->setName($name)->setEmail($email)->setPhone($phone)
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))->setRole($role)->setStatus(UserStatus::ACTIVE)
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))->setRole($role)->setStatus(UserStatus::ACTIVE)
             ->setCreatedAt($now)->setUpdatedAt($now);
     }
 

@@ -141,7 +141,7 @@ final class RestaurantOwnershipBoundaryTest extends WebTestCase
 
     private function user(string $email, string $phone, UserRole $role, string $name, \DateTimeImmutable $now): User
     {
-        return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))
+        return (new User())->setName($name)->setEmail($email)->setPhone($phone)->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole($role)->setStatus(UserStatus::ACTIVE)->setCreatedAt($now)->setUpdatedAt($now);
     }
 

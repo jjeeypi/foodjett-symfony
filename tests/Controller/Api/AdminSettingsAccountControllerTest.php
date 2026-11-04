@@ -88,7 +88,7 @@ final class AdminSettingsAccountControllerTest extends WebTestCase
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $now = new \DateTimeImmutable();
         $user = (new User())->setName('Settings Admin')->setEmail(self::ADMIN_EMAIL)->setPhone('+639190400001')
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))->setRole(UserRole::ADMIN)->setStatus(UserStatus::ACTIVE)
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))->setRole(UserRole::ADMIN)->setStatus(UserStatus::ACTIVE)
             ->setCreatedAt($now)->setUpdatedAt($now);
         $admin = (new Admin())->setUser($user)->setCreatedAt($now)->setUpdatedAt($now);
         $entityManager->persist($user);

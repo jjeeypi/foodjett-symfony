@@ -105,7 +105,7 @@ final class JwtAuthenticationTest extends WebTestCase
             ->setName('JWT Test User')
             ->setEmail($email)
             ->setPhone($phone)
-            ->setPassword(password_hash(self::PASSWORD, PASSWORD_DEFAULT))
+            ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
             ->setRole(UserRole::CUSTOMER)
             ->setStatus($status)
             ->setCreatedAt($now)
