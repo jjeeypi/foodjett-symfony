@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-/** The public restaurant list, with kind, cuisine, rating and open-now filters. */
+/** The public restaurant list, with craving, kind, cuisine, rating and open-now filters. */
 final class BrowseController extends AbstractController
 {
     #[Route('/restaurants', name: 'app_restaurants', methods: ['GET'])]
@@ -21,6 +21,8 @@ final class BrowseController extends AbstractController
     {
         $kind = $request->query->getString('kind');
         $kind = array_key_exists($kind, Restaurant::KINDS) ? $kind : '';
+        $craving = $request->query->getString('craving');
+        $craving = isset(Restaurant::CRAVINGS[$craving]) ? $craving : '';
         $cuisine = mb_strtolower(trim($request->query->getString('cuisine')));
         $rating = $request->query->getString('rating');
         $minimumRating = is_numeric($rating) ? max(0.0, min(5.0, (float) $rating)) : null;
@@ -29,6 +31,9 @@ final class BrowseController extends AbstractController
 
         $rows = [];
         foreach ($restaurants->findApproved() as $restaurant) {
+            if ('' !== $craving && !$restaurant->matchesCraving($craving)) {
+                continue;
+            }
             if ('' !== $kind && $restaurant->getKind() !== $kind) {
                 continue;
             }
@@ -57,7 +62,8 @@ final class BrowseController extends AbstractController
             'pagination' => $paginator->paginate($rows, $request->query->getInt('page', 1), 20),
             'favoriteIds' => $favorites->findRestaurantIdsFor($this->getUser() instanceof User ? $this->getUser()->getCustomer() : null),
             'kinds' => Restaurant::KINDS,
-            'filters' => ['kind' => $kind, 'cuisine' => $cuisine, 'rating' => $rating, 'open_now' => $openOnly],
+            'cravings' => Restaurant::CRAVINGS,
+            'filters' => ['craving' => $craving, 'kind' => $kind, 'cuisine' => $cuisine, 'rating' => $rating, 'open_now' => $openOnly],
         ]);
     }
 

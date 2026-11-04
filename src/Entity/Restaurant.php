@@ -66,6 +66,25 @@ class Restaurant
         self::KIND_COFFEE_TEA => 'Coffee & tea',
     ];
 
+    /**
+     * The "What's your craving?" groups on the explore page: a label, an icon from
+     * assets/images/icons.svg, and words looked for in the cuisine.
+     *
+     * @var array<string, array{label: string, icon: string, words: list<string>}>
+     */
+    public const CRAVINGS = [
+        'chicken' => ['label' => 'Chicken', 'icon' => 'crave-chicken', 'words' => ['chicken', 'lechon', 'filipino fast food']],
+        'burgers' => ['label' => 'Burgers', 'icon' => 'crave-burger', 'words' => ['burger']],
+        'pizza' => ['label' => 'Pizza', 'icon' => 'crave-pizza', 'words' => ['pizza']],
+        'filipino' => ['label' => 'Filipino', 'icon' => 'crave-filipino', 'words' => ['filipino', 'lechon', 'visayan', 'cebuano']],
+        'asian' => ['label' => 'Asian', 'icon' => 'crave-asian', 'words' => ['japanese', 'chinese', 'korean', 'dimsum']],
+        'grill' => ['label' => 'Grill', 'icon' => 'crave-grill', 'words' => ['grill', 'shawarma', 'roast']],
+        'desserts' => ['label' => 'Bakery', 'icon' => 'crave-bakery', 'words' => ['bake', 'donut']],
+        'coffee' => ['label' => 'Coffee', 'icon' => 'crave-coffee', 'words' => ['coffee']],
+        'milk-tea' => ['label' => 'Milk tea', 'icon' => 'crave-milktea', 'words' => ['milk tea']],
+        'snacks' => ['label' => 'Snacks', 'icon' => 'crave-snacks', 'words' => ['fries', 'shawarma', 'street', 'burrito']],
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
@@ -597,6 +616,22 @@ class Restaurant
     public function getKindLabel(): string
     {
         return self::KINDS[$this->kind] ?? $this->kind;
+    }
+
+    /** Whether the restaurant belongs in a "What's your craving?" group (CRAVINGS). */
+    public function matchesCraving(string $craving): bool
+    {
+        if (!isset(self::CRAVINGS[$craving])) {
+            return true;
+        }
+        $cuisine = mb_strtolower((string) $this->cuisineType);
+        foreach (self::CRAVINGS[$craving]['words'] as $word) {
+            if (str_contains($cuisine, $word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function setKind(string $kind): self

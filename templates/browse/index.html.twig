@@ -13,8 +13,16 @@
         <a class="btn btn-light" href="{{ path('app_search') }}">{{ icon('search', 'icon-sm') }} Search dishes</a>
     </div>
 
+    <nav class="cravings" aria-label="Cravings">
+        <a class="craving{{ filters.craving ? '' : ' selected' }}" href="{{ path('app_restaurants') }}"><span><svg aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#crave-all"></use></svg></span>All</a>
+        {% for key, craving in cravings %}
+            <a class="craving{{ filters.craving == key ? ' selected' }}" href="{{ path('app_restaurants', {craving: key}) }}" {% if filters.craving == key %}aria-current="true"{% endif %}><span><svg aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#{{ craving.icon }}"></use></svg></span>{{ craving.label }}</a>
+        {% endfor %}
+    </nav>
+
     <div class="filter-bar">
         <form method="get" action="{{ path('app_restaurants') }}">
+            {% if filters.craving %}<input type="hidden" name="craving" value="{{ filters.craving }}">{% endif %}
             <label class="search" for="cuisine">
                 {{ icon('search', 'icon-sm') }}
                 <span class="sr-only">Cuisine</span>
@@ -46,7 +54,7 @@
 
     <div class="list-head">
         <div>
-            <h2>{{ filters.kind ? kinds[filters.kind] : 'All restaurants' }} <span class="badge badge-green"><i class="dot"></i> Delivering now</span></h2>
+            <h2>{{ filters.craving ? cravings[filters.craving].label : (filters.kind ? kinds[filters.kind] : 'All restaurants') }} <span class="badge badge-green"><i class="dot"></i> Delivering now</span></h2>
             <p>{{ pagination.totalItemCount }} {{ pagination.totalItemCount == 1 ? 'place' : 'places' }} ready to make your day a little tastier</p>
         </div>
     </div>

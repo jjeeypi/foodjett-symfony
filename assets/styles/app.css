@@ -161,6 +161,7 @@ button.link-button { background: none; border: 0; padding: 0; color: var(--green
 .card, .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .panel { padding: 26px; }
 .panel + .panel, .panel + .card, .card + .panel { margin-top: 20px; }
+:is(.grid-2, .grid-3, .split, .stats) > * { margin-top: 0 !important; }
 .panel h2 { margin-bottom: 6px; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .subtle { color: var(--muted); font-size: 12px; }
@@ -275,8 +276,8 @@ main > table, .content > table { background: var(--surface); border: 1px solid v
 
 .section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .section-title > span { font-size: 11px; color: #9b9f94; }
-.cravings { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 14px; margin: 0 0 34px; }
-.craving { display: flex; align-items: center; flex-direction: column; gap: 9px; font-size: 11px; color: #868c7e; font-weight: 500; text-align: center; }
+.cravings { display: flex; gap: 12px; margin: 0 0 34px; overflow-x: auto; padding: 2px 2px 8px; overscroll-behavior-x: contain; }
+.craving { flex: 1 0 74px; display: flex; align-items: center; flex-direction: column; gap: 9px; font-size: 11px; color: #868c7e; font-weight: 500; text-align: center; }
 .craving:hover { text-decoration: none; }
 .craving > span { width: 100%; height: 76px; display: flex; align-items: center; justify-content: center; border: 1px solid #e9ece2; background: #f5f6f0; border-radius: 12px; transition: background .2s, border-color .2s; color: #899278; }
 .craving svg { width: 38px; height: 38px; }
@@ -512,8 +513,7 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
     .hero h2 { font-size: 32px; }
     .hero-photo { position: relative; width: 100%; height: 180px; }
     .photo-shade { background: linear-gradient(180deg, #eaf2dd, transparent 35%); }
-    .cravings { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 8px; }
-    .craving { flex: 0 0 74px; }
+    .craving { flex: 0 0 72px; }
     .restaurant-grid, .grid-2, .grid-3, .form-grid { grid-template-columns: 1fr; }
     .panel { padding: 20px 16px; }
     .dish-photo { width: 88px; height: 88px; }
@@ -528,3 +528,4 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+.list-head .search { flex: 0 1 340px; }
