@@ -1,36 +1,39 @@
 {% extends 'base.html.twig' %}
+{% set auth_page = {eyebrow: 'Welcome back', headline: 'Good food.<br>Good mood.', image: 'images/catalog/covers/jollibee.webp'} %}
 
 {% block title %}Log in | Foodjett{% endblock %}
 
 {% block body %}
+    <div class="eyebrow">A little hungry? You’re in the right place.</div>
     <h1>Log in</h1>
+    <p class="lead">Use the email or phone number you signed up with.</p>
 
     <form method="post">
         {% if error %}
-            <p class="error" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</p>
+            <p class="error callout callout-danger" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</p>
         {% endif %}
 
         {% if app.user %}
-            <p>You are logged in as {{ app.user.userIdentifier }}. <a href="{{ path('app_logout') }}">Log out</a></p>
+            <p class="callout">You are logged in as {{ app.user.userIdentifier }}. <a href="{{ path('app_logout') }}">Log out</a></p>
         {% endif %}
 
-        <p>
+        <div>
             <label for="username">Email or phone number</label>
             <input type="text" value="{{ last_username }}" name="_username" id="username" autocomplete="username" required autofocus>
-        </p>
-        <p>
+        </div>
+        <div>
             <label for="password">Password</label>
             <input type="password" name="_password" id="password" autocomplete="current-password" required>
-        </p>
-        <p>
-            <input type="checkbox" name="_remember_me" id="_remember_me">
-            <label for="_remember_me">Remember me</label>
-        </p>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center">
+            <span><input type="checkbox" name="_remember_me" id="_remember_me"><label for="_remember_me">Remember me</label></span>
+            <a href="{{ path('app_forgot_password_request') }}" style="font-size: 13px">Forgot your password?</a>
+        </div>
         <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
 
         <button type="submit">Log in</button>
     </form>
 
-    <p><a href="{{ path('app_forgot_password_request') }}">Forgot your password?</a></p>
-    <p>New to Foodjett? <a href="{{ path('app_register') }}">Create an account</a>.</p>
+    <p class="auth-switch">New to Foodjett? <a href="{{ path('app_register') }}"><strong>Create an account</strong></a>.</p>
+    <p class="auth-switch" style="margin-top: 6px"><a href="{{ path('app_register_restaurant') }}">Apply as a restaurant</a> · <a href="{{ path('app_register_rider') }}">Apply as a rider</a></p>
 {% endblock %}

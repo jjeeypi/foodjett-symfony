@@ -125,6 +125,25 @@
     </head>
     <body>
         {% block layout %}
+        {% if auth_page is defined %}
+            {# Sign-in, sign-up and password pages: a food photo beside a focused form. #}
+            <div class="auth">
+                <aside class="auth-art">
+                    <img src="{{ asset(auth_page.image ?? 'images/catalog/covers/maxs-restaurant.webp') }}" alt="" width="1024" height="576">
+                    <a class="logo" href="{{ path('app_home') }}" aria-label="Foodjett home" style="margin-left: 0">foodjett{{ icon('bolt') }}</a>
+                    <div>
+                        <div class="eyebrow">{{ auth_page.eyebrow ?? 'Your daily good food' }}</div>
+                        <h2>{{ (auth_page.headline ?? 'Good food.<br>Good mood.')|raw }}</h2>
+                    </div>
+                    <p class="art-foot">Fifty local favorites around Dumaguete, delivered fresh to your door.</p>
+                </aside>
+                <main class="auth-main content">
+                    <div class="auth-card{{ auth_page.wide ?? false ? ' auth-wide' }}">
+                        {% block body %}{% endblock %}
+                    </div>
+                </main>
+            </div>
+        {% else %}
         <div class="app">
             <aside class="sidebar">
                 <a class="logo" href="{{ path('app_home') }}" aria-label="Foodjett home">foodjett{{ icon('bolt') }}</a>
@@ -240,7 +259,7 @@
                 </header>
 
                 <main class="content">
-                    {% block body %}{% endblock %}
+                    {{ block('body') }}
                 </main>
 
                 <footer class="site-footer">
@@ -249,6 +268,7 @@
                 </footer>
             </div>
         </div>
+        {% endif %}
         {% endblock %}
 
         {% set flashes = app.flashes %}

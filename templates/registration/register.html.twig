@@ -1,22 +1,36 @@
 {% extends 'base.html.twig' %}
+{% set is_restaurant = registrationForm.address is defined %}
+{% set is_rider = registrationForm.vehicleType is defined %}
+{% set auth_page = {
+    eyebrow: is_restaurant ? 'For restaurants' : (is_rider ? 'For riders' : 'Join Foodjett'),
+    headline: is_restaurant ? 'Reach hungry<br>neighbors.' : (is_rider ? 'Your road.<br>Your rhythm.' : 'Your cravings,<br>delivered.'),
+    image: is_restaurant ? 'images/catalog/covers/kuya-j-restaurant.webp' : (is_rider ? 'images/catalog/covers/mang-inasal.webp' : 'images/catalog/covers/red-ribbon.webp'),
+    wide: is_restaurant or is_rider,
+} %}
 
 {% block title %}{{ heading }} | Foodjett{% endblock %}
 
 {% block body %}
+    <div class="eyebrow">{{ is_restaurant or is_rider ? 'Apply in a few minutes' : 'Good food is a few taps away' }}</div>
     <h1>{{ heading }}</h1>
+    <p class="lead">
+        {% if is_restaurant %}Tell us about your restaurant and upload your permits. An admin reviews every application.
+        {% elseif is_rider %}Tell us about you and your vehicle and upload your documents. An admin reviews every application.
+        {% else %}Create your account to order from local favorites around Dumaguete.{% endif %}
+    </p>
 
     {# Only the restaurant application has an address, so only it gets the address picker. #}
-    {{ form_start(registrationForm, registrationForm.address is defined ? {attr: {'data-controller': 'location-picker', 'data-location-picker-coverage-url-value': path('app_delivery_coverage')}} : {}) }}
+    {{ form_start(registrationForm, is_restaurant ? {attr: {'data-controller': 'location-picker', 'data-location-picker-coverage-url-value': path('app_delivery_coverage')}} : {}) }}
         {{ form_errors(registrationForm) }}
         {{ form_widget(registrationForm) }}
 
-        <button type="submit">Submit</button>
+        <button type="submit">{{ is_restaurant or is_rider ? 'Send application' : 'Create account' }}</button>
     {{ form_end(registrationForm) }}
 
-    <p>
+    <p class="auth-switch">
         Sign up as a <a href="{{ path('app_register') }}">customer</a>,
         apply as a <a href="{{ path('app_register_restaurant') }}">restaurant</a>
         or as a <a href="{{ path('app_register_rider') }}">rider</a>.
-        Already registered? <a href="{{ path('app_login') }}">Log in</a>.
+        Already registered? <a href="{{ path('app_login') }}"><strong>Log in</strong></a>.
     </p>
 {% endblock %}
