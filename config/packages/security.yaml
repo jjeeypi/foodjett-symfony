@@ -5,8 +5,11 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
+        # No "property": the entity provider asks UserRepository::loadUserByIdentifier(),
+        # which accepts an email or a phone number.
         foodjett_users:
-            id: App\Security\UserProvider
+            entity:
+                class: App\Entity\User
 
     firewalls:
         dev:
@@ -17,18 +20,15 @@ security:
             pattern: ^/api/login$
             stateless: true
             provider: foodjett_users
-            user_checker: App\Security\UserChecker
             json_login:
                 check_path: api_login
                 username_path: login
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
-                failure_handler: App\Security\JsonAuthenticationFailureHandler
         api:
             pattern: ^/api
             stateless: true
             provider: foodjett_users
-            user_checker: App\Security\UserChecker
             jwt: ~
 
     # Note: Only the *first* matching rule is applied
