@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CustomerAddress index{% endblock %}
+
+{% block body %}
+    <h1>CustomerAddress index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Label</th>
+                <th>AddressLine</th>
+                <th>Landmark</th>
+                <th>DeliveryInstructions</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>IsDefault</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for customer_address in customer_addresses %}
+            <tr>
+                <td>{{ customer_address.id }}</td>
+                <td>{{ customer_address.label }}</td>
+                <td>{{ customer_address.addressLine }}</td>
+                <td>{{ customer_address.landmark }}</td>
+                <td>{{ customer_address.deliveryInstructions }}</td>
+                <td>{{ customer_address.latitude }}</td>
+                <td>{{ customer_address.longitude }}</td>
+                <td>{{ customer_address.isDefault ? 'Yes' : 'No' }}</td>
+                <td>{{ customer_address.createdAt ? customer_address.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ customer_address.updatedAt ? customer_address.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_customer_address_show', {'id': customer_address.id}) }}">show</a>
+                    <a href="{{ path('app_customer_address_edit', {'id': customer_address.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="11">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_customer_address_new') }}">Create new</a>
+{% endblock %}

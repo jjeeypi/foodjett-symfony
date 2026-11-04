@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SupportTicket{% endblock %}
+
+{% block body %}
+    <h1>SupportTicket</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ support_ticket.id }}</td>
+            </tr>
+            <tr>
+                <th>Subject</th>
+                <td>{{ support_ticket.subject }}</td>
+            </tr>
+            <tr>
+                <th>Message</th>
+                <td>{{ support_ticket.message }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>{{ support_ticket.status }}</td>
+            </tr>
+            <tr>
+                <th>CreatedAt</th>
+                <td>{{ support_ticket.createdAt ? support_ticket.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>UpdatedAt</th>
+                <td>{{ support_ticket.updatedAt ? support_ticket.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_support_ticket_index') }}">back to list</a>
+
+    <a href="{{ path('app_support_ticket_edit', {'id': support_ticket.id}) }}">edit</a>
+
+    {{ include('support_ticket/_delete_form.html.twig') }}
+{% endblock %}
