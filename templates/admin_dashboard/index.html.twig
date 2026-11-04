@@ -26,6 +26,11 @@
         | <a href="{{ path('app_admin_delivery_zone_index') }}">Delivery zones</a>
         | <a href="{{ path('app_admin_platform_setting_index') }}">Platform settings</a>
     </p>
+    <p>
+        <a href="{{ path('app_admin_review') }}">Reviews</a>
+        | <a href="{{ path('app_admin_audit_log') }}">Audit log</a>
+        | <a href="{{ path('app_admin_account') }}">Administrators</a>
+    </p>
 
     {% for section, values in stats %}
         {% if values is iterable %}

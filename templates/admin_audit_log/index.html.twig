@@ -1,20 +1,38 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello AdminAuditLogController!{% endblock %}
+{% block title %}Audit log | Foodjett admin{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Audit log</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <form method="get">
+        <label for="action">Action contains</label>
+        <input type="search" id="action" name="action" value="{{ action }}" placeholder="voucher, rider.suspended, ...">
+        <label for="from">From</label>
+        <input type="date" id="from" name="from" value="{{ from ? from|date('Y-m-d') }}">
+        <label for="to">to</label>
+        <input type="date" id="to" name="to" value="{{ to ? to|date('Y-m-d') }}">
+        <button type="submit">Filter</button>
+    </form>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/AdminAuditLogController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/admin_audit_log/index.html.twig</code></li>
-    </ul>
-</div>
+    <table class="table">
+        <thead>
+            <tr><th>When</th><th>Admin</th><th>Action</th><th>Subject</th><th>Changes</th></tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            <tr id="log-{{ log.id }}">
+                <td>{{ log.createdAt|date('M j, Y g:i:s A') }}</td>
+                <td>{{ log.user ? log.user.name : 'system' }}</td>
+                <td class="action">{{ log.action }}</td>
+                <td>{{ log.subjectType|replace({'_': ' '}) }} #{{ log.subjectId }}</td>
+                <td><code>{{ log.changes|json_encode(constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_UNESCAPED_UNICODE')) }}</code></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">no records found</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(logs) }}
 {% endblock %}

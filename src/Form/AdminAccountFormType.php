@@ -2,64 +2,37 @@
 
 namespace App\Form;
 
-use App\Entity\Admin;
-use App\Entity\Customer;
-use App\Entity\Restaurant;
-use App\Entity\Rider;
 use App\Entity\User;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use Symfony\Component\Form\Extension\Core\Type\TelType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
+/** A new administrator's login. The starting password is hashed by the controller and should be changed after the first sign-in. */
 class AdminAccountFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name')
-            ->add('email')
-            ->add('phone')
-            ->add('password')
-            ->add('twoFactorSecret')
-            ->add('twoFactorRecoveryCodes')
-            ->add('twoFactorConfirmedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('role')
-            ->add('status')
-            ->add('emailVerifiedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('phoneVerifiedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('avatarPath')
-            ->add('lastLoginAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('rememberToken')
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('admin', EntityType::class, [
-                'class' => Admin::class,
-                'choice_label' => 'id',
-            ])
-            ->add('restaurant', EntityType::class, [
-                'class' => Restaurant::class,
-                'choice_label' => 'id',
-            ])
-            ->add('rider', EntityType::class, [
-                'class' => Rider::class,
-                'choice_label' => 'id',
-            ])
-            ->add('customer', EntityType::class, [
-                'class' => Customer::class,
-                'choice_label' => 'id',
+            ->add('name', TextType::class, ['label' => 'Full name', 'empty_data' => ''])
+            ->add('email', EmailType::class, ['empty_data' => ''])
+            ->add('phone', TelType::class, ['label' => 'Phone number', 'empty_data' => ''])
+            ->add('plainPassword', RepeatedType::class, [
+                'type' => PasswordType::class,
+                'mapped' => false,
+                'first_options' => ['label' => 'Starting password', 'attr' => ['autocomplete' => 'new-password']],
+                'second_options' => ['label' => 'Confirm password', 'attr' => ['autocomplete' => 'new-password']],
+                'invalid_message' => 'The password confirmation does not match.',
+                'constraints' => [
+                    new NotBlank(message: 'Please enter a password.'),
+                    new Length(min: 8, minMessage: 'The password should be at least {{ limit }} characters.', max: 4096),
+                ],
             ])
         ;
     }
