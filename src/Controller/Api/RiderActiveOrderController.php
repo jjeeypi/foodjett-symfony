@@ -132,7 +132,7 @@ final class RiderActiveOrderController extends AbstractRiderController
                     $locked->setProofOfDeliveryPath($path);
                     if (PaymentMethod::COD === $locked->getPaymentMethod() && null !== $locked->getPayment()) {
                         $this->payments->markPaid($locked->getPayment(), PaymentActor::RIDER, 'COD cash collected by rider.', $now);
-                        $rider->setCashOnHand($this->money((float) $rider->getCashOnHand() + (float) $locked->getTotalAmount()));
+                        $rider->setCashOnHand(bcadd($rider->getCashOnHand(), $locked->getTotalAmount(), 2));
                     }
                     $waitMinutes = 0.0;
                     if (null !== $locked->getRiderArrivedRestaurantAt() && null !== $locked->getPickedUpAt()) {
@@ -269,6 +269,4 @@ final class RiderActiveOrderController extends AbstractRiderController
     {
         return null === $earning ? null : ['id' => $earning->getId(), 'base_pay' => $earning->getBasePay(), 'distance_pay' => $earning->getDistancePay(), 'waiting_pay' => $earning->getWaitingPay(), 'incentive_pay' => $earning->getIncentivePay(), 'tip_amount' => $earning->getTipAmount(), 'total_earned' => $earning->getTotalEarned()];
     }
-
-    private function money(float $amount): string { return number_format(round($amount, 2), 2, '.', ''); }
 }

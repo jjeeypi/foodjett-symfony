@@ -53,10 +53,10 @@ class Rider
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     private ?\DateTimeImmutable $lastLocationAt = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $cashOnHand = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '2000.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '2000.00'])]
     private string $cashRemitLimit = '2000.00';
 
     #[ORM\Column(length: 32, nullable: true, enumType: PayoutMethod::class)]

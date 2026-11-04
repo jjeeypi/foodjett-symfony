@@ -192,7 +192,7 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
         if ((!$partial || array_key_exists('name', $data)) && '' === trim((string) ($data['name'] ?? ''))) {
             $errors['name'][] = 'An item name is required.';
         }
-        if ((!$partial || array_key_exists('base_price', $data)) && (!is_numeric($data['base_price'] ?? null) || (float) $data['base_price'] < 0)) {
+        if ((!$partial || array_key_exists('base_price', $data)) && null === $this->decimalInput($data['base_price'] ?? null)) {
             $errors['base_price'][] = 'Base price must be zero or greater.';
         }
         $category = null;
@@ -233,7 +233,7 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
             $item->setDescription('' === $description ? null : $description);
         }
         if (array_key_exists('base_price', $data)) {
-            $item->setBasePrice(number_format((float) $data['base_price'], 2, '.', ''));
+            $item->setBasePrice($this->decimalInput($data['base_price']) ?? '0.00');
         }
         if (array_key_exists('is_available', $data)) {
             $item->setIsAvailable((bool) filter_var($data['is_available'], FILTER_VALIDATE_BOOL));
@@ -290,5 +290,22 @@ final class RestaurantMenuItemController extends AbstractRestaurantController
             'variants' => array_map(static fn (MenuItemVariant $variant): array => ['id' => $variant->getId(), 'name' => $variant->getName(), 'price_delta' => $variant->getPriceDelta()], $item->getVariants()->toArray()),
             'addons' => array_map(static fn (MenuItemAddon $addon): array => ['id' => $addon->getId(), 'name' => $addon->getName(), 'price' => $addon->getPrice(), 'is_available' => $addon->isAvailable()], $item->getAddons()->toArray()),
         ];
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }

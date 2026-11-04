@@ -34,7 +34,7 @@ class MenuItem
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photoPath = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $basePrice;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]

@@ -55,25 +55,25 @@ class Order
     #[ORM\Column(length: 64, enumType: OrderStatus::class, options: ['default' => 'placed'])]
     private OrderStatus $status = OrderStatus::PLACED;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $subtotal;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $deliveryFee;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $serviceFee = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $discountAmount = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $tipAmount = '0.00';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private string $totalAmount;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $commissionAmount = null;
 
     #[ORM\Column(length: 16, enumType: PaymentMethod::class)]

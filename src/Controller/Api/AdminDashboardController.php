@@ -83,7 +83,7 @@ final class AdminDashboardController extends AbstractController
         $approvedRiders = $this->riders->countWithApprovalStatus(ApprovalStatus::APPROVED);
 
         $openSupportTickets = $this->supportTickets->countWithStatuses([SupportTicketStatus::OPEN, SupportTicketStatus::IN_PROGRESS]);
-        $pendingRemittances = (float) $this->remittances->sumPending();
+        $pendingRemittances = $this->remittances->sumPending();
         $activeVouchers = $this->vouchers->countActiveAt($now);
         $voucherRedemptions = $this->voucherRedemptions->countBetween($monthStart, $nextMonth);
 
@@ -131,13 +131,13 @@ final class AdminDashboardController extends AbstractController
         ]);
     }
 
-    private function deliveredRevenue(\DateTimeImmutable $start, \DateTimeImmutable $end): float
+    private function deliveredRevenue(\DateTimeImmutable $start, \DateTimeImmutable $end): string
     {
-        return (float) $this->orders->sumDeliveredTotalBetween($start, $end);
+        return $this->orders->sumDeliveredTotalBetween($start, $end);
     }
 
-    private function money(float $amount): string
+    private function money(string $amount): string
     {
-        return number_format($amount, 2, '.', '');
+        return bcround($amount, 2);
     }
 }

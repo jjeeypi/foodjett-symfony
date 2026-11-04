@@ -62,6 +62,9 @@ final readonly class RegistrationService
             $user = $this->newUser($request->ownerName, $request->email, $request->phone, $request->password, UserRole::RESTAURANT, $now);
             $setting = $this->entityManager->getRepository(PlatformSetting::class)->findOneBy(['key' => 'default_commission_rate']);
             $commissionRate = $setting?->getValue() ?? '15.00';
+            if (1 !== preg_match('/^\d{1,3}(\.\d+)?$/', trim($commissionRate))) {
+                $commissionRate = '15.00';
+            }
             $restaurant = (new Restaurant())
                 ->setUser($user)
                 ->setName($request->restaurantName)
@@ -70,7 +73,7 @@ final readonly class RegistrationService
                 ->setLatitude($request->latitude)
                 ->setLongitude($request->longitude)
                 ->setCuisineType($request->cuisineType)
-                ->setCommissionRate(number_format((float) $commissionRate, 2, '.', ''))
+                ->setCommissionRate(bcround(trim($commissionRate), 2))
                 ->setApprovalStatus(ApprovalStatus::PENDING)
                 ->setOperatingStatus(RestaurantOperatingStatus::CLOSED)
                 ->setCreatedAt($now)

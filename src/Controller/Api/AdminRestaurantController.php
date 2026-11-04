@@ -134,14 +134,21 @@ final class AdminRestaurantController extends AbstractController
             if (!array_key_exists($field, $data)) {
                 continue;
             }
-            if (!is_numeric($data[$field]) || (float) $data[$field] < $min || (float) $data[$field] > $max) {
-                return $this->json(['message' => $field.' is invalid.'], 422);
+            $isCoordinate = in_array($field, ['latitude', 'longitude'], true);
+            if ($isCoordinate) {
+                // Coordinates are measurements, not money.
+                if (!is_numeric($data[$field]) || (float) $data[$field] < $min || (float) $data[$field] > $max) {
+                    return $this->json(['message' => $field.' is invalid.'], 422);
+                }
+                $value = number_format((float) $data[$field], 7, '.', '');
+            } else {
+                $value = $this->decimalInput($data[$field]);
+                if (null === $value || 1 === bccomp($value, (string) $max, 2)) {
+                    return $this->json(['message' => $field.' is invalid.'], 422);
+                }
             }
             $setter = 'set'.str_replace(' ', '', ucwords(str_replace('_', ' ', $field)));
             $getter = 'get'.str_replace(' ', '', ucwords(str_replace('_', ' ', $field)));
-            $value = in_array($field, ['latitude', 'longitude'], true)
-                ? number_format((float) $data[$field], 7, '.', '')
-                : number_format((float) $data[$field], 2, '.', '');
             $changes[$field] = ['from' => $restaurant->{$getter}(), 'to' => $value];
             $restaurant->{$setter}($value);
         }
@@ -247,5 +254,22 @@ final class AdminRestaurantController extends AbstractController
         }
 
         return $user;
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }

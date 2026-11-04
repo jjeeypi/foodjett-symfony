@@ -114,7 +114,7 @@ final class CustomerOrderController extends AbstractCustomerController
             $menuItem = $orderItem->getMenuItem();
             $variant = $orderItem->getMenuItemVariant();
             $addons = [];
-            $unitPrice = (float) $menuItem->getBasePrice() + (null === $variant ? 0.0 : (float) $variant->getPriceDelta());
+            $unitPrice = bcadd($menuItem->getBasePrice(), null === $variant ? '0' : $variant->getPriceDelta(), 2);
             if (!$menuItem->isAvailable() || !$this->isWithinTimeWindow($menuItem->getAvailableFrom(), $menuItem->getAvailableUntil(), $now)) {
                 $unavailable[] = ['menu_item_id' => $menuItem->getId(), 'name' => $menuItem->getName()];
                 continue;
@@ -125,14 +125,14 @@ final class CustomerOrderController extends AbstractCustomerController
                     $unavailable[] = ['menu_item_id' => $menuItem->getId(), 'name' => $menuItem->getName().' / '.$addon->getName()];
                     continue 2;
                 }
-                $unitPrice += (float) $addon->getPrice();
+                $unitPrice = bcadd($unitPrice, $addon->getPrice(), 2);
                 $addons[] = ['id' => $addon->getId(), 'name' => $addon->getName(), 'price' => $addon->getPrice()];
             }
             $items[] = [
                 'menu_item_id' => $menuItem->getId(), 'name' => $menuItem->getName(), 'base_price' => $menuItem->getBasePrice(),
                 'variant' => null === $variant ? null : ['id' => $variant->getId(), 'name' => $variant->getName(), 'price_delta' => $variant->getPriceDelta()],
                 'addons' => $addons, 'quantity' => $orderItem->getQuantity(), 'special_instructions' => $orderItem->getSpecialInstructions(),
-                'current_unit_price' => number_format($unitPrice, 2, '.', ''),
+                'current_unit_price' => $unitPrice,
             ];
         }
         if ([] !== $unavailable) {

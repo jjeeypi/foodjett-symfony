@@ -26,7 +26,7 @@ class RiderPoolOffer
     #[ORM\Column(type: Types::DECIMAL, precision: 4, scale: 1, options: ['default' => '3.0'])]
     private string $searchRadiusKm = '3.0';
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $incentiveAmount = '0.00';
 
     #[ORM\Column(length: 32, enumType: RiderPoolEscalationStage::class, options: ['default' => 'initial'])]

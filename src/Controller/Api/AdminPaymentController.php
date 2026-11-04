@@ -78,14 +78,15 @@ final class AdminPaymentController extends AbstractController
         if (mb_strlen($reason) > 1000) {
             return $this->json(['message' => 'reason cannot exceed 1000 characters.'], 422);
         }
-        if (array_key_exists('amount', $data) && (!is_numeric($data['amount']) || (float) $data['amount'] <= 0)) {
+        $requested = array_key_exists('amount', $data) ? $this->plainAmount($data['amount']) : null;
+        if (array_key_exists('amount', $data) && (null === $requested || 1 !== bccomp($requested, '0', 2))) {
             return $this->json(['message' => 'amount must be greater than zero.'], 422);
         }
         $admin = $this->admin();
 
         try {
             /** @var Payment $updated */
-            $updated = $this->entityManager->wrapInTransaction(function () use ($payment, $data, $reason, $admin): Payment {
+            $updated = $this->entityManager->wrapInTransaction(function () use ($payment, $requested, $reason, $admin): Payment {
                 $locked = $this->entityManager->find(Payment::class, $payment->getId(), LockMode::PESSIMISTIC_WRITE);
                 if (!$locked instanceof Payment) {
                     throw new \RuntimeException('Payment not found.');
@@ -93,24 +94,24 @@ final class AdminPaymentController extends AbstractController
                 if (!in_array($locked->getStatus(), [PaymentStatus::PAID, PaymentStatus::PARTIALLY_REFUNDED], true)) {
                     throw new \DomainException('Only paid or partially refunded payments can be refunded.');
                 }
-                $remaining = round((float) $locked->getAmount() - (float) $locked->getRefundedAmount(), 2);
-                $amount = array_key_exists('amount', $data) ? round((float) $data['amount'], 2) : $remaining;
-                if ($amount <= 0 || $amount > $remaining) {
+                $remaining = bcsub($locked->getAmount(), $locked->getRefundedAmount(), 2);
+                $amount = $requested ?? $remaining;
+                if (1 !== bccomp($amount, '0', 2) || 1 === bccomp($amount, $remaining, 2)) {
                     throw new \DomainException('The refund amount cannot exceed the remaining refundable balance.');
                 }
                 $from = $locked->getStatus();
-                $newRefunded = round((float) $locked->getRefundedAmount() + $amount, 2);
-                $to = $newRefunded >= (float) $locked->getAmount() ? PaymentStatus::REFUNDED : PaymentStatus::PARTIALLY_REFUNDED;
+                $newRefunded = bcadd($locked->getRefundedAmount(), $amount, 2);
+                $to = -1 !== bccomp($newRefunded, $locked->getAmount(), 2) ? PaymentStatus::REFUNDED : PaymentStatus::PARTIALLY_REFUNDED;
                 $now = new \DateTimeImmutable();
-                $note = sprintf('Admin recorded a %s refund of PHP %s%s', PaymentStatus::REFUNDED === $to ? 'full' : 'partial', number_format($amount, 2), '' === $reason ? '.' : ': '.$reason);
-                $locked->setRefundedAmount(number_format($newRefunded, 2, '.', ''))->setRefundedAt($now)->setStatus($to)->setUpdatedAt($now);
+                $note = sprintf('Admin recorded a %s refund of PHP %s%s', PaymentStatus::REFUNDED === $to ? 'full' : 'partial', $amount, '' === $reason ? '.' : ': '.$reason);
+                $locked->setRefundedAmount($newRefunded)->setRefundedAt($now)->setStatus($to)->setUpdatedAt($now);
                 $history = (new PaymentStatusHistory())->setPayment($locked)->setFromStatus($from)->setToStatus($to)
                     ->setChangedBy(PaymentActor::ADMIN)->setNote($note)->setCreatedAt($now);
                 $locked->addStatusHistory($history);
                 $this->entityManager->persist($history);
                 $this->audit->record($admin, 'payment.refunded', 'payment', (string) $locked->getId(), [
                     'status' => ['from' => $from->value, 'to' => $to->value],
-                    'refund_amount' => number_format($amount, 2, '.', ''),
+                    'refund_amount' => $amount,
                     'refunded_amount' => $locked->getRefundedAmount(),
                     'reason' => '' === $reason ? null : $reason,
                 ]);
@@ -145,6 +146,22 @@ final class AdminPaymentController extends AbstractController
             'paid_at' => $payment->getPaidAt()?->format(\DateTimeInterface::ATOM),
             'refunded_at' => $payment->getRefundedAt()?->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    /**
+     * Accepts a plain positive or zero decimal (no exponent, sign or spaces) and returns it
+     * rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function plainAmount(mixed $value): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        if (!is_string($value) || 1 !== preg_match('/^\d{1,8}(\.\d+)?$/', trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 
     private function admin(): User

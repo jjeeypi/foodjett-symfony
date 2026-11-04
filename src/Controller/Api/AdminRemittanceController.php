@@ -58,12 +58,12 @@ final class AdminRemittanceController extends AbstractController
                 if (RemittanceStatus::CONFIRMED === $locked->getStatus()) { return $locked; }
                 $rider = $this->entityManager->find(Rider::class, $locked->getRider()->getId(), LockMode::PESSIMISTIC_WRITE);
                 if (!$rider instanceof Rider) { throw new \RuntimeException('Rider not found.'); }
-                if ((float) $locked->getAmount() > (float) $rider->getCashOnHand()) {
+                if (1 === bccomp($locked->getAmount(), $rider->getCashOnHand(), 2)) {
                     throw new \DomainException("The rider's cash balance is lower than this remittance amount.");
                 }
                 $beforeCash = $rider->getCashOnHand();
                 $now = new \DateTimeImmutable();
-                $afterCash = number_format(round((float) $beforeCash - (float) $locked->getAmount(), 2), 2, '.', '');
+                $afterCash = bcsub($beforeCash, $locked->getAmount(), 2);
                 $locked->setStatus(RemittanceStatus::CONFIRMED)->setConfirmedByAdmin($adminUser->getAdmin())
                     ->setRemittedAt($locked->getRemittedAt() ?? $now)->setUpdatedAt($now);
                 $rider->setCashOnHand($afterCash)->setUpdatedAt($now);

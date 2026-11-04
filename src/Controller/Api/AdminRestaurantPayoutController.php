@@ -60,13 +60,13 @@ final class AdminRestaurantPayoutController extends AbstractController
         /** @var array{created: list<RestaurantPayout>, skipped: int} $result */
         $result = $this->entityManager->wrapInTransaction(function () use ($periodStart, $periodEnd, $startAt, $endAt, $admin): array {
             $orders = $this->orders->findDeliveredBetween($startAt, $endAt);
-            /** @var array<string, array{restaurant: \App\Entity\Restaurant, gross: float, commission: float}> $totals */
+            /** @var array<string, array{restaurant: \App\Entity\Restaurant, gross: string, commission: string}> $totals */
             $totals = [];
             foreach ($orders as $order) {
                 $id = (string) $order->getRestaurant()->getId();
-                $totals[$id] ??= ['restaurant' => $order->getRestaurant(), 'gross' => 0.0, 'commission' => 0.0];
-                $totals[$id]['gross'] += (float) $order->getSubtotal();
-                $totals[$id]['commission'] += (float) ($order->getCommissionAmount() ?? '0.00');
+                $totals[$id] ??= ['restaurant' => $order->getRestaurant(), 'gross' => '0.00', 'commission' => '0.00'];
+                $totals[$id]['gross'] = bcadd($totals[$id]['gross'], $order->getSubtotal(), 2);
+                $totals[$id]['commission'] = bcadd($totals[$id]['commission'], $order->getCommissionAmount() ?? '0.00', 2);
             }
             $created = [];
             $skipped = 0;
@@ -77,11 +77,9 @@ final class AdminRestaurantPayoutController extends AbstractController
                     ++$skipped;
                     continue;
                 }
-                $gross = round($total['gross'], 2);
-                $commission = round($total['commission'], 2);
                 $payout = (new RestaurantPayout())->setRestaurant($total['restaurant'])->setPeriodStart($periodStart)->setPeriodEnd($periodEnd)
-                    ->setGrossSales(number_format($gross, 2, '.', ''))->setCommissionDeducted(number_format($commission, 2, '.', ''))
-                    ->setNetAmount(number_format($gross - $commission, 2, '.', ''))->setStatus(PayoutStatus::PENDING)
+                    ->setGrossSales($total['gross'])->setCommissionDeducted($total['commission'])
+                    ->setNetAmount(bcsub($total['gross'], $total['commission'], 2))->setStatus(PayoutStatus::PENDING)
                     ->setCreatedAt($now)->setUpdatedAt($now);
                 $this->entityManager->persist($payout);
                 $created[] = $payout;

@@ -136,10 +136,10 @@ final class AdminRiderController extends AbstractController
             $rider->setPlateNumber($plate);
         }
         if (array_key_exists('cash_remit_limit', $data)) {
-            if (!is_numeric($data['cash_remit_limit']) || (float) $data['cash_remit_limit'] < 0) {
+            $limit = $this->decimalInput($data['cash_remit_limit']);
+            if (null === $limit) {
                 return $this->json(['message' => 'cash_remit_limit must be a non-negative number.'], 422);
             }
-            $limit = number_format((float) $data['cash_remit_limit'], 2, '.', '');
             $changes['cash_remit_limit'] = ['from' => $rider->getCashRemitLimit(), 'to' => $limit];
             $rider->setCashRemitLimit($limit);
         }
@@ -211,5 +211,22 @@ final class AdminRiderController extends AbstractController
         }
 
         return $user;
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }

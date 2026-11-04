@@ -59,7 +59,7 @@ class Restaurant
     #[ORM\Column(type: Types::INTEGER, options: ['unsigned' => true, 'default' => 15])]
     private int $defaultPrepTimeMinutes = 15;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, options: ['default' => '0.00'])]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $minOrderAmount = '0.00';
 
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => '15.00'])]

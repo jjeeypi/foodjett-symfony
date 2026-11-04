@@ -40,7 +40,7 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
         }
         $now = new \DateTimeImmutable();
         $variant = (new MenuItemVariant())->setMenuItem($item)->setName(trim((string) $data['name']))
-            ->setPriceDelta(number_format((float) $data['price_delta'], 2, '.', ''))->setCreatedAt($now)->setUpdatedAt($now);
+            ->setPriceDelta($this->decimalInput($data['price_delta'], true) ?? '0.00')->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($variant);
         $this->entityManager->flush();
 
@@ -64,7 +64,7 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
             $variant->setName(trim((string) $data['name']));
         }
         if (array_key_exists('price_delta', $data)) {
-            $variant->setPriceDelta(number_format((float) $data['price_delta'], 2, '.', ''));
+            $variant->setPriceDelta($this->decimalInput($data['price_delta'], true) ?? '0.00');
         }
         $variant->setUpdatedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
@@ -99,7 +99,7 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
         }
         $now = new \DateTimeImmutable();
         $addon = (new MenuItemAddon())->setMenuItem($item)->setName(trim((string) $data['name']))
-            ->setPrice(number_format((float) $data['price'], 2, '.', ''))->setIsAvailable($this->bool($data['is_available'] ?? true))
+            ->setPrice($this->decimalInput($data['price']) ?? '0.00')->setIsAvailable($this->bool($data['is_available'] ?? true))
             ->setCreatedAt($now)->setUpdatedAt($now);
         $this->entityManager->persist($addon);
         $this->entityManager->flush();
@@ -124,7 +124,7 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
             $addon->setName(trim((string) $data['name']));
         }
         if (array_key_exists('price', $data)) {
-            $addon->setPrice(number_format((float) $data['price'], 2, '.', ''));
+            $addon->setPrice($this->decimalInput($data['price']) ?? '0.00');
         }
         if (array_key_exists('is_available', $data)) {
             $addon->setIsAvailable($this->bool($data['is_available']));
@@ -185,9 +185,9 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
         if ((!$partial || array_key_exists('name', $data)) && '' === trim((string) ($data['name'] ?? ''))) {
             $errors['name'][] = 'A name is required.';
         }
-        if ((!$partial || array_key_exists($moneyField, $data)) && !is_numeric($data[$moneyField] ?? null)) {
+        if ((!$partial || array_key_exists($moneyField, $data)) && null === $this->decimalInput($data[$moneyField] ?? null, true)) {
             $errors[$moneyField][] = 'This value must be numeric.';
-        } elseif (array_key_exists($moneyField, $data) && !$allowNegative && (float) $data[$moneyField] < 0) {
+        } elseif (array_key_exists($moneyField, $data) && !$allowNegative && null === $this->decimalInput($data[$moneyField])) {
             $errors[$moneyField][] = 'This value cannot be negative.';
         }
         if (array_key_exists('is_available', $data) && null === filter_var($data['is_available'], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE)) {
@@ -212,5 +212,22 @@ final class RestaurantMenuOptionController extends AbstractRestaurantController
     private function serializeAddon(MenuItemAddon $addon): array
     {
         return ['id' => $addon->getId(), 'name' => $addon->getName(), 'price' => $addon->getPrice(), 'is_available' => $addon->isAvailable()];
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }

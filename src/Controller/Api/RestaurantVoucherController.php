@@ -113,15 +113,15 @@ final class RestaurantVoucherController extends AbstractRestaurantController
             return $this->json(['message' => 'Invalid or missing type.'], 422);
         }
         $rawValue = array_key_exists('value', $data) ? $data['value'] : ($creating ? null : $voucher->getValue());
-        $value = null === $rawValue || '' === $rawValue ? null : (is_numeric($rawValue) ? (float) $rawValue : null);
-        if (VoucherType::FREE_DELIVERY !== $type && (null === $value || $value <= 0)) {
+        $value = null === $rawValue || '' === $rawValue ? null : $this->decimalInput($rawValue);
+        if (VoucherType::FREE_DELIVERY !== $type && (null === $value || 1 !== bccomp($value, '0', 2))) {
             return $this->json(['message' => 'value must be greater than zero for percentage and fixed vouchers.'], 422);
         }
-        if (VoucherType::PERCENTAGE === $type && $value > 100) {
+        if (VoucherType::PERCENTAGE === $type && 1 === bccomp((string) $value, '100', 2)) {
             return $this->json(['message' => 'Percentage value cannot exceed 100.'], 422);
         }
-        $minimum = array_key_exists('min_order_amount', $data) ? $data['min_order_amount'] : ($creating ? 0 : $voucher->getMinOrderAmount());
-        if (!is_numeric($minimum) || (float) $minimum < 0) {
+        $minimum = $this->decimalInput(array_key_exists('min_order_amount', $data) ? $data['min_order_amount'] : ($creating ? 0 : $voucher->getMinOrderAmount()));
+        if (null === $minimum) {
             return $this->json(['message' => 'min_order_amount must be non-negative.'], 422);
         }
         $totalLimit = array_key_exists('usage_limit_total', $data) ? $data['usage_limit_total'] : ($creating ? null : $voucher->getUsageLimitTotal());
@@ -142,8 +142,8 @@ final class RestaurantVoucherController extends AbstractRestaurantController
             return $this->json(['message' => 'is_active must be boolean.'], 422);
         }
 
-        $voucher->setCode($code)->setType($type)->setValue(VoucherType::FREE_DELIVERY === $type ? null : number_format((float) $value, 2, '.', ''))
-            ->setMinOrderAmount(number_format((float) $minimum, 2, '.', ''))->setUsageLimitTotal(null === $totalLimit ? null : (int) $totalLimit)
+        $voucher->setCode($code)->setType($type)->setValue(VoucherType::FREE_DELIVERY === $type ? null : $value)
+            ->setMinOrderAmount($minimum)->setUsageLimitTotal(null === $totalLimit ? null : (int) $totalLimit)
             ->setUsageLimitPerCustomer((int) $customerLimit)->setStartsAt($starts instanceof \DateTimeImmutable ? $starts : null)
             ->setEndsAt($ends instanceof \DateTimeImmutable ? $ends : null)->setIsActive($active);
 
@@ -175,5 +175,22 @@ final class RestaurantVoucherController extends AbstractRestaurantController
             'redemption_count' => $voucher->getRedemptions()->count(), 'starts_at' => $voucher->getStartsAt()?->format(\DateTimeInterface::ATOM),
             'ends_at' => $voucher->getEndsAt()?->format(\DateTimeInterface::ATOM), 'is_active' => $voucher->isActive(),
         ];
+    }
+
+    /**
+     * Accepts a plain decimal (no exponent or spaces; a leading minus only when $allowNegative)
+     * and returns it rounded half-up to two places, or null when the value is not such a number.
+     */
+    private function decimalInput(mixed $value, bool $allowNegative = false): ?string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        $pattern = $allowNegative ? '/^-?\d{1,8}(\.\d+)?$/' : '/^\d{1,8}(\.\d+)?$/';
+        if (!is_string($value) || 1 !== preg_match($pattern, trim($value))) {
+            return null;
+        }
+
+        return bcround(trim($value), 2);
     }
 }
