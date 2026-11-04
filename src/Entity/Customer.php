@@ -50,6 +50,12 @@ class Customer
     #[ORM\OneToMany(mappedBy: 'customer', targetEntity: RiderReview::class, cascade: ['persist'])]
     private Collection $riderReviews;
 
+    /**
+     * @var Collection<int, CartItem>
+     */
+    #[ORM\OneToMany(targetEntity: CartItem::class, mappedBy: 'customer', orphanRemoval: true)]
+    private Collection $cartItems;
+
     public function __construct()
     {
         $this->addresses = new ArrayCollection();
@@ -57,6 +63,7 @@ class Customer
         $this->voucherRedemptions = new ArrayCollection();
         $this->restaurantReviews = new ArrayCollection();
         $this->riderReviews = new ArrayCollection();
+        $this->cartItems = new ArrayCollection();
     }
 
     public function getId(): ?string
@@ -147,4 +154,34 @@ class Customer
 
     /** @return Collection<int, RiderReview> */
     public function getRiderReviews(): Collection { return $this->riderReviews; }
+
+    /**
+     * @return Collection<int, CartItem>
+     */
+    public function getCartItems(): Collection
+    {
+        return $this->cartItems;
+    }
+
+    public function addCartItem(CartItem $cartItem): static
+    {
+        if (!$this->cartItems->contains($cartItem)) {
+            $this->cartItems->add($cartItem);
+            $cartItem->setCustomer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCartItem(CartItem $cartItem): static
+    {
+        if ($this->cartItems->removeElement($cartItem)) {
+            // set the owning side to null (unless already changed)
+            if ($cartItem->getCustomer() === $this) {
+                $cartItem->setCustomer(null);
+            }
+        }
+
+        return $this;
+    }
 }
