@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Restaurants | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Restaurants</h1>
+
+    <form method="get" action="{{ path('app_restaurants') }}">
+        <label for="cuisine">Cuisine</label>
+        <input type="text" id="cuisine" name="cuisine" value="{{ filters.cuisine }}">
+
+        <label for="rating">Minimum rating</label>
+        <select id="rating" name="rating">
+            <option value="">Any</option>
+            {% for stars in 1..5 %}
+                <option value="{{ stars }}" {{ filters.rating == stars ~ '' ? 'selected' }}>{{ stars }}+</option>
+            {% endfor %}
+        </select>
+
+        <input type="checkbox" id="open_now" name="open_now" value="1" {{ filters.open_now ? 'checked' }}>
+        <label for="open_now">Open now</label>
+
+        <button type="submit">Filter</button>
+    </form>
+
+    <p><a href="{{ path('app_search') }}">Search dishes</a></p>
+
+    {% if pagination.totalItemCount == 0 %}
+        <p>No restaurants match these filters.</p>
+    {% else %}
+        <ul>
+            {% for row in pagination %}
+                {% set restaurant = row.restaurant %}
+                <li>
+                    <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a>
+                    · {{ restaurant.cuisineType }}
+                    · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }})
+                    · {{ restaurant.openNow ? 'Open now' : 'Closed' }}
+                    {% if row.distance is not null %}· {{ row.distance|number_format(1) }} km{% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+        {{ knp_pagination_render(pagination) }}
+    {% endif %}
+{% endblock %}

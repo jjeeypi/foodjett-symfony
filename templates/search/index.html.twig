@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Search | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Search</h1>
+
+    <form method="get" action="{{ path('app_search') }}">
+        <label for="q">Restaurant or dish</label>
+        <input type="search" id="q" name="q" value="{{ query }}">
+
+        <label for="category">Category</label>
+        <input type="text" id="category" name="category" value="{{ filters.category }}">
+
+        <label for="min_price">Min price</label>
+        <input type="text" id="min_price" name="min_price" value="{{ filters.min_price }}" inputmode="decimal">
+
+        <label for="max_price">Max price</label>
+        <input type="text" id="max_price" name="max_price" value="{{ filters.max_price }}" inputmode="decimal">
+
+        <button type="submit">Search</button>
+    </form>
+
+    {% for error in errors %}
+        <p class="error" role="alert">{{ error }}</p>
+    {% endfor %}
+
+    {% if searched and errors is empty %}
+        {% if query %}
+            <h2>Restaurants</h2>
+            <ul>
+                {% for restaurant in restaurants %}
+                    <li><a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a> · {{ restaurant.cuisineType }}</li>
+                {% else %}
+                    <li>No restaurants match.</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <h2>Dishes you can order now</h2>
+        <ul>
+            {% for item in dishes %}
+                {% set restaurant = item.menuCategory.restaurant %}
+                <li>
+                    <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}#item-{{ item.id }}">{{ item.name }}</a>
+                    · PHP {{ item.basePrice }} · {{ restaurant.name }} · {{ item.menuCategory.name }}
+                </li>
+            {% else %}
+                <li>No dishes match.</li>
+            {% endfor %}
+        </ul>
+        {{ knp_pagination_render(dishes) }}
+    {% endif %}
+{% endblock %}

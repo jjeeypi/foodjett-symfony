@@ -513,4 +513,59 @@ class Restaurant
 
     /** @return Collection<int, RestaurantReview> */
     public function getReviews(): Collection { return $this->reviews; }
+
+    /**
+     * Whether $now falls inside the weekly schedule. A restaurant without a schedule follows
+     * its manual open/closed toggle alone, so this is true for it. Overnight slots
+     * (opening after closing time) run into the next day.
+     */
+    public function isWithinOperatingHours(\DateTimeImmutable $now): bool
+    {
+        if ($this->operatingHours->isEmpty()) {
+            return true;
+        }
+
+        $today = (int) $now->format('w');
+        $previousDay = (6 + $today) % 7;
+        $time = $now->format('H:i:s');
+        foreach ($this->operatingHours as $hours) {
+            $opens = $hours->getOpensAt()->format('H:i:s');
+            $closes = $hours->getClosesAt()->format('H:i:s');
+            $overnight = $opens > $closes;
+            if ($hours->getDayOfWeek() === $today && ((!$overnight && $time >= $opens && $time <= $closes) || ($overnight && $time >= $opens))) {
+                return true;
+            }
+            if ($overnight && $hours->getDayOfWeek() === $previousDay && $time <= $closes) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Open for orders right now: switched open and inside its schedule. */
+    public function isOpenAt(\DateTimeImmutable $now): bool
+    {
+        return self::OPERATING_OPEN === $this->operatingStatus && $this->isWithinOperatingHours($now);
+    }
+
+    public function isOpenNow(): bool
+    {
+        return $this->isOpenAt(new \DateTimeImmutable());
+    }
+
+    /** Average review rating rounded to two places; 0 without reviews. */
+    public function getAverageRating(): float
+    {
+        $count = $this->reviews->count();
+        if (0 === $count) {
+            return 0.0;
+        }
+        $sum = 0;
+        foreach ($this->reviews as $review) {
+            $sum += $review->getRating();
+        }
+
+        return round($sum / $count, 2);
+    }
 }

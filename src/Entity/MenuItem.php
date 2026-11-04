@@ -248,4 +248,29 @@ class MenuItem
     {
         return $this->orderItems;
     }
+
+    /** Whether the item's daily time window (if any) includes $now; windows may run past midnight. */
+    public function isOfferedAt(\DateTimeImmutable $now): bool
+    {
+        $start = $this->availableFrom?->format('H:i:s');
+        $end = $this->availableUntil?->format('H:i:s');
+        if (null === $start && null === $end) {
+            return true;
+        }
+        $time = $now->format('H:i:s');
+        if (null === $start) {
+            return $time <= $end;
+        }
+        if (null === $end) {
+            return $time >= $start;
+        }
+
+        return $start <= $end ? $time >= $start && $time <= $end : $time >= $start || $time <= $end;
+    }
+
+    /** Can be ordered right now: marked available and inside its time window. */
+    public function isOrderableNow(): bool
+    {
+        return $this->isAvailable() && $this->isOfferedAt(new \DateTimeImmutable());
+    }
 }

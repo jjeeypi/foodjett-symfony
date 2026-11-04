@@ -54,10 +54,10 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/restaurant, roles: ROLE_RESTAURANT }
-        - { path: ^/rider, roles: ROLE_RIDER }
-        - { path: ^/(?:account|cart|checkout|orders), roles: ROLE_CUSTOMER }
+        - { path: ^/admin(?:/|$), roles: ROLE_ADMIN }
+        - { path: ^/restaurant(?:/|$), roles: ROLE_RESTAURANT }
+        - { path: ^/rider(?:/|$), roles: ROLE_RIDER }
+        - { path: ^/(?:account|cart|checkout|orders)(?:/|$), roles: ROLE_CUSTOMER }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
