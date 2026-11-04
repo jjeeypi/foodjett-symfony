@@ -534,3 +534,10 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
 .dish details[open] { background: #fafbf7; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
 .store-hero::after { background: linear-gradient(180deg, #1b241622 0%, #1b241655 40%, #1b2416dd 100%); }
 .totals dt, .totals dd { margin: 0; }
+.order-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 14px 18px; color: var(--text); transition: box-shadow .2s, transform .2s; }
+.order-card:hover { text-decoration: none; box-shadow: var(--shadow); transform: translateY(-2px); }
+.order-card .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.order-card .order-number { font-family: Manrope, sans-serif; font-size: 15px; }
+.order-card .order-restaurant { font-size: 13px; color: #5f6b52; }
+.order-card .amount { font-weight: 700; white-space: nowrap; }
+@media (max-width: 600px) { .order-card { flex-wrap: wrap; } .order-card .badge { order: 5; } }

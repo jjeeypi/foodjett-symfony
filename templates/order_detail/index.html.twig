@@ -1,116 +1,176 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Order {{ order.orderNumber }} | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('orders/' ~ order.id ~ '/status', null, {withCredentials: true}) }} hidden></div>
-    <p><a href="{{ path('app_orders') }}">All orders</a></p>
+    <a class="back-link" href="{{ path('app_orders') }}">{{ icon('back', 'icon-sm') }} All orders</a>
 
-    <h1>Order {{ order.orderNumber }}</h1>
-    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
-    <p>
-        From <a href="{{ path('app_restaurant_menu', {slug: order.restaurant.slug}) }}">{{ order.restaurant.name }}</a>,
-        placed {{ order.placedAt|date('M j, Y g:i A') }}.
-        {% if order.estimatedReadyAt %}Expected ready by {{ order.estimatedReadyAt|date('g:i A') }}.{% endif %}
-    </p>
-    {% if order.cancellationReason %}<p>Cancelled: {{ order.cancellationReason }}</p>{% endif %}
+    {% set terminal = order.status in constant('App\\Entity\\Order::TERMINAL_STATUSES') %}
+    {% set tone = order.status == 'delivered' ? 'badge-green' : (terminal ? 'badge-danger' : 'badge-warn') %}
+    {# Progress for the tracker: which of the five steps the order has reached. #}
+    {% set reached = {
+        placed: 1, accepted: 2, preparing: 2, ready: 3, finding_rider: 3, rider_assigned: 3, at_restaurant: 3,
+        picked_up: 4, on_the_way: 4, arrived: 4, delivered: 5,
+    }[order.status] ?? 0 %}
 
-    <h2>Items</h2>
-    <ul>
-        {% for item in order.items %}
-            <li>
-                {{ item.quantity }} × {{ item.menuItem.name }}
-                {% if item.menuItemVariant %}({{ item.menuItemVariant.name }}){% endif %}
-                · PHP {{ item.unitPrice }} each
-                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }} (PHP {{ addon.price }}){% endfor %}
-                {% if item.specialInstructions %}<br>Note: {{ item.specialInstructions }}{% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Follow your food</div>
+            <h1>Order {{ order.orderNumber }}</h1>
+            <p>
+                From <a href="{{ path('app_restaurant_menu', {slug: order.restaurant.slug}) }}">{{ order.restaurant.name }}</a>,
+                placed {{ order.placedAt|date('M j, Y g:i A') }}.
+                {% if order.estimatedReadyAt %}Expected ready by {{ order.estimatedReadyAt|date('g:i A') }}.{% endif %}
+            </p>
+        </div>
+        <p id="status" style="margin: 0">Status: <strong class="badge {{ tone }}">{{ order.status|replace({'_': ' '}) }}</strong></p>
+    </div>
 
-    <dl id="totals">
-        <dt>Subtotal</dt><dd>PHP {{ order.subtotal }}</dd>
-        <dt>Delivery fee</dt><dd>PHP {{ order.deliveryFee }}</dd>
-        <dt>Service fee</dt><dd>PHP {{ order.serviceFee }}</dd>
-        {% if order.discountAmount > 0 %}<dt>Discount</dt><dd>- PHP {{ order.discountAmount }}</dd>{% endif %}
-        {% if order.tipAmount > 0 %}<dt>Rider tip</dt><dd>PHP {{ order.tipAmount }}</dd>{% endif %}
-        <dt>Total</dt><dd><strong>PHP {{ order.totalAmount }}</strong></dd>
-        <dt>Payment</dt>
-        <dd>
-            {{ order.paymentMethod|upper }}
-            {% if order.payment %}· {{ order.payment.status|replace({'_': ' '}) }}
-                {% if order.payment.refundedAmount > 0 %}· refunded PHP {{ order.payment.refundedAmount }}{% endif %}
+    {% if order.cancellationReason %}<p class="callout callout-danger">{{ icon('close', 'icon-sm') }} Cancelled: {{ order.cancellationReason }}</p>{% endif %}
+
+    {% if reached > 0 %}
+        <div class="panel" style="margin-bottom: 22px">
+            <div class="progress-steps" style="margin: 0">
+                {% for label in ['Order placed', 'Kitchen is cooking', 'Ready for pickup', 'On the way', 'Delivered'] %}
+                    <span class="{{ loop.index <= reached ? 'done' }}"><b>{{ loop.index }}</b>{{ label }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="split">
+        <div class="stack">
+            <section class="panel">
+                <h2>Items</h2>
+                {% for item in order.items %}
+                    <div class="line">
+                        <span class="dish-photo" style="width: 56px; height: 56px">
+                            {% if item.menuItem.photoPath %}<img src="{{ asset(item.menuItem.photoPath) }}" alt="" width="56" height="56">{% endif %}
+                        </span>
+                        <span class="grow">
+                            {{ item.quantity }} × <strong>{{ item.menuItem.name }}</strong>
+                            {% if item.menuItemVariant %}<span class="subtle">({{ item.menuItemVariant.name }})</span>{% endif %}
+                            <span class="subtle">· ₱{{ item.unitPrice }} each</span>
+                            {% for addon in item.addons %}<div class="subtle">+ {{ addon.menuItemAddon.name }} (₱{{ addon.price }})</div>{% endfor %}
+                            {% if item.specialInstructions %}<div class="subtle">Note: {{ item.specialInstructions }}</div>{% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+                <dl id="totals" class="totals">
+                    <div><dt>Subtotal</dt><dd>₱{{ order.subtotal }}</dd></div>
+                    <div><dt>Delivery fee</dt><dd>₱{{ order.deliveryFee }}</dd></div>
+                    <div><dt>Service fee</dt><dd>₱{{ order.serviceFee }}</dd></div>
+                    {% if order.discountAmount > 0 %}<div><dt>Discount</dt><dd>- ₱{{ order.discountAmount }}</dd></div>{% endif %}
+                    {% if order.tipAmount > 0 %}<div><dt>Rider tip</dt><dd>₱{{ order.tipAmount }}</dd></div>{% endif %}
+                    <div class="grand"><dt>Total</dt><dd><strong>₱{{ order.totalAmount }}</strong></dd></div>
+                    <div class="subtle">
+                        <dt>Payment</dt>
+                        <dd>
+                            {{ order.paymentMethod|upper }}
+                            {% if order.payment %}· {{ order.payment.status|replace({'_': ' '}) }}
+                                {% if order.payment.refundedAmount > 0 %}· refunded ₱{{ order.payment.refundedAmount }}{% endif %}
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            {% if cancel_form %}
+                <section class="panel">
+                    <h2>Cancel this order</h2>
+                    <p class="subtle">You can cancel until the restaurant accepts it.</p>
+                    {{ form_start(cancel_form, {action: path('app_order_cancel', {id: order.id})}) }}
+                        {{ form_widget(cancel_form) }}
+                        <button class="btn-danger" type="submit">Cancel order</button>
+                    {{ form_end(cancel_form) }}
+                </section>
             {% endif %}
-        </dd>
-    </dl>
 
-    <h2>Delivery</h2>
-    <p>
-        {{ order.customerAddress.label }}: {{ order.customerAddress.addressLine }}
-        {% if order.customerAddress.landmark %}(near {{ order.customerAddress.landmark }}){% endif %}
-    </p>
-    {% if order.rider %}
-        <p id="rider">
-            Rider: {{ order.rider.user.name }} ({{ order.rider.vehicleType }})
-            {% if rider_location_visible and order.rider.currentLatitude %}
-                · last seen at {{ order.rider.currentLatitude }}, {{ order.rider.currentLongitude }}
-                {% if order.rider.lastLocationAt %}({{ order.rider.lastLocationAt|date('g:i A') }}){% endif %}
+            {% if review_form %}
+                <section class="panel">
+                    <h2>Rate this order</h2>
+                    <p class="subtle">How was the food and the delivery?</p>
+                    {{ form_start(review_form, {action: path('app_order_review', {id: order.id})}) }}
+                        {{ form_errors(review_form) }}
+                        {{ form_widget(review_form) }}
+                        <button type="submit">Send review</button>
+                    {{ form_end(review_form) }}
+                </section>
             {% endif %}
-        </p>
-    {% endif %}
 
-    {% if order.status not in constant('App\\Entity\\Order::TERMINAL_STATUSES') or order.conversations is not empty %}
-        <h2>Messages</h2>
-        {% if order.acceptedAt %}
-            <form method="post" action="{{ path('app_conversation_start', {id: order.id, type: 'customer_restaurant'}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ order.id) }}">
-                <button type="submit">Message the restaurant</button>
-            </form>
-        {% endif %}
-        {% if order.rider %}
-            <form method="post" action="{{ path('app_conversation_start', {id: order.id, type: 'customer_rider'}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ order.id) }}">
-                <button type="submit">Message the rider</button>
-            </form>
-        {% endif %}
-    {% endif %}
+            {% if report_form %}
+                <section class="panel">
+                    <h2>Report a problem</h2>
+                    <p class="subtle">Something wrong with your order? Tell us and an admin will look into it.</p>
+                    {{ form_start(report_form, {action: path('app_order_report', {id: order.id})}) }}
+                        {{ form_widget(report_form) }}
+                        <button class="btn-light" type="submit">Send report</button>
+                    {{ form_end(report_form) }}
+                </section>
+            {% endif %}
+        </div>
 
-    <h2>Timeline</h2>
-    <ol id="timeline">
-        {% for entry in history %}
-            <li>{{ entry.createdAt|date('M j, g:i A') }}: {{ entry.status|replace({'_': ' '}) }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
-        {% endfor %}
-    </ol>
+        <aside class="stack">
+            <section class="panel">
+                <h2>Delivery</h2>
+                <div class="line">
+                    <span class="pin-box">{{ icon('pin') }}</span>
+                    <span class="grow">
+                        <strong>{{ order.customerAddress.label }}</strong>
+                        <div class="subtle">{{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} (near {{ order.customerAddress.landmark }}){% endif %}</div>
+                    </span>
+                </div>
+                {% if order.rider %}
+                    <div class="line" id="rider">
+                        <span class="pin-box">{{ icon('bike') }}</span>
+                        <span class="grow">
+                            <strong>Rider: {{ order.rider.user.name }}</strong> <span class="subtle">({{ order.rider.vehicleType }})</span>
+                            {% if rider_location_visible and order.rider.currentLatitude %}
+                                <div class="subtle">
+                                    Last seen at {{ order.rider.currentLatitude }}, {{ order.rider.currentLongitude }}
+                                    {% if order.rider.lastLocationAt %}({{ order.rider.lastLocationAt|date('g:i A') }}){% endif %}
+                                    · <a href="https://www.openstreetmap.org/?mlat={{ order.rider.currentLatitude }}&amp;mlon={{ order.rider.currentLongitude }}#map=17/{{ order.rider.currentLatitude }}/{{ order.rider.currentLongitude }}" target="_blank" rel="noopener">see on map</a>
+                                </div>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
 
-    {% if cancel_form %}
-        <h2>Cancel this order</h2>
-        {{ form_start(cancel_form, {action: path('app_order_cancel', {id: order.id})}) }}
-            {{ form_widget(cancel_form) }}
-            <button type="submit">Cancel order</button>
-        {{ form_end(cancel_form) }}
-    {% endif %}
+                {% if not terminal or order.conversations is not empty %}
+                    <div class="button-row">
+                        {% if order.acceptedAt %}
+                            <form method="post" action="{{ path('app_conversation_start', {id: order.id, type: 'customer_restaurant'}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ order.id) }}">
+                                <button class="btn-light btn-sm" type="submit">{{ icon('message', 'icon-sm') }} Message the restaurant</button>
+                            </form>
+                        {% endif %}
+                        {% if order.rider %}
+                            <form method="post" action="{{ path('app_conversation_start', {id: order.id, type: 'customer_rider'}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ order.id) }}">
+                                <button class="btn-light btn-sm" type="submit">{{ icon('message', 'icon-sm') }} Message the rider</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </section>
 
-    {% if review_form %}
-        <h2>Rate this order</h2>
-        {{ form_start(review_form, {action: path('app_order_review', {id: order.id})}) }}
-            {{ form_errors(review_form) }}
-            {{ form_widget(review_form) }}
-            <button type="submit">Send review</button>
-        {{ form_end(review_form) }}
-    {% endif %}
+            <section class="panel">
+                <h2>Timeline</h2>
+                <ol id="timeline" class="timeline" style="margin-top: 14px">
+                    {% for entry in history %}
+                        <li>{{ entry.createdAt|date('M j, g:i A') }}: {{ entry.status|replace({'_': ' '}) }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
+                    {% endfor %}
+                </ol>
+            </section>
 
-    {% if order.status in constant('App\\Entity\\Order::TERMINAL_STATUSES') %}
-        <form method="post" action="{{ path('app_order_reorder', {id: order.id}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('reorder' ~ order.id) }}">
-            <button type="submit">Order these items again</button>
-        </form>
-    {% endif %}
-
-    {% if report_form %}
-        <h2>Report a problem</h2>
-        {{ form_start(report_form, {action: path('app_order_report', {id: order.id})}) }}
-            {{ form_widget(report_form) }}
-            <button type="submit">Send report</button>
-        {{ form_end(report_form) }}
-    {% endif %}
+            {% if terminal %}
+                <form method="post" action="{{ path('app_order_reorder', {id: order.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reorder' ~ order.id) }}">
+                    <button class="btn-green btn-block" type="submit">{{ icon('bag', 'icon-sm') }} Order these items again</button>
+                </form>
+            {% endif %}
+        </aside>
+    </div>
 {% endblock %}
