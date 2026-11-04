@@ -7,6 +7,7 @@ use App\Entity\Order;
 use App\Entity\Restaurant;
 use App\Entity\Rider;
 use App\Enum\OrderStatus;
+use App\Enum\RiderPoolEscalationStage;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -249,5 +250,91 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('orders.status NOT IN (:terminal)')->setParameter('terminal', $terminal)
             ->orderBy('orders.riderAssignedAt', 'DESC')->setMaxResults(1)
             ->getQuery()->getOneOrNullResult();
+    }
+
+    /** All orders with their parties loaded, newest first, optionally filtered by status, restaurant and placed date. */
+    public function createAdminListQuery(
+        ?OrderStatus $status = null,
+        string $restaurantId = '',
+        ?\DateTimeImmutable $placedFrom = null,
+        ?\DateTimeImmutable $placedTo = null,
+    ): QueryBuilder {
+        $query = $this->createQueryBuilder('orders')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->innerJoin('orders.customer', 'customer')->addSelect('customer')
+            ->innerJoin('customer.user', 'customerUser')->addSelect('customerUser')
+            ->leftJoin('orders.rider', 'rider')->addSelect('rider')
+            ->leftJoin('rider.user', 'riderUser')->addSelect('riderUser')
+            ->orderBy('orders.placedAt', 'DESC');
+        if (null !== $status) {
+            $query->andWhere('orders.status = :status')->setParameter('status', $status->value);
+        }
+        if ('' !== $restaurantId) {
+            $query->andWhere('restaurant.id = :restaurantId')->setParameter('restaurantId', $restaurantId);
+        }
+        if (null !== $placedFrom) {
+            $query->andWhere('orders.placedAt >= :date_from')->setParameter('date_from', $placedFrom);
+        }
+        if (null !== $placedTo) {
+            $query->andWhere('orders.placedAt <= :date_to')->setParameter('date_to', $placedTo);
+        }
+
+        return $query;
+    }
+
+    /** Orders whose rider search escalated to the admin, oldest search first. */
+    public function createEscalatedRiderSearchQuery(): QueryBuilder
+    {
+        return $this->createQueryBuilder('orders')
+            ->innerJoin('orders.riderPoolOffer', 'offer')
+            ->addSelect('offer')
+            ->innerJoin('orders.restaurant', 'restaurant')
+            ->addSelect('restaurant')
+            ->andWhere('orders.status = :status')
+            ->andWhere('orders.rider IS NULL')
+            ->andWhere('offer.escalationStage IN (:stages)')
+            ->setParameter('status', OrderStatus::FINDING_RIDER)
+            ->setParameter('stages', [
+                RiderPoolEscalationStage::ADMIN_ALERTED->value,
+                RiderPoolEscalationStage::CUSTOMER_NOTIFIED->value,
+                RiderPoolEscalationStage::AUTO_CANCELLED->value,
+            ])
+            ->orderBy('orders.riderSearchStartedAt', 'ASC');
+    }
+
+    /**
+     * Delivered orders between $startAt and $endAt with their restaurant loaded.
+     *
+     * @return list<Order>
+     */
+    public function findDeliveredBetween(\DateTimeImmutable $startAt, \DateTimeImmutable $endAt): array
+    {
+        return $this->createQueryBuilder('orders')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.deliveredAt BETWEEN :startAt AND :endAt')->setParameter('startAt', $startAt)->setParameter('endAt', $endAt)
+            ->getQuery()->getResult();
+    }
+
+    /**
+     * Order count and lifetime spend for one customer.
+     *
+     * @return array{order_count: int|string, lifetime_spend: string}
+     */
+    public function summarizeForCustomer(Customer $customer): array
+    {
+        return $this->createQueryBuilder('orders')
+            ->select('COUNT(orders.id) AS order_count, COALESCE(SUM(orders.totalAmount), 0) AS lifetime_spend')
+            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
+            ->getQuery()->getSingleResult();
+    }
+
+    /** @return list<Order> */
+    public function findRecentForCustomer(Customer $customer, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('orders')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
+            ->orderBy('orders.placedAt', 'DESC')->setMaxResults($limit)->getQuery()->getResult();
     }
 }

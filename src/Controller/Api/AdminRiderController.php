@@ -11,6 +11,7 @@ use App\Enum\ApprovalStatus;
 use App\Enum\RiderAvailabilityStatus;
 use App\Enum\UserStatus;
 use App\Enum\VehicleType;
+use App\Repository\RiderRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,26 +29,21 @@ final class AdminRiderController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly RiderRepository $riders,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Rider::class)->createQueryBuilder('rider')
-            ->innerJoin('rider.user', 'owner')->addSelect('owner')
-            ->orderBy('rider.createdAt', 'DESC');
+        $approval = null;
         if ('' !== ($status = trim((string) $request->query->get('approval_status', '')))) {
             $approval = ApprovalStatus::tryFrom($status);
             if (null === $approval) {
                 return $this->json(['message' => 'Invalid approval_status.'], 422);
             }
-            $query->andWhere('rider.approvalStatus = :approval')->setParameter('approval', $approval->value);
         }
-        if ('' !== ($search = trim((string) $request->query->get('search', '')))) {
-            $query->andWhere('LOWER(owner.name) LIKE :search OR LOWER(COALESCE(rider.plateNumber, \'\')) LIKE :search')
-                ->setParameter('search', '%'.mb_strtolower($search).'%');
-        }
+        $query = $this->riders->createAdminListQuery($approval, trim((string) $request->query->get('search', '')));
 
         return $this->json($this->paginator->paginate($query, $request, fn (Rider $rider): array => $this->normalize($rider)));
     }
@@ -55,11 +51,7 @@ final class AdminRiderController extends AbstractController
     #[Route('/pending', name: 'pending', methods: ['GET'])]
     public function pending(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Rider::class)->createQueryBuilder('rider')
-            ->innerJoin('rider.user', 'owner')->addSelect('owner')
-            ->andWhere('rider.approvalStatus = :status')
-            ->setParameter('status', ApprovalStatus::PENDING->value)
-            ->orderBy('rider.createdAt', 'ASC');
+        $query = $this->riders->createPendingQuery();
 
         return $this->json($this->paginator->paginate($query, $request, fn (Rider $rider): array => $this->normalize($rider, true)));
     }

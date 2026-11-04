@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\ApprovalStatus;
 use App\Enum\RestaurantOperatingStatus;
 use App\Enum\UserStatus;
+use App\Repository\RestaurantRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,25 +28,21 @@ final class AdminRestaurantController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly RestaurantRepository $restaurants,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Restaurant::class)->createQueryBuilder('restaurant')
-            ->innerJoin('restaurant.user', 'owner')->addSelect('owner')
-            ->orderBy('restaurant.createdAt', 'DESC');
+        $approval = null;
         if ('' !== ($status = trim((string) $request->query->get('approval_status', '')))) {
             $approval = ApprovalStatus::tryFrom($status);
             if (null === $approval) {
                 return $this->json(['message' => 'Invalid approval_status.'], 422);
             }
-            $query->andWhere('restaurant.approvalStatus = :approval')->setParameter('approval', $approval->value);
         }
-        if ('' !== ($search = trim((string) $request->query->get('search', '')))) {
-            $query->andWhere('LOWER(restaurant.name) LIKE :search')->setParameter('search', '%'.mb_strtolower($search).'%');
-        }
+        $query = $this->restaurants->createAdminListQuery($approval, trim((string) $request->query->get('search', '')));
 
         return $this->json($this->paginator->paginate($query, $request, fn (Restaurant $restaurant): array => $this->normalize($restaurant)));
     }
@@ -53,11 +50,7 @@ final class AdminRestaurantController extends AbstractController
     #[Route('/pending', name: 'pending', methods: ['GET'])]
     public function pending(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Restaurant::class)->createQueryBuilder('restaurant')
-            ->innerJoin('restaurant.user', 'owner')->addSelect('owner')
-            ->andWhere('restaurant.approvalStatus = :status')
-            ->setParameter('status', ApprovalStatus::PENDING->value)
-            ->orderBy('restaurant.createdAt', 'ASC');
+        $query = $this->restaurants->createPendingQuery();
 
         return $this->json($this->paginator->paginate($query, $request, fn (Restaurant $restaurant): array => $this->normalize($restaurant, true)));
     }

@@ -3,7 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Payment;
+use App\Enum\PaymentMethod;
+use App\Enum\PaymentStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +19,32 @@ class PaymentRepository extends ServiceEntityRepository
         parent::__construct($registry, Payment::class);
     }
 
-//    /**
-//     * @return Payment[] Returns an array of Payment objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('p')
-//            ->andWhere('p.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('p.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** Payments with their order parties, newest first, optionally filtered by method, status and paid date. */
+    public function createAdminListQuery(
+        ?PaymentMethod $method = null,
+        ?PaymentStatus $status = null,
+        ?\DateTimeImmutable $paidFrom = null,
+        ?\DateTimeImmutable $paidTo = null,
+    ): QueryBuilder {
+        $query = $this->createQueryBuilder('payment')
+            ->innerJoin('payment.order', 'orders')->addSelect('orders')
+            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
+            ->innerJoin('orders.customer', 'customer')->addSelect('customer')
+            ->innerJoin('customer.user', 'customerUser')->addSelect('customerUser')
+            ->orderBy('payment.createdAt', 'DESC');
+        if (null !== $method) {
+            $query->andWhere('payment.method = :method')->setParameter('method', $method->value);
+        }
+        if (null !== $status) {
+            $query->andWhere('payment.status = :status')->setParameter('status', $status->value);
+        }
+        if (null !== $paidFrom) {
+            $query->andWhere('payment.paidAt >= :date_from')->setParameter('date_from', $paidFrom);
+        }
+        if (null !== $paidTo) {
+            $query->andWhere('payment.paidAt <= :date_to')->setParameter('date_to', $paidTo);
+        }
 
-//    public function findOneBySomeField($value): ?Payment
-//    {
-//        return $this->createQueryBuilder('p')
-//            ->andWhere('p.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        return $query;
+    }
 }

@@ -36,4 +36,12 @@ class VoucherRepository extends ServiceEntityRepository
             ->andWhere('voucher.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
             ->getQuery()->getOneOrNullResult();
     }
+
+    /** Platform-wide vouchers, newest first. */
+    public function createPlatformListQuery(): QueryBuilder
+    {
+        return $this->createQueryBuilder('voucher')
+            ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::PLATFORM->value)
+            ->orderBy('voucher.createdAt', 'DESC');
+    }
 }

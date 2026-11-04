@@ -9,6 +9,7 @@ use App\Entity\Rider;
 use App\Entity\RiderCashRemittance;
 use App\Entity\User;
 use App\Enum\RemittanceStatus;
+use App\Repository\RiderCashRemittanceRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\DBAL\LockMode;
@@ -27,21 +28,19 @@ final class AdminRemittanceController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly RiderCashRemittanceRepository $remittances,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(RiderCashRemittance::class)->createQueryBuilder('remittance')
-            ->innerJoin('remittance.rider', 'rider')->addSelect('rider')->innerJoin('rider.user', 'riderUser')->addSelect('riderUser')
-            ->leftJoin('remittance.confirmedByAdmin', 'admin')->addSelect('admin')
-            ->orderBy('remittance.createdAt', 'ASC');
+        $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
             $status = RemittanceStatus::tryFrom($statusValue);
             if (null === $status) { return $this->json(['message' => 'Invalid status.'], 422); }
-            $query->andWhere('remittance.status = :status')->setParameter('status', $status->value);
         }
+        $query = $this->remittances->createAdminListQuery($status);
 
         return $this->json($this->paginator->paginate($query, $request, fn (RiderCashRemittance $remittance): array => $this->normalize($remittance)));
     }

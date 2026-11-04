@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\SupportTicket;
 use App\Entity\User;
+use App\Enum\SupportTicketStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -24,5 +25,17 @@ class SupportTicketRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('ticket')
             ->andWhere('ticket.user = :user')->setParameter('user', $user)
             ->orderBy('ticket.createdAt', 'DESC');
+    }
+
+    /** Every support ticket with its account, newest first, optionally filtered by status. */
+    public function createAdminListQuery(?SupportTicketStatus $status = null): QueryBuilder
+    {
+        $query = $this->createQueryBuilder('ticket')
+            ->innerJoin('ticket.user', 'account')->addSelect('account')->orderBy('ticket.createdAt', 'DESC');
+        if (null !== $status) {
+            $query->andWhere('ticket.status = :status')->setParameter('status', $status->value);
+        }
+
+        return $query;
     }
 }

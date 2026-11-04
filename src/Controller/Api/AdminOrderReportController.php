@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\OrderReportAgainst;
 use App\Enum\OrderReportStatus;
 use App\Enum\OrderReportType;
+use App\Repository\OrderReportRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,28 +28,25 @@ final class AdminOrderReportController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly OrderReportRepository $reports,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(OrderReport::class)->createQueryBuilder('report')
-            ->innerJoin('report.order', 'orders')->addSelect('orders')
-            ->innerJoin('report.reportedBy', 'reporter')->addSelect('reporter')
-            ->leftJoin('report.resolvedByAdmin', 'resolver')->addSelect('resolver')
-            ->orderBy('report.createdAt', 'DESC');
+        $filters = ['status' => null, 'type' => null, 'against' => null];
         foreach (['status' => OrderReportStatus::class, 'type' => OrderReportType::class, 'against' => OrderReportAgainst::class] as $parameter => $enumClass) {
             $value = trim((string) $request->query->get($parameter, ''));
             if ('' === $value) {
                 continue;
             }
-            $enum = $enumClass::tryFrom($value);
-            if (null === $enum) {
+            $filters[$parameter] = $enumClass::tryFrom($value);
+            if (null === $filters[$parameter]) {
                 return $this->json(['message' => 'Invalid '.$parameter.'.'], 422);
             }
-            $query->andWhere('report.'.$parameter.' = :'.$parameter)->setParameter($parameter, $enum->value);
         }
+        $query = $this->reports->createAdminListQuery($filters['status'], $filters['type'], $filters['against']);
 
         return $this->json($this->paginator->paginate($query, $request, fn (OrderReport $report): array => $this->normalize($report)));
     }

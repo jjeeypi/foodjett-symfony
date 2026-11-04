@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\PaymentActor;
 use App\Enum\PaymentMethod;
 use App\Enum\PaymentStatus;
+use App\Repository\PaymentRepository;
 use App\Service\ApiPaginator;
 use App\Service\AuditLogger;
 use Doctrine\DBAL\LockMode;
@@ -28,43 +29,39 @@ final class AdminPaymentController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogger $audit,
+        private readonly PaymentRepository $payments,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-        $query = $this->entityManager->getRepository(Payment::class)->createQueryBuilder('payment')
-            ->innerJoin('payment.order', 'orders')->addSelect('orders')
-            ->innerJoin('orders.restaurant', 'restaurant')->addSelect('restaurant')
-            ->innerJoin('orders.customer', 'customer')->addSelect('customer')
-            ->innerJoin('customer.user', 'customerUser')->addSelect('customerUser')
-            ->orderBy('payment.createdAt', 'DESC');
+        $method = null;
         if ('' !== ($methodValue = trim((string) $request->query->get('method', '')))) {
             $method = PaymentMethod::tryFrom($methodValue);
             if (null === $method) {
                 return $this->json(['message' => 'Invalid method.'], 422);
             }
-            $query->andWhere('payment.method = :method')->setParameter('method', $method->value);
         }
+        $status = null;
         if ('' !== ($statusValue = trim((string) $request->query->get('status', '')))) {
             $status = PaymentStatus::tryFrom($statusValue);
             if (null === $status) {
                 return $this->json(['message' => 'Invalid status.'], 422);
             }
-            $query->andWhere('payment.status = :status')->setParameter('status', $status->value);
         }
-        foreach (['date_from' => '>=', 'date_to' => '<='] as $parameter => $operator) {
+        $dates = ['date_from' => null, 'date_to' => null];
+        foreach (array_keys($dates) as $parameter) {
             if ('' === ($value = trim((string) $request->query->get($parameter, '')))) {
                 continue;
             }
             try {
-                $date = new \DateTimeImmutable($value.('date_to' === $parameter && 10 === strlen($value) ? ' 23:59:59' : ''));
+                $dates[$parameter] = new \DateTimeImmutable($value.('date_to' === $parameter && 10 === strlen($value) ? ' 23:59:59' : ''));
             } catch (\Throwable) {
                 return $this->json(['message' => $parameter.' must be a valid date.'], 422);
             }
-            $query->andWhere('payment.paidAt '.$operator.' :'.$parameter)->setParameter($parameter, $date);
         }
+        $query = $this->payments->createAdminListQuery($method, $status, $dates['date_from'], $dates['date_to']);
 
         return $this->json($this->paginator->paginate($query, $request, fn (Payment $payment): array => $this->normalize($payment)));
     }

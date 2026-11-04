@@ -35,4 +35,18 @@ class RiderCashRemittanceRepository extends ServiceEntityRepository
             ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
             ->getQuery()->getSingleScalarResult();
     }
+
+    /** Every remittance with its rider and reviewing admin, oldest first, optionally filtered by status. */
+    public function createAdminListQuery(?RemittanceStatus $status = null): QueryBuilder
+    {
+        $query = $this->createQueryBuilder('remittance')
+            ->innerJoin('remittance.rider', 'rider')->addSelect('rider')->innerJoin('rider.user', 'riderUser')->addSelect('riderUser')
+            ->leftJoin('remittance.confirmedByAdmin', 'admin')->addSelect('admin')
+            ->orderBy('remittance.createdAt', 'ASC');
+        if (null !== $status) {
+            $query->andWhere('remittance.status = :status')->setParameter('status', $status->value);
+        }
+
+        return $query;
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Customer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +17,17 @@ class CustomerRepository extends ServiceEntityRepository
         parent::__construct($registry, Customer::class);
     }
 
-//    /**
-//     * @return Customer[] Returns an array of Customer objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /** Customers with their accounts, newest first, optionally matching a name, email or phone search. */
+    public function createAdminListQuery(string $search = ''): QueryBuilder
+    {
+        $query = $this->createQueryBuilder('customer')
+            ->innerJoin('customer.user', 'account')->addSelect('account')
+            ->orderBy('customer.createdAt', 'DESC');
+        if ('' !== $search) {
+            $query->andWhere('LOWER(account.name) LIKE :search OR LOWER(COALESCE(account.email, \'\')) LIKE :search OR COALESCE(account.phone, \'\') LIKE :search')
+                ->setParameter('search', '%'.mb_strtolower($search).'%');
+        }
 
-//    public function findOneBySomeField($value): ?Customer
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        return $query;
+    }
 }

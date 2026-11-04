@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\DeliveryZone;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,28 +17,9 @@ class DeliveryZoneRepository extends ServiceEntityRepository
         parent::__construct($registry, DeliveryZone::class);
     }
 
-//    /**
-//     * @return DeliveryZone[] Returns an array of DeliveryZone objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('d')
-//            ->andWhere('d.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('d.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?DeliveryZone
-//    {
-//        return $this->createQueryBuilder('d')
-//            ->andWhere('d.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /** Delivery zones by name. */
+    public function createListQuery(): QueryBuilder
+    {
+        return $this->createQueryBuilder('zone')->orderBy('zone.name', 'ASC');
+    }
 }
