@@ -111,9 +111,24 @@ class CheckoutControllerTest extends WebTestCase
         self::assertStringStartsWith('SIMULATED-', (string) $order->getPayment()?->getTransactionReference());
     }
 
-    public function testAnAddressOutsideEveryActiveZoneIsRejected(): void
+    public function testWithNoActiveZoneEveryAddressIsAccepted(): void
     {
         $this->entityManager->getRepository(DeliveryZone::class)->findOneBy(['name' => self::ZONE_NAME])->setIsActive(false);
+        $this->entityManager->getRepository(CustomerAddress::class)->findOneBy(['label' => 'Checkout Test Address'])
+            ->setLatitude('9.3068000')->setLongitude('123.3054000');
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/checkout');
+        self::assertSelectorNotExists('.error');
+        $this->placeOrder(Payment::METHOD_GCASH);
+        self::assertSame(1, $this->entityManager->getRepository(Order::class)->count([]), 'An address far from any zone is accepted while no zone is active.');
+    }
+
+    public function testAnAddressOutsideEveryActiveZoneIsRejected(): void
+    {
+        // About 600 km from the 5 km zone around the test restaurant.
+        $this->entityManager->getRepository(CustomerAddress::class)->findOneBy(['label' => 'Checkout Test Address'])
+            ->setLatitude('9.3068000')->setLongitude('123.3054000');
         $this->entityManager->flush();
 
         $this->client->request('GET', '/checkout');

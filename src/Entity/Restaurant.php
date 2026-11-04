@@ -89,7 +89,7 @@ class Restaurant
     #[ORM\Column(length: 255)]
     private string $address;
 
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'Choose the spot: pick a suggestion, use your location, or tap the map.')]
     #[Assert\Regex(pattern: '/^-?(?:90(?:\.0+)?|[0-8]?\d(?:\.\d+)?)$/', message: 'Latitude must be between -90 and 90.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $latitude;

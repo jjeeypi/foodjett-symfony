@@ -6,6 +6,7 @@ use App\Entity\Restaurant;
 use App\Entity\RestaurantDocument;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -26,9 +27,9 @@ class RestaurantRegistrationFormType extends AbstractType
             ])
             ->add('name', TextType::class, ['label' => 'Restaurant name', 'empty_data' => ''])
             ->add('cuisineType', TextType::class, ['label' => 'Cuisine', 'empty_data' => ''])
-            ->add('address', TextType::class, ['empty_data' => ''])
-            ->add('latitude', TextType::class, ['empty_data' => ''])
-            ->add('longitude', TextType::class, ['empty_data' => ''])
+            ->add('address', TextType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'address', 'autocomplete' => 'off', 'placeholder' => 'Start typing the street, barangay or a landmark']])
+            ->add('latitude', HiddenType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'latitude']])
+            ->add('longitude', HiddenType::class, ['empty_data' => '', 'error_bubbling' => false, 'attr' => ['data-location-picker-target' => 'longitude']])
         ;
 
         foreach (RestaurantDocument::TYPES as $type) {

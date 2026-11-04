@@ -6,10 +6,11 @@ use App\Entity\Restaurant;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TelType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Image;
@@ -35,9 +36,9 @@ class RestaurantProfileFormType extends AbstractType
                 'mapped' => false,
                 'constraints' => [new NotBlank(), new Regex(pattern: '/^\+?[0-9]{7,20}$/', message: 'Enter a valid phone number.')],
             ])
-            ->add('address', TextType::class, ['empty_data' => ''])
-            ->add('latitude', TextType::class, ['empty_data' => ''])
-            ->add('longitude', TextType::class, ['empty_data' => ''])
+            ->add('address', TextType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'address', 'autocomplete' => 'off', 'placeholder' => 'Start typing the street, barangay or a landmark']])
+            ->add('latitude', HiddenType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'latitude']])
+            ->add('longitude', HiddenType::class, ['empty_data' => '', 'error_bubbling' => false, 'attr' => ['data-location-picker-target' => 'longitude']])
             ->add('defaultPrepTimeMinutes', IntegerType::class, ['label' => 'Usual preparation time (minutes)'])
             ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (PHP)', 'empty_data' => '0', 'attr' => ['inputmode' => 'decimal']])
             ->add('payoutMethod', ChoiceType::class, [

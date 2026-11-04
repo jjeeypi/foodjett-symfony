@@ -40,7 +40,8 @@
         <p>
             {% if rider.lastLocationAt %}Last shared {{ rider.lastLocationAt|date('M j, g:i:s A') }}.{% else %}Not shared yet; the pool needs it.{% endif %}
         </p>
-        {{ form_start(location_form) }}
+        {# Shares the position automatically while this page is open; the pin is the fallback when location access is blocked. #}
+        {{ form_start(location_form, {attr: {id: 'rider-location-picker', 'data-turbo-permanent': '', 'data-controller': 'location-picker', 'data-location-picker-live-value': 'true'}}) }}
             {{ form_widget(location_form) }}
             <button type="submit">Share location</button>
         {{ form_end(location_form) }}

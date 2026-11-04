@@ -66,6 +66,12 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
         $this->reload(Rider::class, $this->rider->getId())->setLastLocationAt(new \DateTimeImmutable('-10 seconds'));
         $this->entityManager->flush();
         $hub->reset();
+        $crawler = $this->client->request('GET', '/rider');
+        $picker = $crawler->filter('#rider-location-picker');
+        self::assertSame('location-picker', $picker->attr('data-controller'));
+        self::assertSame('true', $picker->attr('data-location-picker-live-value'), 'The dashboard shares the position by itself.');
+        self::assertNotNull($picker->attr('data-turbo-permanent'), 'Live refreshes keep the map and the location watch running.');
+        self::assertSame('hidden', $crawler->filter('#location_form_latitude')->attr('type'));
         $this->submit('/rider', 'Share location', ['location_form[latitude]' => '9.315412', 'location_form[longitude]' => '123.302528']);
         self::assertSame('9.3154120', $this->reload(Rider::class, $this->rider->getId())->getCurrentLatitude());
         self::assertCount(0, $hub->updates(), 'Nothing is published without a delivery.');
