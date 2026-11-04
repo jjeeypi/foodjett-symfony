@@ -70,7 +70,9 @@ visual design comes later.
    ```
 
    The menus come from `data/catalog.json`. Prices are approximate, and the
-   descriptions that the source lacked were written for this project.
+   descriptions that the source lacked were written for this project. The dish
+   and cover pictures in `public/images/catalog` are AI-generated illustrations
+   (Stable Diffusion XL), not photos of the real dishes.
 
 6. Open the application at <http://localhost:8080>. The health check is
    <http://localhost:8080/api/health>.

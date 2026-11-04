@@ -54,6 +54,8 @@ class SeedCatalogCommandTest extends KernelTestCase
         self::assertSame('105.00', $chickenjoy->getBasePrice());
         self::assertCount(2, $chickenjoy->getVariants());
         self::assertCount(2, $chickenjoy->getAddons());
+        self::assertStringStartsWith('images/catalog/items/', (string) $chickenjoy->getPhotoPath());
+        self::assertFileExists($kernel->getProjectDir().'/public/'.$bySlug['jollibee']->getCoverPhotoPath());
         foreach ($items as $item) {
             self::assertNotEmpty($item->getDescription(), $item->getName().' has a description.');
         }
