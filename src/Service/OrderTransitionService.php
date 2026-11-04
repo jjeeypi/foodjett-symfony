@@ -10,13 +10,13 @@ use App\Entity\RiderPoolOffer;
 use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\RiderPoolEscalationStage;
-use App\Event\OrderStatusChangedEvent;
-use App\Event\OrderUpdatedEvent;
-use App\Event\RiderPoolOfferCreatedEvent;
-use App\Event\RiderPoolOfferTakenEvent;
+use App\Message\OrderStatusChanged;
+use App\Message\OrderUpdated;
+use App\Message\RiderPoolOfferCreated;
+use App\Message\RiderPoolOfferTaken;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * The only writer of Order.status. Every status it sets is recorded as authorized so that
@@ -35,7 +35,7 @@ final class OrderTransitionService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PlatformSettingService $settings,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly MessageBusInterface $bus,
     ) {
         self::$authorizedStatuses ??= new \WeakMap();
     }
@@ -89,7 +89,7 @@ final class OrderTransitionService
         }
         $this->assertValidSequence($order->getStatus(), $statuses);
 
-        /** @var list<OrderStatusChangedEvent> $events */
+        /** @var list<OrderStatusChanged> $events */
         $events = [];
 
         /** @var Order $updatedOrder */
@@ -133,7 +133,7 @@ final class OrderTransitionService
                 $locked->addStatusHistory($history);
                 $this->entityManager->persist($history);
 
-                $events[] = new OrderStatusChangedEvent(
+                $events[] = new OrderStatusChanged(
                     orderId: (string) $locked->getId(),
                     previousStatus: $from,
                     currentStatus: $status,
@@ -149,11 +149,11 @@ final class OrderTransitionService
         });
 
         foreach ($events as $event) {
-            $this->eventDispatcher->dispatch($event);
+            $this->bus->dispatch($event);
             if (OrderStatus::FINDING_RIDER === $event->currentStatus) {
-                $this->eventDispatcher->dispatch(new RiderPoolOfferCreatedEvent($event->orderId, $event->changedAt));
+                $this->bus->dispatch(new RiderPoolOfferCreated($event->orderId, $event->changedAt));
             } elseif (OrderStatus::FINDING_RIDER === $event->previousStatus) {
-                $this->eventDispatcher->dispatch(new RiderPoolOfferTakenEvent(
+                $this->bus->dispatch(new RiderPoolOfferTaken(
                     $event->orderId,
                     $event->currentStatus->value,
                     $event->changedAt,
@@ -212,7 +212,7 @@ final class OrderTransitionService
             return $locked;
         });
 
-        $this->eventDispatcher->dispatch(new OrderUpdatedEvent(
+        $this->bus->dispatch(new OrderUpdated(
             orderId: (string) $updatedOrder->getId(),
             currentStatus: $updatedOrder->getStatus(),
             changedBy: $changedBy,

@@ -2,16 +2,18 @@
 
 namespace App\Message;
 
+use App\Enum\OrderActor;
+use App\Enum\OrderStatus;
 
 final class OrderUpdated
 {
-    /*
-     * Add whatever properties and methods you need
-     * to hold the data for this message class.
-     */
-
-    // public function __construct(
-    //     public readonly string $name,
-    // ) {
-    // }
+    public function __construct(
+        public readonly string $orderId,
+        public readonly OrderStatus $currentStatus,
+        public readonly OrderActor $changedBy,
+        public readonly string $kind,
+        public readonly ?string $note,
+        public readonly \DateTimeImmutable $changedAt,
+    ) {
+    }
 }

@@ -2,16 +2,14 @@
 
 namespace App\Message;
 
-
 final class RiderLocationUpdated
 {
-    /*
-     * Add whatever properties and methods you need
-     * to hold the data for this message class.
-     */
-
-    // public function __construct(
-    //     public readonly string $name,
-    // ) {
-    // }
+    public function __construct(
+        public readonly string $orderId,
+        public readonly string $riderId,
+        public readonly string $latitude,
+        public readonly string $longitude,
+        public readonly \DateTimeImmutable $occurredAt,
+    ) {
+    }
 }
