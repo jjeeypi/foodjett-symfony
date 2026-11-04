@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Your cart | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Your cart</h1>
+
+    {% if lines is empty %}
+        <p>Your cart is empty. <a href="{{ path('app_restaurants') }}">Find something to eat</a>.</p>
+    {% else %}
+        <p>From <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a></p>
+
+        <table>
+            <thead>
+                <tr><th>Item</th><th>Each</th><th>Quantity</th><th>Total</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr id="line-{{ line.id }}">
+                        <td>
+                            {{ line.menuItem.name }}
+                            {% if line.variant %}({{ line.variant.name }}){% endif %}
+                            {% for addon in line.chosenAddons %}<br>+ {{ addon.name }}{% endfor %}
+                            {% if line.specialInstructions %}<br>Note: {{ line.specialInstructions }}{% endif %}
+                        </td>
+                        <td>PHP {{ line.unitPrice }}</td>
+                        <td>
+                            <form method="post" action="{{ path('app_cart_quantity', {id: line.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                                <input type="number" name="quantity" value="{{ line.quantity }}" min="1" max="99" aria-label="Quantity">
+                                <button type="submit">Update</button>
+                            </form>
+                        </td>
+                        <td>PHP {{ line.lineTotal }}</td>
+                        <td>
+                            <form method="post" action="{{ path('app_cart_remove', {id: line.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                                <button type="submit">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p>Subtotal: <strong id="subtotal">PHP {{ subtotal }}</strong> (fees, discounts and the final total are shown at checkout)</p>
+
+        <p><a href="{{ path('app_checkout') }}">Go to checkout</a></p>
+
+        <form method="post" action="{{ path('app_cart_clear') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+            <button type="submit">Empty cart</button>
+        </form>
+    {% endif %}
+{% endblock %}

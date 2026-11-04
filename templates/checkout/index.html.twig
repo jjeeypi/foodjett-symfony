@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Checkout | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Checkout</h1>
+    <p><a href="{{ path('app_cart') }}">Back to cart</a></p>
+
+    {% if form is null %}
+        <p>Add a delivery address to your account before checking out.</p>
+    {% else %}
+        {% if error %}
+            <p class="error" role="alert">{{ error }}</p>
+        {% endif %}
+
+        {% if quote %}
+            <h2>Order summary</h2>
+            <table>
+                <tbody>
+                    {% for item in quote.items %}
+                        <tr>
+                            <td>
+                                {{ item.quantity }} × {{ item.name }}
+                                {% if item.variant %}({{ item.variant.name }}){% endif %}
+                                {% for addon in item.addons %}<br>+ {{ addon.name }}{% endfor %}
+                            </td>
+                            <td>PHP {{ item.line_total }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <dl id="totals">
+                <dt>Subtotal</dt><dd>PHP {{ quote.subtotal }}</dd>
+                <dt>Delivery fee</dt><dd>PHP {{ quote.delivery_fee }}</dd>
+                <dt>Service fee</dt><dd>PHP {{ quote.service_fee }}</dd>
+                {% if quote.discount_amount > 0 %}<dt>Discount</dt><dd>- PHP {{ quote.discount_amount }}</dd>{% endif %}
+                {% if quote.tip_amount > 0 %}<dt>Rider tip</dt><dd>PHP {{ quote.tip_amount }}</dd>{% endif %}
+                <dt>Total</dt><dd><strong>PHP {{ quote.total_amount }}</strong></dd>
+            </dl>
+        {% endif %}
+
+        {{ form_start(form) }}
+            {{ form_row(form.address) }}
+            {{ form_row(form.paymentMethod) }}
+            {{ form_row(form.tipAmount) }}
+            {{ form_row(form.voucherCode) }}
+            {{ form_row(form.notes) }}
+            {{ form_row(form.checkoutToken) }}
+            {{ form_row(form.preview) }}
+            {{ form_row(form.place) }}
+        {{ form_end(form) }}
+    {% endif %}
+{% endblock %}
