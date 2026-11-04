@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Your rider account | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a> | <a href="{{ path('app_rider_documents') }}">Documents</a></p>
+    <h1>Your rider account</h1>
+
+    {% if rider.user.avatarPath %}<p><img src="{{ asset(rider.user.avatarPath) }}" alt="Profile photo" width="96"></p>{% endif %}
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit">Save profile</button>
+    {{ form_end(form) }}
+
+    <h2>Delete account</h2>
+    <p>Your details and documents are removed and you cannot sign in again. Past deliveries stay on record.</p>
+    <form method="post" action="{{ path('app_rider_account_delete') }}" onsubmit="return confirm('Delete your rider account for good?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete-rider-account') }}">
+        <button type="submit">Delete my account</button>
+    </form>
+{% endblock %}

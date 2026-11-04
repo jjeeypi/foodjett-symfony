@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Earnings and cash | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_rider_dashboard') }}">Dashboard</a></p>
+    <h1>Earnings and cash</h1>
+
+    <dl id="totals">
+        {% for label, total in totals %}<dt>{{ label }}</dt><dd>PHP {{ total }}</dd>{% endfor %}
+    </dl>
+
+    <h2>Cash on hand</h2>
+    <dl id="cash">
+        <dt>Holding</dt><dd>PHP {{ rider.cashOnHand }} (limit PHP {{ rider.cashRemitLimit }})</dd>
+        <dt>Waiting for confirmation</dt><dd>PHP {{ cash.pending }}</dd>
+        <dt>Available to remit</dt><dd>PHP {{ cash.available }}</dd>
+    </dl>
+    {% if cash.at_limit %}<p class="error">You are at your cash limit. Remit cash before taking another cash-on-delivery order.</p>{% endif %}
+
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit">Request remittance</button>
+    {{ form_end(form) }}
+
+    <h3>Remittances</h3>
+    <ul id="remittances">
+        {% for remittance in remittances %}
+            <li>PHP {{ remittance.amount }} · {{ remittance.status }} · {{ remittance.createdAt|date('M j, g:i A') }}{% if remittance.referenceNote %} · {{ remittance.referenceNote }}{% endif %}</li>
+        {% else %}
+            <li>No remittances yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Deliveries</h2>
+    <table id="earnings">
+        <thead><tr><th>Order</th><th>Base</th><th>Distance</th><th>Waiting</th><th>Incentive</th><th>Tip</th><th>Total</th></tr></thead>
+        <tbody>
+            {% for earning in earnings %}
+                <tr>
+                    <td>{{ earning.order.orderNumber }} · {{ earning.order.restaurant.name }}</td>
+                    <td>{{ earning.basePay }}</td><td>{{ earning.distancePay }}</td><td>{{ earning.waitingPay }}</td>
+                    <td>{{ earning.incentivePay }}</td><td>{{ earning.tipAmount }}</td><td>PHP {{ earning.totalEarned }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7">No deliveries yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(earnings) }}
+
+    <h2>Payouts</h2>
+    <ul id="payouts">
+        {% for payout in payouts %}
+            <li>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }} · PHP {{ payout.totalAmount }} · {{ payout.status }}</li>
+        {% else %}
+            <li>No payouts yet.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
