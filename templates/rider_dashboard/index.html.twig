@@ -1,20 +1,50 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RiderDashboardController!{% endblock %}
+{% block title %}Rider | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <h1>Hi, {{ rider.user.name }}</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    {% if not approved %}
+        <section id="approval">
+            <h2>Application status: {{ rider.approvalStatus }}</h2>
+            {% if rider.approvalStatus == 'rejected' %}
+                <p>Your application was not approved.{% if rider.rejectionReason %} Reason: {{ rider.rejectionReason }}{% endif %}</p>
+            {% else %}
+                <p>An admin is reviewing your documents. You can take orders once you are approved.</p>
+            {% endif %}
+        </section>
+    {% else %}
+        <p id="availability">
+            You are <strong>{{ rider.availabilityStatus }}</strong>.
+            {% if not active_order %}
+                <form method="post" action="{{ path('app_rider_availability') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('availability') }}">
+                    <button type="submit">{{ rider.availabilityStatus == 'offline' ? 'Go online' : 'Go offline' }}</button>
+                </form>
+            {% endif %}
+        </p>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RiderDashboardController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/rider_dashboard/index.html.twig</code></li>
-    </ul>
-</div>
+        {% if active_order %}
+            <p id="active-order">
+                Delivering order {{ active_order.orderNumber }} ({{ active_order.status|replace({'_': ' '}) }}).
+                <a href="{{ path('app_rider_delivery') }}">Open delivery</a>
+            </p>
+        {% else %}
+            <p><a href="{{ path('app_rider_pool') }}">Find orders</a></p>
+        {% endif %}
+
+        <h2>Your location</h2>
+        <p>
+            {% if rider.lastLocationAt %}Last shared {{ rider.lastLocationAt|date('M j, g:i:s A') }}.{% else %}Not shared yet; the pool needs it.{% endif %}
+        </p>
+        {{ form_start(location_form) }}
+            {{ form_widget(location_form) }}
+            <button type="submit">Share location</button>
+        {{ form_end(location_form) }}
+
+        <p>
+            <a href="{{ path('app_messages') }}">Messages</a>
+        </p>
+    {% endif %}
 {% endblock %}
