@@ -5,6 +5,7 @@
 {% block body %}
     <p><a href="{{ path('app_restaurants') }}">All restaurants</a></p>
 
+    {% if restaurant.coverPhotoPath %}<p><img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="640" height="360"></p>{% endif %}
     <h1>{{ restaurant.name }}</h1>
     <p>
         {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}
@@ -34,6 +35,7 @@
             <ul>
                 {% for item in category.items %}
                     <li id="item-{{ item.id }}">
+                        {% if item.photoPath %}<img src="{{ asset(item.photoPath) }}" alt="{{ item.name }}" width="120" height="120" loading="lazy"><br>{% endif %}
                         <strong>{{ item.name }}</strong> · PHP {{ item.basePrice }}
                         {% if not item.orderableNow %}<em>(not available right now)</em>{% endif %}
                         {% if item.description %}<br>{{ item.description }}{% endif %}

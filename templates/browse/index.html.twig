@@ -40,6 +40,7 @@
             {% for row in pagination %}
                 {% set restaurant = row.restaurant %}
                 <li>
+                    {% if restaurant.coverPhotoPath %}<img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="160" height="90" loading="lazy">{% endif %}
                     <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.name }}</a>
                     · {{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}
                     · {{ restaurant.averageRating|number_format(1) }} ★ ({{ restaurant.reviews|length }})
