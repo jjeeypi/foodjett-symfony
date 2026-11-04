@@ -1,36 +1,16 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}DeliveryZone{% endblock %}
+{% block title %}{{ delivery_zone.name }} | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>DeliveryZone</h1>
+    <h1>{{ delivery_zone.name }}</h1>
 
     <table class="table">
         <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ delivery_zone.id }}</td>
-            </tr>
-            <tr>
-                <th>Name</th>
-                <td>{{ delivery_zone.name }}</td>
-            </tr>
-            <tr>
-                <th>Polygon</th>
-                <td>{{ delivery_zone.polygon ? delivery_zone.polygon|json_encode : '' }}</td>
-            </tr>
-            <tr>
-                <th>IsActive</th>
-                <td>{{ delivery_zone.isActive ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ delivery_zone.createdAt ? delivery_zone.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>UpdatedAt</th>
-                <td>{{ delivery_zone.updatedAt ? delivery_zone.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
+            <tr><th>Centre</th><td>{{ delivery_zone.polygon.center[0] ?? '' }}, {{ delivery_zone.polygon.center[1] ?? '' }}</td></tr>
+            <tr><th>Radius</th><td>{{ delivery_zone.polygon.radius_km ?? '' }} km</td></tr>
+            <tr><th>Active</th><td>{{ delivery_zone.active ? 'Yes' : 'No' }}</td></tr>
+            <tr><th>Updated</th><td>{{ delivery_zone.updatedAt ? delivery_zone.updatedAt|date('M j, Y g:i A') : '' }}</td></tr>
         </tbody>
     </table>
 

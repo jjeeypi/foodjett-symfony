@@ -1,45 +1,33 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Voucher index{% endblock %}
+{% block title %}Vouchers | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Voucher index</h1>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Platform vouchers</h1>
+    <p>These work at every restaurant. Restaurants run their own vouchers from their dashboard.</p>
 
     <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
                 <th>Code</th>
-                <th>Scope</th>
-                <th>Type</th>
-                <th>Value</th>
-                <th>MinOrderAmount</th>
-                <th>UsageLimitTotal</th>
-                <th>UsageLimitPerCustomer</th>
-                <th>StartsAt</th>
-                <th>EndsAt</th>
-                <th>IsActive</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
+                <th>Discount</th>
+                <th>Minimum order</th>
+                <th>Used</th>
+                <th>Valid</th>
+                <th>Active</th>
                 <th>actions</th>
             </tr>
         </thead>
         <tbody>
         {% for voucher in vouchers %}
-            <tr>
-                <td>{{ voucher.id }}</td>
+            <tr id="voucher-{{ voucher.code }}">
                 <td>{{ voucher.code }}</td>
-                <td>{{ voucher.scope }}</td>
-                <td>{{ voucher.type }}</td>
-                <td>{{ voucher.value }}</td>
-                <td>{{ voucher.minOrderAmount }}</td>
-                <td>{{ voucher.usageLimitTotal }}</td>
-                <td>{{ voucher.usageLimitPerCustomer }}</td>
-                <td>{{ voucher.startsAt ? voucher.startsAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ voucher.endsAt ? voucher.endsAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ voucher.isActive ? 'Yes' : 'No' }}</td>
-                <td>{{ voucher.createdAt ? voucher.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ voucher.updatedAt ? voucher.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ voucher.type == 'free_delivery' ? 'Free delivery' : (voucher.type == 'percentage' ? voucher.value ~ '%' : 'PHP ' ~ voucher.value) }}</td>
+                <td>PHP {{ voucher.minOrderAmount }}</td>
+                <td>{{ voucher.redemptions|length }}{% if voucher.usageLimitTotal %} of {{ voucher.usageLimitTotal }}{% endif %}</td>
+                <td>{{ voucher.startsAt ? voucher.startsAt|date('M j') : 'now' }} to {{ voucher.endsAt ? voucher.endsAt|date('M j, Y') : 'no end' }}</td>
+                <td>{{ voucher.active ? 'Yes' : 'No' }}</td>
                 <td>
                     <a href="{{ path('app_admin_voucher_show', {'id': voucher.id}) }}">show</a>
                     <a href="{{ path('app_admin_voucher_edit', {'id': voucher.id}) }}">edit</a>
@@ -47,11 +35,13 @@
             </tr>
         {% else %}
             <tr>
-                <td colspan="14">no records found</td>
+                <td colspan="7">No vouchers yet.</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
 
-    <a href="{{ path('app_admin_voucher_new') }}">Create new</a>
+    {{ knp_pagination_render(vouchers) }}
+
+    <a href="{{ path('app_admin_voucher_new') }}">Create a voucher</a>
 {% endblock %}

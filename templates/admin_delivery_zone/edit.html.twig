@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit DeliveryZone{% endblock %}
+{% block title %}Edit delivery zone | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Edit DeliveryZone</h1>
+    <h1>Edit {{ delivery_zone.name }}</h1>
 
     {{ include('admin_delivery_zone/_form.html.twig', {'button_label': 'Update'}) }}
 
