@@ -573,3 +573,5 @@ table.table > tbody > tr > th { width: 32%; text-transform: none; letter-spacing
 .content > form[method="get"] > button { min-height: 40px; }
 .content > form[method="get"] > p, .content > form[method="get"] > div { margin: 0; display: flex; align-items: center; gap: 8px; }
 dd.money::before { content: "₱"; }
+.split > *, .grid-2 > *, .grid-3 > * { min-width: 0; }
+@media (max-width: 600px) { .line { flex-wrap: wrap; } .line .grow { flex: 1 1 calc(100% - 90px); } .line .qty { margin-left: 76px; } }
