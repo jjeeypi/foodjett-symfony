@@ -28,14 +28,14 @@ use App\Enum\PaymentStatus;
 use App\Enum\RestaurantOperatingStatus;
 use App\Enum\VoucherScope;
 use App\Enum\VoucherType;
-use App\Event\OrderStatusChangedEvent;
+use App\Message\OrderStatusChanged;
 use App\Repository\VoucherRedemptionRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final readonly class CheckoutService
 {
@@ -43,7 +43,7 @@ final readonly class CheckoutService
         private EntityManagerInterface $entityManager,
         private PlatformSettingService $settings,
         private DeliveryZoneService $deliveryZones,
-        private EventDispatcherInterface $eventDispatcher,
+        private MessageBusInterface $bus,
         private VoucherRedemptionRepository $voucherRedemptions,
     ) {
     }
@@ -193,7 +193,7 @@ final readonly class CheckoutService
         });
 
         if ($result->created) {
-            $this->eventDispatcher->dispatch(new OrderStatusChangedEvent(
+            $this->bus->dispatch(new OrderStatusChanged(
                 orderId: (string) $result->order->getId(),
                 previousStatus: null,
                 currentStatus: OrderStatus::PLACED,

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Event\RiderLocationUpdatedEvent;
+use App\Message\RiderLocationUpdated;
 use App\Security\Voter\ApprovedAccountVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[Route('/api/rider/location', name: 'api_rider_location_update', methods: ['POST', 'PATCH'])]
 #[IsGranted('ROLE_RIDER')]
@@ -20,7 +20,7 @@ final class RiderLocationController extends AbstractRiderController
 {
     public function __construct(
         EntityManagerInterface $entityManager,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly MessageBusInterface $bus,
     ) {
         parent::__construct($entityManager);
     }
@@ -47,7 +47,7 @@ final class RiderLocationController extends AbstractRiderController
         $rider->setCurrentLatitude($latitude)->setCurrentLongitude($longitude)->setLastLocationAt($now)->setUpdatedAt($now);
         $this->entityManager->flush();
         if (null !== $order) {
-            $this->eventDispatcher->dispatch(new RiderLocationUpdatedEvent(
+            $this->bus->dispatch(new RiderLocationUpdated(
                 orderId: (string) $order->getId(),
                 riderId: (string) $rider->getId(),
                 latitude: (string) $latitude,

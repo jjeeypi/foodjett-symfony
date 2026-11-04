@@ -28,7 +28,7 @@ use App\Service\PlatformSettingService;
 use App\Tests\Double\RecordingMercureHub;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class RiderPoolEscalationServiceTest extends KernelTestCase
 {
@@ -206,7 +206,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         return new RiderPoolEscalationService(
             self::getContainer()->get(OrderRepository::class),
             $settings,
-            new OrderTransitionService($this->entityManager, $settings, self::getContainer()->get(EventDispatcherInterface::class)),
+            new OrderTransitionService($this->entityManager, $settings, self::getContainer()->get(MessageBusInterface::class)),
             new PaymentTransitionService($this->entityManager),
         );
     }

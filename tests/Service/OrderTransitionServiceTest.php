@@ -16,13 +16,14 @@ use App\Enum\PaymentMethod;
 use App\Enum\RestaurantOperatingStatus;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
-use App\Event\OrderStatusChangedEvent;
+use App\Message\OrderStatusChanged;
 use App\Service\OrderTransitionService;
 use App\Service\PlatformSettingService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class OrderTransitionServiceTest extends KernelTestCase
 {
@@ -47,17 +48,18 @@ final class OrderTransitionServiceTest extends KernelTestCase
     public function testAcceptanceSequenceCreatesPoolHistoryAndDispatchesOnlyAfterCommit(): void
     {
         $order = $this->createOrder();
-        $dispatcher = new EventDispatcher();
         $events = [];
         $transactionStates = [];
-        $dispatcher->addListener(OrderStatusChangedEvent::class, function (OrderStatusChangedEvent $event) use (&$events, &$transactionStates): void {
-            $events[] = $event;
-            $transactionStates[] = $this->entityManager->getConnection()->isTransactionActive();
+        $bus = $this->recordingBus(function (object $message) use (&$events, &$transactionStates): void {
+            if ($message instanceof OrderStatusChanged) {
+                $events[] = $message;
+                $transactionStates[] = $this->entityManager->getConnection()->isTransactionActive();
+            }
         });
         $service = new OrderTransitionService(
             $this->entityManager,
             new PlatformSettingService($this->entityManager),
-            $dispatcher,
+            $bus,
         );
 
         $updated = $service->transitionSequence(
@@ -81,7 +83,7 @@ final class OrderTransitionServiceTest extends KernelTestCase
         self::assertCount(3, $events);
         self::assertSame(
             [OrderStatus::ACCEPTED, OrderStatus::PREPARING, OrderStatus::FINDING_RIDER],
-            array_map(static fn (OrderStatusChangedEvent $event): OrderStatus => $event->currentStatus, $events),
+            array_map(static fn (OrderStatusChanged $event): OrderStatus => $event->currentStatus, $events),
         );
         self::assertSame([false, false, false], $transactionStates);
     }
@@ -92,7 +94,8 @@ final class OrderTransitionServiceTest extends KernelTestCase
         $service = new OrderTransitionService(
             $this->entityManager,
             new PlatformSettingService($this->entityManager),
-            new EventDispatcher(),
+            $this->recordingBus(static function (): void {
+            }),
         );
 
         try {
@@ -190,6 +193,23 @@ final class OrderTransitionServiceTest extends KernelTestCase
             ->setStatus(UserStatus::ACTIVE)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);
+    }
+
+    /** A bus that records each message instead of handling it. */
+    private function recordingBus(\Closure $onDispatch): MessageBusInterface
+    {
+        return new class($onDispatch) implements MessageBusInterface {
+            public function __construct(private readonly \Closure $onDispatch)
+            {
+            }
+
+            public function dispatch(object $message, array $stamps = []): Envelope
+            {
+                ($this->onDispatch)($message);
+
+                return new Envelope($message, $stamps);
+            }
+        };
     }
 
     private function cleanup(): void

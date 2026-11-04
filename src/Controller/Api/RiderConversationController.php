@@ -6,7 +6,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Event\MessageSentEvent;
+use App\Message\ConversationMessageSent;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
 use App\Security\Voter\ApprovedAccountVoter;
@@ -15,9 +15,9 @@ use App\Service\ApiPaginator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[Route('/api/rider/conversations', name: 'api_rider_conversations_')]
 #[IsGranted('ROLE_RIDER')]
@@ -27,7 +27,7 @@ final class RiderConversationController extends AbstractRiderController
     public function __construct(
         EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly MessageBusInterface $bus,
         private readonly ConversationRepository $conversations,
         private readonly MessageRepository $messages,
     ) {
@@ -83,7 +83,7 @@ final class RiderConversationController extends AbstractRiderController
         $this->entityManager->persist($message);
         $this->entityManager->flush();
         $recipient = $conversation->getOrder()->getCustomer()->getUser();
-        $this->eventDispatcher->dispatch(new MessageSentEvent(
+        $this->bus->dispatch(new ConversationMessageSent(
             messageId: (string) $message->getId(),
             conversationId: (string) $conversation->getId(),
             senderUserId: (string) $this->riderUser()->getId(),

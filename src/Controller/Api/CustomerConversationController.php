@@ -8,7 +8,7 @@ use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Order;
 use App\Enum\ConversationType;
-use App\Event\MessageSentEvent;
+use App\Message\ConversationMessageSent;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\OrderRepository;
@@ -18,9 +18,9 @@ use App\Service\ConversationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[Route('/api/customer/conversations', name: 'api_customer_conversations_')]
 #[IsGranted('ROLE_CUSTOMER')]
@@ -29,7 +29,7 @@ final class CustomerConversationController extends AbstractCustomerController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly MessageBusInterface $bus,
         private readonly ConversationService $conversations,
         private readonly OrderRepository $orders,
         private readonly ConversationRepository $conversationRecords,
@@ -119,7 +119,7 @@ final class CustomerConversationController extends AbstractCustomerController
             ? $conversation->getOrder()->getRestaurant()->getUser()
             : $conversation->getOrder()->getRider()?->getUser();
         if (null !== $recipient) {
-            $this->eventDispatcher->dispatch(new MessageSentEvent(
+            $this->bus->dispatch(new ConversationMessageSent(
                 messageId: (string) $message->getId(),
                 conversationId: (string) $conversation->getId(),
                 senderUserId: (string) $this->customerUser()->getId(),
