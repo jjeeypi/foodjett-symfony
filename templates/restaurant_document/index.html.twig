@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Documents | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
+    <h1>Documents</h1>
+
+    <table>
+        <thead><tr><th>Document</th><th>Status</th><th>Note from the admin</th><th>File</th></tr></thead>
+        <tbody>
+            {% for type in types %}
+                {% set document = documents[type] ?? null %}
+                <tr id="document-{{ type }}">
+                    <td>{{ type|replace({'_': ' '})|capitalize }}</td>
+                    <td>{{ document ? document.status : 'missing' }}</td>
+                    <td>{{ document ? document.rejectionReason }}</td>
+                    <td>{% if document %}<a href="{{ path('app_restaurant_document_file', {id: document.id}) }}">view</a>{% endif %}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if form %}
+        <h2>Upload a document</h2>
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <button type="submit">Upload</button>
+        {{ form_end(form) }}
+    {% else %}
+        <p>All documents are submitted.</p>
+    {% endif %}
+{% endblock %}

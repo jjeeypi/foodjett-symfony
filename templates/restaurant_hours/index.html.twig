@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Opening hours | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_restaurant_profile') }}">Profile</a></p>
+    <h1>Opening hours</h1>
+    <p>Leave a day empty when you are closed. A closing time earlier than the opening time runs past midnight.
+        With no hours at all, customers can order whenever your status is open.</p>
+
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+        <table>
+            <thead><tr><th>Day</th><th>Opens</th><th>Closes</th></tr></thead>
+            <tbody>
+                {% for day, name in days %}
+                    <tr>
+                        <td>{{ name }}</td>
+                        <td>{{ form_widget(form['opens_' ~ day], {attr: {'aria-label': name ~ ' opens'}}) }}{{ form_errors(form['opens_' ~ day]) }}</td>
+                        <td>{{ form_widget(form['closes_' ~ day], {attr: {'aria-label': name ~ ' closes'}}) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit">Save hours</button>
+    {{ form_end(form) }}
+{% endblock %}

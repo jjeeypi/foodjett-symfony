@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Restaurant profile | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a> | <a href="{{ path('app_restaurant_hours') }}">Opening hours</a> | <a href="{{ path('app_restaurant_documents') }}">Documents</a></p>
+    <h1>Restaurant profile</h1>
+
+    <p>Commission: {{ restaurant.commissionRate }}% · Public page: <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.slug }}</a></p>
+    {% if restaurant.logoPath %}<p><img src="{{ asset(restaurant.logoPath) }}" alt="Logo" width="96"></p>{% endif %}
+
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit">Save profile</button>
+    {{ form_end(form) }}
+{% endblock %}
