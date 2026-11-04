@@ -1,67 +1,230 @@
+{#- Icon from assets/images/icons.svg. Child templates: {% from 'base.html.twig' import icon %} -#}
+{% macro icon(name, class = '') -%}
+    <svg class="icon {{ class }}" aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#{{ name }}"></use></svg>
+{%- endmacro %}
+{% from _self import icon %}
+{%- set route = app.request.attributes.get('_route') ?? '' -%}
+{%- set user = app.user -%}
+{%- if is_granted('ROLE_ADMIN') -%}
+    {%- set workspace = 'Admin console' -%}
+    {%- set nav = [
+        ['Dashboard', 'chart', 'app_admin_dashboard', 'app_admin_dashboard'],
+        ['Orders', 'receipt', 'app_admin_order', 'app_admin_order'],
+        ['Unassigned', 'bike', 'app_admin_unassigned_order', 'app_admin_unassigned'],
+        ['Restaurants', 'store', 'app_admin_restaurant_index', 'app_admin_restaurant'],
+        ['Riders', 'bike', 'app_admin_rider_index', 'app_admin_rider'],
+        ['Customers', 'users', 'app_admin_customer_index', 'app_admin_customer'],
+        ['Payments', 'wallet', 'app_admin_payment', 'app_admin_payment'],
+        ['Restaurant payouts', 'cash', 'app_admin_restaurant_payout', 'app_admin_restaurant_payout'],
+        ['Rider payouts', 'cash', 'app_admin_rider_payout', 'app_admin_rider_payout'],
+        ['Cash remittances', 'wallet', 'app_admin_remittance', 'app_admin_remittance'],
+        ['Vouchers', 'ticket', 'app_admin_voucher_index', 'app_admin_voucher'],
+        ['Delivery zones', 'map', 'app_admin_delivery_zone_index', 'app_admin_delivery_zone'],
+        ['Reports', 'flag', 'app_admin_order_report', 'app_admin_order_report'],
+        ['Reviews', 'star', 'app_admin_review', 'app_admin_review'],
+        ['Support', 'help', 'app_admin_support_ticket', 'app_admin_support_ticket'],
+        ['Settings', 'settings', 'app_admin_platform_setting_index', 'app_admin_platform_setting'],
+        ['Audit log', 'list', 'app_admin_audit_log', 'app_admin_audit_log'],
+        ['Admin accounts', 'shield', 'app_admin_account', 'app_admin_account'],
+    ] -%}
+{%- elseif is_granted('ROLE_RESTAURANT') -%}
+    {%- set workspace = 'Restaurant workspace' -%}
+    {%- set nav = [
+        ['Dashboard', 'chart', 'app_restaurant_dashboard', 'app_restaurant_dashboard'],
+        ['Orders', 'receipt', 'app_restaurant_orders', 'app_restaurant_order'],
+        ['Menu', 'menu-book', 'app_menu_item_index', 'app_menu_'],
+        ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
+        ['Hours', 'clock', 'app_restaurant_hours', 'app_restaurant_hours'],
+        ['Vouchers', 'ticket', 'app_restaurant_voucher_index', 'app_restaurant_voucher'],
+        ['Reviews', 'star', 'app_restaurant_reviews', 'app_restaurant_reviews'],
+        ['Earnings', 'wallet', 'app_restaurant_earnings', 'app_restaurant_earnings'],
+        ['Documents', 'file', 'app_restaurant_documents', 'app_restaurant_documents'],
+        ['Profile', 'store', 'app_restaurant_profile', 'app_restaurant_profile'],
+    ] -%}
+{%- elseif is_granted('ROLE_RIDER') -%}
+    {%- set workspace = 'Rider workspace' -%}
+    {%- set nav = [
+        ['Order pool', 'bag', 'app_rider_pool', 'app_rider_pool'],
+        ['Active delivery', 'bike', 'app_rider_delivery', 'app_rider_delivery'],
+        ['Status', 'pin', 'app_rider_dashboard', 'app_rider_dashboard'],
+        ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
+        ['Earnings', 'bolt', 'app_rider_finance', 'app_rider_finance'],
+        ['My account', 'user', 'app_rider_account', 'app_rider_account|app_rider_document'],
+    ] -%}
+{%- elseif is_granted('ROLE_CUSTOMER') -%}
+    {%- set workspace = 'Your daily good food' -%}
+    {%- set nav = [
+        ['Explore', 'home', 'app_home', 'app_home|app_restaurant|app_search'],
+        ['My orders', 'bag', 'app_orders', 'app_order'],
+        ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
+        ['My account', 'user', 'app_account', 'app_account|app_customer_address|app_support'],
+    ] -%}
+{%- else -%}
+    {%- set workspace = 'Your daily good food' -%}
+    {%- set nav = [
+        ['Explore', 'home', 'app_home', 'app_home'],
+        ['Restaurants', 'store', 'app_restaurants', 'app_restaurant'],
+        ['Search', 'search', 'app_search', 'app_search'],
+        ['Log in', 'login', 'app_login', 'app_login'],
+        ['Sign up', 'user', 'app_register', 'app_register'],
+    ] -%}
+{%- endif -%}
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <title>{% block title %}Foodjett{% endblock %}</title>
         {# Live pages refresh in place when the server signals a change over Mercure. #}
         {{ turbo_refresh_method('morph') }}
         {{ turbo_refresh_scroll('preserve') }}
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>🍽️</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22m13 2-9 12h7l-1 8 10-13h-7Z%22 fill=%22%23c7ed8c%22 stroke=%22%23273826%22 stroke-width=%221.6%22 stroke-linejoin=%22round%22/></svg>">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
+        {% block stylesheets %}{% endblock %}
 
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
     </head>
     <body>
-        {# Plain markup on purpose: the styled frontend is built later from the mockup. #}
-        <header>
-            <nav>
-                <a href="{{ path('app_home') }}">Foodjett</a>
-                | <a href="{{ path('app_restaurants') }}">Restaurants</a>
-                | <a href="{{ path('app_search') }}">Search</a>
-                {% if is_granted('ROLE_CUSTOMER') %}
-                    | <a href="{{ path('app_cart') }}">Cart</a>
-                    | <a href="{{ path('app_orders') }}">Orders</a>
-                    | <a href="{{ path('app_account') }}">Account</a>
-                {% endif %}
-                {% if is_granted('ROLE_ADMIN') %}
-                    | <a href="{{ path('app_admin_dashboard') }}">Admin</a>
-                {% endif %}
-                {% if is_granted('ROLE_RIDER') %}
-                    | <a href="{{ path('app_rider_dashboard') }}">Rider</a>
-                    | <a href="{{ path('app_rider_pool') }}">Pool</a>
-                {% endif %}
-                {% if is_granted('ROLE_RESTAURANT') %}
-                    | <a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a>
-                    | <a href="{{ path('app_restaurant_orders') }}">Orders</a>
-                    | <a href="{{ path('app_menu_item_index') }}">Menu</a>
-                {% endif %}
-                {% if app.user %}
-                    | <a href="{{ path('app_messages') }}">Messages</a>
-                    | <a href="{{ path('app_support_ticket_index') }}">Help</a>
-                    | Signed in as {{ app.user.name }} ({{ app.user.role }})
-                    | <a href="{{ path('app_logout') }}">Log out</a>
-                {% else %}
-                    | <a href="{{ path('app_login') }}">Log in</a>
-                {% endif %}
-            </nav>
-        </header>
+        {% block layout %}
+        <div class="app">
+            <aside class="sidebar">
+                <a class="logo" href="{{ path('app_home') }}" aria-label="Foodjett home">foodjett{{ icon('bolt') }}</a>
+                <div class="workspace-label">{{ workspace }}</div>
 
-        <main>
-            {% for type, messages in app.flashes %}
-                {% for message in messages %}
-                    <p class="flash flash-{{ type }}" role="status">{{ message }}</p>
+                <nav class="side-nav" aria-label="Main navigation">
+                    {% for item in nav %}
+                        {% set active = false %}
+                        {% for prefix in item[3]|split('|') %}
+                            {% if route starts with prefix %}{% set active = true %}{% endif %}
+                        {% endfor %}
+                        <a class="nav-item{{ active ? ' active' }}{{ loop.index > 5 ? ' mobile-hidden' }}" href="{{ path(item[2]) }}" {% if active %}aria-current="page"{% endif %} title="{{ item[0] }}">
+                            {{ icon(item[1]) }}<span>{{ item[0] }}</span>
+                        </a>
+                    {% endfor %}
+                </nav>
+
+                <div class="sidebar-bottom">
+                    {% if user and is_granted('ROLE_CUSTOMER') %}
+                        <div class="little-promo">
+                            {{ icon('bike', 'icon-lg') }}
+                            <strong>Good food. Great perks.</strong>
+                            <p>Your next favorite meal comes with a little extra.</p>
+                            <a href="{{ path('app_restaurants') }}">Explore restaurants {{ icon('arrow', 'icon-sm') }}</a>
+                        </div>
+                    {% elseif user and is_granted('ROLE_RIDER') %}
+                        <div class="little-promo">
+                            {{ icon('bike', 'icon-lg') }}
+                            <strong>A good day starts with a safe ride.</strong>
+                            <p>Take your time. We’re with you every kilometer.</p>
+                        </div>
+                    {% endif %}
+                    {% if user %}
+                        <a class="side-link" href="{{ path('app_support_ticket_index') }}" title="Help & support">{{ icon('help') }}<span>Help & support</span></a>
+                        <div class="profile">
+                            <span class="avatar">
+                                {%- if user.avatarPath %}<img src="{{ asset(user.avatarPath) }}" alt="">{% else %}{{ user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}{% endif -%}
+                            </span>
+                            <span class="profile-text">
+                                <span class="profile-name">Hey, {{ user.name|split(' ')|first }}</span>
+                                <span class="profile-note">Signed in as {{ user.name }} ({{ user.role }})</span>
+                            </span>
+                            <a class="icon-button" href="{{ path('app_logout') }}" title="Log out" aria-label="Log out">{{ icon('logout') }}</a>
+                        </div>
+                    {% else %}
+                        <div class="little-promo">
+                            {{ icon('store', 'icon-lg') }}
+                            <strong>Grow with Foodjett.</strong>
+                            <p>Sell on Foodjett or deliver with us around Dumaguete.</p>
+                            <a href="{{ path('app_register_restaurant') }}">Add your restaurant {{ icon('arrow', 'icon-sm') }}</a>
+                            <a href="{{ path('app_register_rider') }}">Ride with us {{ icon('arrow', 'icon-sm') }}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </aside>
+
+            <div class="main-shell">
+                <header class="topbar">
+                    {% block topbar %}
+                        {% if is_granted('ROLE_CUSTOMER') %}
+                            {% set default = user.customer ? user.customer.addresses|filter(a => a.default)|first : null %}
+                            <a class="topbar-place" href="{{ path('app_customer_address_index') }}">
+                                <span class="pin-box">{{ icon('pin') }}</span>
+                                <span><small>Deliver to</small><strong>{{ default ? default.addressLine : 'Add a delivery address' }} {{ icon('down', 'icon-sm') }}</strong></span>
+                            </a>
+                            <div class="topbar-actions">
+                                <span class="status-note"><i class="dot"></i> Delivering good food, every day</span>
+                                {% set cartCount = user.customer ? user.customer.cartItems|reduce((sum, i) => sum + i.quantity, 0) : 0 %}
+                                <a class="cart-button" href="{{ path('app_cart') }}" aria-label="Your cart, {{ cartCount }} items">{{ icon('bag', 'icon-sm') }}<span class="cart-label">Your cart</span><span class="cart-count">{{ cartCount }}</span></a>
+                            </div>
+                        {% elseif is_granted('ROLE_RIDER') and user.rider %}
+                            {% set availability = user.rider.availabilityStatus %}
+                            <a class="topbar-place" href="{{ path('app_rider_dashboard') }}">
+                                <span class="pin-box">{{ icon('pin') }}</span>
+                                <span><small>Your delivery area</small><strong>Dumaguete City {{ icon('down', 'icon-sm') }}</strong></span>
+                            </a>
+                            <div class="topbar-actions">
+                                <a class="toggle{{ availability == 'available' ? ' on' }}" href="{{ path('app_rider_dashboard') }}">
+                                    <i class="dot{{ availability == 'offline' ? ' dot-off' }}"></i>
+                                    {{ availability == 'available' ? 'You’re online' : (availability == 'busy' ? 'On a delivery' : 'You’re offline') }}
+                                    <span class="toggle-track"></span>
+                                </a>
+                            </div>
+                        {% elseif is_granted('ROLE_RESTAURANT') and user.restaurant %}
+                            {% set store = user.restaurant %}
+                            <a class="topbar-place" href="{{ path('app_restaurant_profile') }}">
+                                <span class="pin-box">{{ icon('store') }}</span>
+                                <span><small>Your restaurant</small><strong>{{ store.name }}</strong></span>
+                            </a>
+                            <div class="topbar-actions">
+                                <span class="badge {{ store.openNow ? 'badge-green' : '' }}"><i class="dot{{ store.openNow ? '' : ' dot-off' }}"></i> {{ store.openNow ? 'Open now' : 'Closed' }}</span>
+                                <a class="btn btn-green btn-sm" href="{{ path('app_restaurant_orders') }}">{{ icon('receipt', 'icon-sm') }} Orders</a>
+                            </div>
+                        {% elseif is_granted('ROLE_ADMIN') %}
+                            <span class="topbar-place">
+                                <span class="pin-box">{{ icon('shield') }}</span>
+                                <span><small>Foodjett</small><strong>Admin console</strong></span>
+                            </span>
+                            <div class="topbar-actions">
+                                <span class="status-note">{{ 'now'|date('l, F j') }}</span>
+                            </div>
+                        {% else %}
+                            <a class="topbar-place" href="{{ path('app_restaurants') }}">
+                                <span class="pin-box">{{ icon('pin') }}</span>
+                                <span><small>Deliver to</small><strong>Dumaguete City {{ icon('down', 'icon-sm') }}</strong></span>
+                            </a>
+                            <div class="topbar-actions">
+                                <a class="btn btn-light btn-sm" href="{{ path('app_login') }}">Log in</a>
+                                <a class="btn btn-green btn-sm" href="{{ path('app_register') }}">Sign up</a>
+                            </div>
+                        {% endif %}
+                    {% endblock %}
+                </header>
+
+                <main class="content">
+                    {% block body %}{% endblock %}
+                </main>
+
+                <footer class="site-footer">
+                    <span class="brand-line">A little local love in every order.</span>
+                    <span>Food and restaurant pictures are AI-generated illustrations, not photos of the actual dishes.</span>
+                </footer>
+            </div>
+        </div>
+        {% endblock %}
+
+        {% set flashes = app.flashes %}
+        {% if flashes is not empty %}
+            <div class="flashes">
+                {% for type, messages in flashes %}
+                    {% for message in messages %}
+                        <p class="flash flash-{{ type }}" role="status">{{ icon(type == 'success' ? 'check' : 'bolt', 'icon-sm') }}{{ message }}<button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()">{{ icon('close', 'icon-sm') }}</button></p>
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
-
-            {% block body %}{% endblock %}
-        </main>
-
-        <footer>
-            <p><small>Food and restaurant pictures are AI-generated illustrations, not photos of the actual dishes.</small></p>
-        </footer>
+            </div>
+        {% endif %}
     </body>
 </html>

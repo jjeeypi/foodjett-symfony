@@ -35,7 +35,7 @@ class SecurityControllerTest extends WebTestCase
         $this->login('web-login@foodjett.test');
         self::assertResponseRedirects('/');
         $this->client->followRedirect();
-        self::assertSelectorTextContains('nav', 'Signed in as Web Test User');
+        self::assertSelectorTextContains('.profile', 'Signed in as Web Test User');
 
         $this->client->request('GET', '/logout');
         $this->client->followRedirect();
@@ -74,7 +74,7 @@ class SecurityControllerTest extends WebTestCase
         $this->createUser('web-session@foodjett.test', '+639170000005');
         $this->login('web-session@foodjett.test');
         $this->client->request('GET', '/');
-        self::assertSelectorTextContains('nav', 'Signed in as');
+        self::assertSelectorTextContains('.profile', 'Signed in as');
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $user = $entityManager->getRepository(User::class)->findOneBy(['email' => 'web-session@foodjett.test']);
@@ -82,7 +82,7 @@ class SecurityControllerTest extends WebTestCase
         $entityManager->flush();
 
         $this->client->request('GET', '/');
-        self::assertSelectorTextNotContains('nav', 'Signed in as');
+        self::assertSelectorNotExists('.profile');
     }
 
     public function testLoginIsThrottledAfterFiveFailedAttempts(): void
