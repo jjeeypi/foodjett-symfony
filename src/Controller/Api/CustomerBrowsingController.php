@@ -7,14 +7,12 @@ namespace App\Controller\Api;
 use App\Entity\MenuItem;
 use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
-use App\Enum\ApprovalStatus;
 use App\Enum\RestaurantOperatingStatus;
 use App\Repository\MenuItemRepository;
 use App\Repository\RestaurantRepository;
 use App\Repository\RestaurantReviewRepository;
 use App\Service\ApiPaginator;
 use App\Service\DeliveryZoneService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,7 +23,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class CustomerBrowsingController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly RestaurantRepository $restaurants,
         private readonly RestaurantReviewRepository $restaurantReviews,

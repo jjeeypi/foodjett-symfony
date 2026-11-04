@@ -44,4 +44,16 @@ class VoucherRepository extends ServiceEntityRepository
             ->andWhere('voucher.scope = :scope')->setParameter('scope', VoucherScope::PLATFORM->value)
             ->orderBy('voucher.createdAt', 'DESC');
     }
+
+    /** Vouchers that are switched on and inside their validity window at $now. */
+    public function countActiveAt(\DateTimeImmutable $now): int
+    {
+        return (int) $this->createQueryBuilder('voucher')
+            ->select('COUNT(voucher.id)')
+            ->andWhere('voucher.isActive = :active')->setParameter('active', true)
+            ->andWhere('(voucher.startsAt IS NULL OR voucher.startsAt <= :now)')
+            ->andWhere('(voucher.endsAt IS NULL OR voucher.endsAt >= :now)')
+            ->setParameter('now', $now)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Restaurant;
 use App\Enum\ApprovalStatus;
+use App\Enum\RestaurantOperatingStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -69,5 +70,35 @@ class RestaurantRepository extends ServiceEntityRepository
             ->andWhere('restaurant.approvalStatus = :status')
             ->setParameter('status', ApprovalStatus::PENDING->value)
             ->orderBy('restaurant.createdAt', 'ASC');
+    }
+
+    /** Approved restaurants that are open and whose owner account is active. */
+    public function countOpenAndActive(): int
+    {
+        return (int) $this->createQueryBuilder('restaurant')
+            ->select('COUNT(restaurant.id)')
+            ->innerJoin('restaurant.user', 'account')
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
+            ->andWhere('restaurant.operatingStatus = :open')->setParameter('open', RestaurantOperatingStatus::OPEN->value)
+            ->andWhere('account.status = :active')->setParameter('active', 'active')
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    public function countWithApprovalStatus(ApprovalStatus $status): int
+    {
+        return (int) $this->createQueryBuilder('restaurant')
+            ->select('COUNT(restaurant.id)')
+            ->andWhere('restaurant.approvalStatus = :status')->setParameter('status', $status->value)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** Records created between $start and $end inclusive. */
+    public function countCreatedBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('restaurant')
+            ->select('COUNT(restaurant.id)')
+            ->andWhere('restaurant.createdAt >= :start AND restaurant.createdAt <= :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
     }
 }

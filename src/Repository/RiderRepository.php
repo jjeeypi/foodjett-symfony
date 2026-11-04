@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Rider;
 use App\Enum\ApprovalStatus;
+use App\Enum\RiderAvailabilityStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -43,5 +44,35 @@ class RiderRepository extends ServiceEntityRepository
             ->andWhere('rider.approvalStatus = :status')
             ->setParameter('status', ApprovalStatus::PENDING->value)
             ->orderBy('rider.createdAt', 'ASC');
+    }
+
+    /** Approved riders who are available or busy and whose account is active. */
+    public function countOnline(): int
+    {
+        return (int) $this->createQueryBuilder('rider')
+            ->select('COUNT(rider.id)')
+            ->innerJoin('rider.user', 'account')
+            ->andWhere('rider.approvalStatus = :approved')->setParameter('approved', ApprovalStatus::APPROVED->value)
+            ->andWhere('rider.availabilityStatus IN (:online)')->setParameter('online', [RiderAvailabilityStatus::AVAILABLE->value, RiderAvailabilityStatus::BUSY->value])
+            ->andWhere('account.status = :active')->setParameter('active', 'active')
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    public function countWithApprovalStatus(ApprovalStatus $status): int
+    {
+        return (int) $this->createQueryBuilder('rider')
+            ->select('COUNT(rider.id)')
+            ->andWhere('rider.approvalStatus = :status')->setParameter('status', $status->value)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** Records created between $start and $end inclusive. */
+    public function countCreatedBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('rider')
+            ->select('COUNT(rider.id)')
+            ->andWhere('rider.createdAt >= :start AND rider.createdAt <= :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
     }
 }

@@ -8,7 +8,6 @@ use App\Entity\Order;
 use App\Enum\OrderStatus;
 use App\Repository\OrderRepository;
 use App\Security\Voter\ApprovedAccountVoter;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -19,7 +18,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class RestaurantDashboardController extends AbstractRestaurantController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly OrderRepository $orders,
     ) {
     }

@@ -30,4 +30,14 @@ class CustomerRepository extends ServiceEntityRepository
 
         return $query;
     }
+
+    /** Records created between $start and $end inclusive. */
+    public function countCreatedBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('customer')
+            ->select('COUNT(customer.id)')
+            ->andWhere('customer.createdAt >= :start AND customer.createdAt <= :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

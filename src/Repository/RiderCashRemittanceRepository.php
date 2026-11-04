@@ -49,4 +49,13 @@ class RiderCashRemittanceRepository extends ServiceEntityRepository
 
         return $query;
     }
+
+    /** Sum of every remittance still pending review, as a decimal string. */
+    public function sumPending(): string
+    {
+        return (string) $this->createQueryBuilder('remittance')
+            ->select('COALESCE(SUM(remittance.amount), 0)')
+            ->andWhere('remittance.status = :status')->setParameter('status', RemittanceStatus::PENDING->value)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\Order;
 use App\Entity\RestaurantPayout;
-use App\Enum\OrderStatus;
 use App\Repository\OrderRepository;
 use App\Repository\RestaurantPayoutRepository;
 use App\Security\Voter\ApprovedAccountVoter;
 use App\Service\ApiPaginator;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -23,7 +20,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class RestaurantEarningsController extends AbstractRestaurantController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly RestaurantPayoutRepository $payouts,
         private readonly OrderRepository $orders,

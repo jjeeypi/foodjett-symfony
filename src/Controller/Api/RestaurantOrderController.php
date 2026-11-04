@@ -18,7 +18,6 @@ use App\Security\Voter\OrderVoter;
 use App\Service\ApiPaginator;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,7 +29,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class RestaurantOrderController extends AbstractRestaurantController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly OrderTransitionService $transitions,
         private readonly PaymentTransitionService $payments,
         private readonly ApiPaginator $paginator,

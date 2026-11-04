@@ -37,4 +37,14 @@ class VoucherRedemptionRepository extends ServiceEntityRepository
             ->setParameter('customer', $customer)
             ->getQuery()->getSingleScalarResult();
     }
+
+    /** Redemptions made in [$start, $end). */
+    public function countBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('redemption')
+            ->select('COUNT(redemption.id)')
+            ->andWhere('redemption.createdAt >= :start AND redemption.createdAt < :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

@@ -337,4 +337,46 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('orders.customer = :customer')->setParameter('customer', $customer)
             ->orderBy('orders.placedAt', 'DESC')->setMaxResults($limit)->getQuery()->getResult();
     }
+
+    /** Orders placed in [$start, $end). */
+    public function countPlacedBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('orders')
+            ->select('COUNT(orders.id)')
+            ->andWhere('orders.placedAt >= :start AND orders.placedAt < :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** @param list<OrderStatus> $statuses */
+    public function countWithStatuses(array $statuses): int
+    {
+        return (int) $this->createQueryBuilder('orders')
+            ->select('COUNT(orders.id)')
+            ->andWhere('orders.status IN (:statuses)')
+            ->setParameter('statuses', array_map(static fn (OrderStatus $status): string => $status->value, $statuses))
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** Orders delivered in [$start, $end). */
+    public function countDeliveredBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('orders')
+            ->select('COUNT(orders.id)')
+            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** Total of all orders delivered in [$start, $end), as a decimal string. */
+    public function sumDeliveredTotalBetween(\DateTimeImmutable $start, \DateTimeImmutable $end): string
+    {
+        return (string) $this->createQueryBuilder('orders')
+            ->select('COALESCE(SUM(orders.totalAmount), 0)')
+            ->andWhere('orders.status = :status')->setParameter('status', OrderStatus::DELIVERED->value)
+            ->andWhere('orders.deliveredAt >= :start AND orders.deliveredAt < :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

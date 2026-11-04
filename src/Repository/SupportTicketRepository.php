@@ -38,4 +38,14 @@ class SupportTicketRepository extends ServiceEntityRepository
 
         return $query;
     }
+
+    /** @param list<SupportTicketStatus> $statuses */
+    public function countWithStatuses(array $statuses): int
+    {
+        return (int) $this->createQueryBuilder('ticket')
+            ->select('COUNT(ticket.id)')
+            ->andWhere('ticket.status IN (:statuses)')
+            ->setParameter('statuses', array_map(static fn (SupportTicketStatus $status): string => $status->value, $statuses))
+            ->getQuery()->getSingleScalarResult();
+    }
 }

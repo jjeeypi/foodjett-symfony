@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\RiderEarning;
 use App\Entity\RiderPayout;
 use App\Entity\User;
-use App\Enum\OrderStatus;
 use App\Enum\PayoutStatus;
 use App\Repository\RiderEarningRepository;
 use App\Repository\RiderPayoutRepository;

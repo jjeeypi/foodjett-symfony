@@ -16,28 +16,18 @@ class OrderStatusHistoryRepository extends ServiceEntityRepository
         parent::__construct($registry, OrderStatusHistory::class);
     }
 
-//    /**
-//     * @return OrderStatusHistory[] Returns an array of OrderStatusHistory objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('o.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?OrderStatusHistory
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /**
+     * Distinct orders that entered one of the statuses in [$start, $end).
+     *
+     * @param list<string> $statuses
+     */
+    public function countOrdersEnteringStatusesBetween(array $statuses, \DateTimeImmutable $start, \DateTimeImmutable $end): int
+    {
+        return (int) $this->createQueryBuilder('history')
+            ->select('COUNT(DISTINCT IDENTITY(history.order))')
+            ->andWhere('history.status IN (:statuses)')->setParameter('statuses', $statuses)
+            ->andWhere('history.createdAt >= :start AND history.createdAt < :end')
+            ->setParameter('start', $start)->setParameter('end', $end)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

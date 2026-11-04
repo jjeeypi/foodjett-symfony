@@ -6,7 +6,6 @@ namespace App\Controller\Api;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Enum\ConversationType;
 use App\Event\MessageSentEvent;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;

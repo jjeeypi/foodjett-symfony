@@ -7,7 +7,6 @@ namespace App\Controller\Api;
 use App\Entity\AuditLog;
 use App\Repository\AuditLogRepository;
 use App\Service\ApiPaginator;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,7 +18,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AdminAuditLogController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
         private readonly ApiPaginator $paginator,
         private readonly AuditLogRepository $auditLogs,
     ) {
