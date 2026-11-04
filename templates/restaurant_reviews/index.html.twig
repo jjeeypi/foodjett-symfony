@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reviews | Foodjett{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
+    <h1>Reviews</h1>
+
+    {% for review in reviews %}
+        <article id="review-{{ review.id }}">
+            <p><strong>{{ review.rating }} ★</strong> from {{ review.customer.user.name }} for order {{ review.order.orderNumber }} · {{ review.createdAt|date('M j, Y') }}</p>
+            {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+            {% if review.repliedAt %}<p>Your reply ({{ review.repliedAt|date('M j') }}): {{ review.restaurantReply }}</p>{% endif %}
+            {{ form_start(forms[review.id]) }}
+                {{ form_widget(forms[review.id]) }}
+                <button type="submit">{{ review.repliedAt ? 'Update reply' : 'Reply' }}</button>
+            {{ form_end(forms[review.id]) }}
+        </article>
+    {% else %}
+        <p>No reviews yet.</p>
+    {% endfor %}
+    {{ knp_pagination_render(reviews) }}
+{% endblock %}

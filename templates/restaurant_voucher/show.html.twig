@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Voucher {{ voucher.code }} | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Voucher {{ voucher.code }}</h1>
+
+    <table class="table">
+        <tbody>
+            <tr><th>Discount</th><td>{{ voucher.type|replace({'_': ' '}) }}{% if voucher.value %}: {{ voucher.value }}{% endif %}</td></tr>
+            <tr><th>Minimum order</th><td>PHP {{ voucher.minOrderAmount }}</td></tr>
+            <tr><th>Uses</th><td>{{ voucher.redemptions|length }} of {{ voucher.usageLimitTotal ?? 'unlimited' }}, at most {{ voucher.usageLimitPerCustomer }} per customer</td></tr>
+            <tr><th>Starts</th><td>{{ voucher.startsAt ? voucher.startsAt|date('M j, Y g:i A') : 'now' }}</td></tr>
+            <tr><th>Ends</th><td>{{ voucher.endsAt ? voucher.endsAt|date('M j, Y g:i A') : 'no end' }}</td></tr>
+            <tr><th>Active</th><td>{{ voucher.active ? 'Yes' : 'No' }}</td></tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_restaurant_voucher_index') }}">back to list</a>
+
+    <a href="{{ path('app_restaurant_voucher_edit', {'id': voucher.id}) }}">edit</a>
+
+    {{ include('restaurant_voucher/_delete_form.html.twig') }}
+{% endblock %}
