@@ -51,6 +51,23 @@ class BrowseControllerTest extends CustomerWebTestCase
         self::assertSelectorExists('select#kind option[value="bakery_desserts"]');
     }
 
+    public function testPicturesShowWhenTheyExist(): void
+    {
+        $restaurant = $this->fresh(Restaurant::class, (string) $this->restaurant->getId())->setCoverPhotoPath('images/catalog/covers/pictured.webp');
+        $item = $this->createItem($this->createCategory($restaurant, 'Pictured'), 'Pictured Dish', '99.00');
+        $item->setPhotoPath('images/catalog/items/pictured.webp');
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+
+        $crawler = $this->client->request('GET', '/restaurants');
+        self::assertCount(1, $crawler->filter('main li img[src="/images/catalog/covers/pictured.webp"]'));
+
+        $crawler = $this->client->request('GET', '/restaurants/'.$this->restaurant->getSlug());
+        self::assertCount(1, $crawler->filter('main img[src="/images/catalog/covers/pictured.webp"]'));
+        self::assertCount(1, $crawler->filter('#item-'.$item->getId().' img[src="/images/catalog/items/pictured.webp"]'));
+        self::assertSelectorTextContains('footer', 'AI-generated illustrations');
+    }
+
     public function testRestaurantPageShowsMenuHoursAndPaginatedReviews(): void
     {
         $this->addCurrentHours($this->restaurant);
