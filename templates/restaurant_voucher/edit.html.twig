@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Voucher{% endblock %}
+{% block title %}Edit voucher | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Edit Voucher</h1>
+    <h1>Edit voucher {{ voucher.code }}</h1>
 
     {{ include('restaurant_voucher/_form.html.twig', {'button_label': 'Update'}) }}
 

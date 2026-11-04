@@ -2,42 +2,39 @@
 
 namespace App\Form;
 
-use App\Entity\Restaurant;
 use App\Entity\Voucher;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/** A discount code. Scope, owner and timestamps are set by the controller (restaurant or admin). */
 class VoucherType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('code')
-            ->add('scope')
-            ->add('type')
-            ->add('value')
-            ->add('minOrderAmount')
-            ->add('usageLimitTotal')
-            ->add('usageLimitPerCustomer')
-            ->add('startsAt', null, [
-                'widget' => 'single_text'
+            ->add('code', TextType::class, ['help' => 'Customers type this at checkout; stored in capitals.', 'empty_data' => ''])
+            ->add('type', ChoiceType::class, [
+                'label' => 'Discount',
+                'choices' => ['Percentage off' => Voucher::TYPE_PERCENTAGE, 'Fixed amount off' => Voucher::TYPE_FIXED, 'Free delivery' => Voucher::TYPE_FREE_DELIVERY],
             ])
-            ->add('endsAt', null, [
-                'widget' => 'single_text'
+            ->add('value', TextType::class, [
+                'label' => 'Value',
+                'required' => false,
+                'help' => 'Percent or PHP amount; leave empty for free delivery.',
+                'attr' => ['inputmode' => 'decimal'],
             ])
-            ->add('isActive')
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('restaurant', EntityType::class, [
-                'class' => Restaurant::class,
-                'choice_label' => 'id',
-            ])
+            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (PHP)', 'empty_data' => '0', 'attr' => ['inputmode' => 'decimal']])
+            ->add('usageLimitTotal', IntegerType::class, ['label' => 'Total uses', 'required' => false, 'help' => 'Leave empty for no limit.'])
+            ->add('usageLimitPerCustomer', IntegerType::class, ['label' => 'Uses per customer', 'empty_data' => '1'])
+            ->add('startsAt', DateTimeType::class, ['label' => 'Starts', 'input' => 'datetime_immutable', 'widget' => 'single_text', 'required' => false])
+            ->add('endsAt', DateTimeType::class, ['label' => 'Ends', 'input' => 'datetime_immutable', 'widget' => 'single_text', 'required' => false])
+            ->add('isActive', CheckboxType::class, ['label' => 'Active', 'required' => false])
         ;
     }
 

@@ -2,46 +2,24 @@
 
 namespace App\Form;
 
-use App\Entity\Customer;
-use App\Entity\Order;
-use App\Entity\Restaurant;
 use App\Entity\RestaurantReview;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
+/** The restaurant's public answer to a review. */
 class ReviewReplyFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder
-            ->add('rating')
-            ->add('comment')
-            ->add('photoPath')
-            ->add('restaurantReply')
-            ->add('repliedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('order', EntityType::class, [
-                'class' => Order::class,
-                'choice_label' => 'id',
-            ])
-            ->add('customer', EntityType::class, [
-                'class' => Customer::class,
-                'choice_label' => 'id',
-            ])
-            ->add('restaurant', EntityType::class, [
-                'class' => Restaurant::class,
-                'choice_label' => 'id',
-            ])
-        ;
+        $builder->add('restaurantReply', TextareaType::class, [
+            'label' => 'Your reply',
+            'empty_data' => '',
+            'constraints' => [new NotBlank(message: 'Write a reply first.'), new Length(max: 5000)],
+        ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

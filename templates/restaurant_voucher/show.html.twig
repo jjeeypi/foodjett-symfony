@@ -1,64 +1,18 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Voucher{% endblock %}
+{% block title %}Voucher {{ voucher.code }} | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Voucher</h1>
+    <h1>Voucher {{ voucher.code }}</h1>
 
     <table class="table">
         <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ voucher.id }}</td>
-            </tr>
-            <tr>
-                <th>Code</th>
-                <td>{{ voucher.code }}</td>
-            </tr>
-            <tr>
-                <th>Scope</th>
-                <td>{{ voucher.scope }}</td>
-            </tr>
-            <tr>
-                <th>Type</th>
-                <td>{{ voucher.type }}</td>
-            </tr>
-            <tr>
-                <th>Value</th>
-                <td>{{ voucher.value }}</td>
-            </tr>
-            <tr>
-                <th>MinOrderAmount</th>
-                <td>{{ voucher.minOrderAmount }}</td>
-            </tr>
-            <tr>
-                <th>UsageLimitTotal</th>
-                <td>{{ voucher.usageLimitTotal }}</td>
-            </tr>
-            <tr>
-                <th>UsageLimitPerCustomer</th>
-                <td>{{ voucher.usageLimitPerCustomer }}</td>
-            </tr>
-            <tr>
-                <th>StartsAt</th>
-                <td>{{ voucher.startsAt ? voucher.startsAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>EndsAt</th>
-                <td>{{ voucher.endsAt ? voucher.endsAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>IsActive</th>
-                <td>{{ voucher.isActive ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ voucher.createdAt ? voucher.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>UpdatedAt</th>
-                <td>{{ voucher.updatedAt ? voucher.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
+            <tr><th>Discount</th><td>{{ voucher.type|replace({'_': ' '}) }}{% if voucher.value %}: {{ voucher.value }}{% endif %}</td></tr>
+            <tr><th>Minimum order</th><td>PHP {{ voucher.minOrderAmount }}</td></tr>
+            <tr><th>Uses</th><td>{{ voucher.redemptions|length }} of {{ voucher.usageLimitTotal ?? 'unlimited' }}, at most {{ voucher.usageLimitPerCustomer }} per customer</td></tr>
+            <tr><th>Starts</th><td>{{ voucher.startsAt ? voucher.startsAt|date('M j, Y g:i A') : 'now' }}</td></tr>
+            <tr><th>Ends</th><td>{{ voucher.endsAt ? voucher.endsAt|date('M j, Y g:i A') : 'no end' }}</td></tr>
+            <tr><th>Active</th><td>{{ voucher.active ? 'Yes' : 'No' }}</td></tr>
         </tbody>
     </table>
 

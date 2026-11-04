@@ -1,20 +1,42 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello RestaurantEarningsController!{% endblock %}
+{% block title %}Earnings | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
+    <h1>Earnings</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <table id="periods">
+        <thead><tr><th>Period</th><th>Delivered orders</th><th>Sales</th><th>Commission</th><th>Net</th></tr></thead>
+        <tbody>
+            {% for label, period in periods %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>{{ period.orders }}</td>
+                    <td>PHP {{ period.gross }}</td>
+                    <td>PHP {{ period.commission }}</td>
+                    <td>PHP {{ period.net }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/src/Controller/RestaurantEarningsController.php</code></li>
-        <li>Your template at <code>C:/Users/jjeeypi/Documents/Symfony/foodjett/templates/restaurant_earnings/index.html.twig</code></li>
-    </ul>
-</div>
+    <h2>Payouts</h2>
+    <table id="payouts">
+        <thead><tr><th>Period</th><th>Sales</th><th>Commission</th><th>Paid to you</th><th>Status</th></tr></thead>
+        <tbody>
+            {% for payout in payouts %}
+                <tr>
+                    <td>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
+                    <td>PHP {{ payout.grossSales }}</td>
+                    <td>PHP {{ payout.commissionDeducted }}</td>
+                    <td>PHP {{ payout.netAmount }}</td>
+                    <td>{{ payout.status }}{% if payout.paidAt %} on {{ payout.paidAt|date('M j, Y') }}{% endif %}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">No payouts yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(payouts) }}
 {% endblock %}
