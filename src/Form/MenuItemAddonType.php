@@ -2,31 +2,22 @@
 
 namespace App\Form;
 
-use App\Entity\MenuItem;
 use App\Entity\MenuItemAddon;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/** An extra a customer can add to a dish for a price. */
 class MenuItemAddonType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name')
-            ->add('price')
-            ->add('isAvailable')
-            ->add('createdAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text'
-            ])
-            ->add('menuItem', EntityType::class, [
-                'class' => MenuItem::class,
-                'choice_label' => 'id',
-            ])
+            ->add('name', TextType::class, ['empty_data' => ''])
+            ->add('price', TextType::class, ['label' => 'Price (PHP)', 'empty_data' => '', 'attr' => ['inputmode' => 'decimal']])
+            ->add('isAvailable', CheckboxType::class, ['label' => 'Available', 'required' => false])
         ;
     }
 

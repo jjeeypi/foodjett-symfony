@@ -1,41 +1,38 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}MenuCategory index{% endblock %}
+{% block title %}Menu categories | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>MenuCategory index</h1>
+    <p><a href="{{ path('app_menu_item_index') }}">Menu items</a></p>
+    <h1>Menu categories</h1>
 
     <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
                 <th>Name</th>
-                <th>SortOrder</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
+                <th>Position</th>
+                <th>Items</th>
                 <th>actions</th>
             </tr>
         </thead>
         <tbody>
         {% for menu_category in menu_categories %}
             <tr>
-                <td>{{ menu_category.id }}</td>
                 <td>{{ menu_category.name }}</td>
                 <td>{{ menu_category.sortOrder }}</td>
-                <td>{{ menu_category.createdAt ? menu_category.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ menu_category.updatedAt ? menu_category.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ menu_category.items|length }}</td>
                 <td>
-                    <a href="{{ path('app_menu_category_show', {'id': menu_category.id}) }}">show</a>
                     <a href="{{ path('app_menu_category_edit', {'id': menu_category.id}) }}">edit</a>
+                    {{ include('menu_category/_delete_form.html.twig') }}
                 </td>
             </tr>
         {% else %}
             <tr>
-                <td colspan="6">no records found</td>
+                <td colspan="4">No categories yet.</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
 
-    <a href="{{ path('app_menu_category_new') }}">Create new</a>
+    <a href="{{ path('app_menu_category_new') }}">Add a category</a>
 {% endblock %}

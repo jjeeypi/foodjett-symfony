@@ -1,62 +1,58 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}MenuItem{% endblock %}
+{% block title %}{{ menu_item.name }} | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>MenuItem</h1>
+    <p><a href="{{ path('app_menu_item_index') }}">Menu items</a></p>
+    <h1>{{ menu_item.name }}</h1>
 
     <table class="table">
         <tbody>
+            <tr><th>Category</th><td>{{ menu_item.menuCategory.name }}</td></tr>
+            <tr><th>Price</th><td>PHP {{ menu_item.basePrice }}</td></tr>
+            <tr><th>Description</th><td>{{ menu_item.description }}</td></tr>
+            <tr><th>Available</th><td>{{ menu_item.available ? 'Yes' : 'No' }}{{ menu_item.featured ? ' · Featured' }}</td></tr>
             <tr>
-                <th>Id</th>
-                <td>{{ menu_item.id }}</td>
+                <th>Served</th>
+                <td>
+                    {% if menu_item.availableFrom or menu_item.availableUntil %}
+                        {{ menu_item.availableFrom ? menu_item.availableFrom|date('H:i') : 'opening' }} to {{ menu_item.availableUntil ? menu_item.availableUntil|date('H:i') : 'closing' }}
+                    {% else %}
+                        all day
+                    {% endif %}
+                </td>
             </tr>
-            <tr>
-                <th>Name</th>
-                <td>{{ menu_item.name }}</td>
-            </tr>
-            <tr>
-                <th>Description</th>
-                <td>{{ menu_item.description }}</td>
-            </tr>
-            <tr>
-                <th>PhotoPath</th>
-                <td>{{ menu_item.photoPath }}</td>
-            </tr>
-            <tr>
-                <th>BasePrice</th>
-                <td>{{ menu_item.basePrice }}</td>
-            </tr>
-            <tr>
-                <th>IsAvailable</th>
-                <td>{{ menu_item.isAvailable ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>AvailableFrom</th>
-                <td>{{ menu_item.availableFrom ? menu_item.availableFrom|date('H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>AvailableUntil</th>
-                <td>{{ menu_item.availableUntil ? menu_item.availableUntil|date('H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>IsFeatured</th>
-                <td>{{ menu_item.isFeatured ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ menu_item.createdAt ? menu_item.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>UpdatedAt</th>
-                <td>{{ menu_item.updatedAt ? menu_item.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
+            {% if menu_item.photoPath %}<tr><th>Photo</th><td><img src="{{ asset(menu_item.photoPath) }}" alt="{{ menu_item.name }}" width="160"></td></tr>{% endif %}
         </tbody>
     </table>
-
-    <a href="{{ path('app_menu_item_index') }}">back to list</a>
-
     <a href="{{ path('app_menu_item_edit', {'id': menu_item.id}) }}">edit</a>
 
+    <h2>Options</h2>
+    <ul id="variants">
+        {% for variant in menu_item.variants %}
+            <li>
+                {{ variant.name }} ({{ variant.priceDelta >= 0 ? '+' : '' }}{{ variant.priceDelta }})
+                <a href="{{ path('app_menu_item_variant_edit', {'itemId': menu_item.id, 'id': variant.id}) }}">edit</a>
+            </li>
+        {% else %}
+            <li>No options.</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ path('app_menu_item_variant_new', {'itemId': menu_item.id}) }}">Add an option</a>
+
+    <h2>Add-ons</h2>
+    <ul id="addons">
+        {% for addon in menu_item.addons %}
+            <li>
+                {{ addon.name }} (+{{ addon.price }}){{ addon.available ? '' : ' · unavailable' }}
+                <a href="{{ path('app_menu_item_addon_edit', {'itemId': menu_item.id, 'id': addon.id}) }}">edit</a>
+            </li>
+        {% else %}
+            <li>No add-ons.</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ path('app_menu_item_addon_new', {'itemId': menu_item.id}) }}">Add an add-on</a>
+
+    <h2>Delete</h2>
     {{ include('menu_item/_delete_form.html.twig') }}
 {% endblock %}
