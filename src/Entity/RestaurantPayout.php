@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\PayoutStatus;
+use App\Repository\RestaurantPayoutRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RestaurantPayoutRepository::class)]
 #[ORM\Table(name: 'restaurant_payouts')]
 #[ORM\UniqueConstraint(name: 'restaurant_payout_period_unique', columns: ['restaurant_id', 'period_start', 'period_end'])]
 class RestaurantPayout

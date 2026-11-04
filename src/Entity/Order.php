@@ -8,12 +8,13 @@ use App\Enum\OrderActor;
 use App\Enum\OrderStatus;
 use App\Enum\PaymentMethod;
 use App\Enum\RiderPoolEscalationStage;
+use App\Repository\OrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: 'orders')]
 #[ORM\Index(name: 'orders_status_index', columns: ['status'])]
 #[ORM\UniqueConstraint(name: 'orders_order_number_unique', columns: ['order_number'])]

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\RiderPoolEscalationStage;
+use App\Repository\RiderPoolOfferRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RiderPoolOfferRepository::class)]
 #[ORM\Table(name: 'rider_pool_offers')]
 #[ORM\UniqueConstraint(name: 'rider_pool_offers_order_id_unique', columns: ['order_id'])]
 class RiderPoolOffer

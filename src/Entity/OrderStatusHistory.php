@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\OrderActor;
+use App\Repository\OrderStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: OrderStatusHistoryRepository::class)]
 #[ORM\Table(name: 'order_status_history')]
 #[ORM\Index(name: 'order_status_history_order_id_foreign', columns: ['order_id'])]
 class OrderStatusHistory

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\VoucherRedemptionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: VoucherRedemptionRepository::class)]
 #[ORM\Table(name: 'voucher_redemptions')]
 #[ORM\UniqueConstraint(name: 'voucher_redemptions_order_id_unique', columns: ['order_id'])]
 #[ORM\Index(name: 'voucher_redemptions_voucher_id_foreign', columns: ['voucher_id'])]

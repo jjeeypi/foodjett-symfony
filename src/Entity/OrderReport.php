@@ -7,10 +7,11 @@ namespace App\Entity;
 use App\Enum\OrderReportAgainst;
 use App\Enum\OrderReportStatus;
 use App\Enum\OrderReportType;
+use App\Repository\OrderReportRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: OrderReportRepository::class)]
 #[ORM\Table(name: 'order_reports')]
 #[ORM\Index(name: 'order_reports_order_id_foreign', columns: ['order_id'])]
 #[ORM\Index(name: 'order_reports_reported_by_user_id_foreign', columns: ['reported_by_user_id'])]

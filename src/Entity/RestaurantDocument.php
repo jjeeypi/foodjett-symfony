@@ -6,10 +6,11 @@ namespace App\Entity;
 
 use App\Enum\DocumentStatus;
 use App\Enum\RestaurantDocumentType;
+use App\Repository\RestaurantDocumentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RestaurantDocumentRepository::class)]
 #[ORM\Table(name: 'restaurant_documents')]
 #[ORM\UniqueConstraint(name: 'restaurant_documents_restaurant_type_unique', columns: ['restaurant_id', 'type'])]
 #[ORM\Index(name: 'restaurant_documents_restaurant_id_foreign', columns: ['restaurant_id'])]

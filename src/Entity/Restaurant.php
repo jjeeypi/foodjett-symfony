@@ -7,12 +7,13 @@ namespace App\Entity;
 use App\Enum\ApprovalStatus;
 use App\Enum\PayoutMethod;
 use App\Enum\RestaurantOperatingStatus;
+use App\Repository\RestaurantRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RestaurantRepository::class)]
 #[ORM\Table(name: 'restaurants')]
 #[ORM\Index(name: 'restaurants_approval_status_operating_status_index', columns: ['approval_status', 'operating_status'])]
 #[ORM\UniqueConstraint(name: 'restaurants_slug_unique', columns: ['slug'])]

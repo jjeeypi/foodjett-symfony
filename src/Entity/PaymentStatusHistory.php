@@ -6,10 +6,11 @@ namespace App\Entity;
 
 use App\Enum\PaymentActor;
 use App\Enum\PaymentStatus;
+use App\Repository\PaymentStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PaymentStatusHistoryRepository::class)]
 #[ORM\Table(name: 'payment_status_history')]
 #[ORM\Index(name: 'payment_status_history_payment_id_foreign', columns: ['payment_id'])]
 class PaymentStatusHistory

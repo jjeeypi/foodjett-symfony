@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: 'messages')]
 #[ORM\Index(name: 'messages_conversation_id_created_at_index', columns: ['conversation_id', 'created_at'])]
 #[ORM\Index(name: 'messages_sender_user_id_foreign', columns: ['sender_user_id'])]
