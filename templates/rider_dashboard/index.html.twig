@@ -13,6 +13,7 @@
             {% else %}
                 <p>An admin is reviewing your documents. You can take orders once you are approved.</p>
             {% endif %}
+            <p><a href="{{ path('app_rider_documents') }}">Your documents</a></p>
         </section>
     {% else %}
         <p id="availability">
@@ -45,6 +46,9 @@
 
         <p>
             <a href="{{ path('app_messages') }}">Messages</a>
+            | <a href="{{ path('app_rider_finance') }}">Earnings and cash</a>
+            | <a href="{{ path('app_rider_account') }}">Account</a>
+            | <a href="{{ path('app_rider_documents') }}">Documents</a>
         </p>
     {% endif %}
 {% endblock %}
