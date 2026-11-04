@@ -24,9 +24,9 @@
         {% for remittance in remittances %}
             <tr id="remittance-{{ remittance.id }}">
                 <td><a href="{{ path('app_admin_rider_show', {id: remittance.rider.id}) }}">{{ remittance.rider.user.name }}</a></td>
-                <td>PHP {{ remittance.amount }}</td>
+                <td>₱{{ remittance.amount }}</td>
                 <td>{{ remittance.referenceNote }}</td>
-                <td class="cash">PHP {{ remittance.rider.cashOnHand }}</td>
+                <td class="cash">₱{{ remittance.rider.cashOnHand }}</td>
                 <td class="status">{{ remittance.status }}{% if remittance.confirmedByAdmin %} by {{ remittance.confirmedByAdmin.user.name }}{% endif %}</td>
                 <td>{{ remittance.createdAt|date('M j, Y g:i A') }}</td>
                 <td>

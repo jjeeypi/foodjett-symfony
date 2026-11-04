@@ -13,7 +13,7 @@
             <tr><th>Cuisine</th><td>{{ restaurant.cuisineType }}</td></tr>
             <tr><th>Address</th><td>{{ restaurant.address }} ({{ restaurant.latitude }}, {{ restaurant.longitude }})</td></tr>
             <tr><th>Commission</th><td>{{ restaurant.commissionRate }}%</td></tr>
-            <tr><th>Minimum order</th><td>PHP {{ restaurant.minOrderAmount }}</td></tr>
+            <tr><th>Minimum order</th><td>₱{{ restaurant.minOrderAmount }}</td></tr>
             <tr><th>Status</th><td>{{ restaurant.operatingStatus|replace({'_': ' '}) }}</td></tr>
         </tbody>
     </table>

@@ -13,9 +13,9 @@
                 <tr>
                     <td>{{ label }}</td>
                     <td>{{ period.orders }}</td>
-                    <td>PHP {{ period.gross }}</td>
-                    <td>PHP {{ period.commission }}</td>
-                    <td>PHP {{ period.net }}</td>
+                    <td>₱{{ period.gross }}</td>
+                    <td>₱{{ period.commission }}</td>
+                    <td>₱{{ period.net }}</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -28,9 +28,9 @@
             {% for payout in payouts %}
                 <tr>
                     <td>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
-                    <td>PHP {{ payout.grossSales }}</td>
-                    <td>PHP {{ payout.commissionDeducted }}</td>
-                    <td>PHP {{ payout.netAmount }}</td>
+                    <td>₱{{ payout.grossSales }}</td>
+                    <td>₱{{ payout.commissionDeducted }}</td>
+                    <td>₱{{ payout.netAmount }}</td>
                     <td>{{ payout.status }}{% if payout.paidAt %} on {{ payout.paidAt|date('M j, Y') }}{% endif %}</td>
                 </tr>
             {% else %}

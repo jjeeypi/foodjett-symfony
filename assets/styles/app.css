@@ -566,3 +566,10 @@ table.table > tbody > tr > th { width: 32%; text-transform: none; letter-spacing
 }
 .content > a:not([class]):hover { background: #f5f8f0; text-decoration: none; }
 .content > table.table, .content > table:not([class]) { display: table; }
+/* GET filter forms on list pages read as one compact bar */
+.content > form[method="get"] { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; max-width: none; padding: 14px 16px; }
+.content > form[method="get"] > label { margin: 0; }
+.content > form[method="get"] > input:not([type=checkbox]), .content > form[method="get"] > select { width: auto; flex: 0 1 220px; min-height: 40px; }
+.content > form[method="get"] > button { min-height: 40px; }
+.content > form[method="get"] > p, .content > form[method="get"] > div { margin: 0; display: flex; align-items: center; gap: 8px; }
+dd.money::before { content: "₱"; }

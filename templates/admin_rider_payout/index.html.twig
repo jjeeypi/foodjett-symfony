@@ -32,7 +32,7 @@
             <tr id="payout-{{ payout.id }}">
                 <td><a href="{{ path('app_admin_rider_show', {id: payout.rider.id}) }}">{{ payout.rider.user.name }}</a></td>
                 <td>{{ payout.periodStart|date('M j, Y') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
-                <td class="net">PHP {{ payout.totalAmount }}</td>
+                <td class="net">₱{{ payout.totalAmount }}</td>
                 <td class="status">{{ payout.status }}{% if payout.paidAt %} {{ payout.paidAt|date('M j, Y') }}{% endif %}</td>
                 <td>
                     {% if payout.status == 'pending' %}

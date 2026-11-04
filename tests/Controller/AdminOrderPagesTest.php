@@ -70,7 +70,7 @@ class AdminOrderPagesTest extends WebTestCase
         $this->page('/admin/order/'.$this->paidOrderId);
         self::assertSelectorTextContains('#payment', 'paid');
         self::assertSelectorTextContains('#address', 'Test address');
-        self::assertSelectorTextContains('#money', 'PHP 135.00');
+        self::assertSelectorTextContains('#money', '₱135.00');
         self::assertSelectorExists('#timeline');
     }
 

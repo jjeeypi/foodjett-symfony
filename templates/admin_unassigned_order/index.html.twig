@@ -20,7 +20,7 @@
                 <td class="minutes">{{ order.riderSearchStartedAt ? ((now.timestamp - order.riderSearchStartedAt.timestamp) / 60)|round(0, 'floor') : 0 }} min</td>
                 <td>{{ order.riderPoolOffer.escalationStage|replace({'_': ' '}) }}</td>
                 <td>{{ order.riderPoolOffer.searchRadiusKm }} km</td>
-                <td>PHP {{ order.riderPoolOffer.incentiveAmount }}</td>
+                <td>₱{{ order.riderPoolOffer.incentiveAmount }}</td>
             </tr>
         {% else %}
             <tr><td colspan="6">Every order has a rider.</td></tr>

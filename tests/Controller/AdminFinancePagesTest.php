@@ -52,7 +52,7 @@ class AdminFinancePagesTest extends WebTestCase
         self::assertSame(1, $this->entityManager()->getRepository(RestaurantPayout::class)->count(['restaurant' => $this->restaurantId]));
 
         $crawler = $this->page('/admin/payout/restaurant');
-        self::assertSelectorTextContains('#payout-'.$payoutId.' .net', 'PHP 85.00');
+        self::assertSelectorTextContains('#payout-'.$payoutId.' .net', '₱85.00');
         $this->client->submit($crawler->filter('#payout-'.$payoutId)->selectButton('Mark paid')->form());
         self::assertResponseRedirects('/admin/payout/restaurant');
         $payout = $this->find(RestaurantPayout::class, $payoutId);
@@ -106,7 +106,7 @@ class AdminFinancePagesTest extends WebTestCase
         self::assertSame(['rider_remittance.confirmed'], $this->auditActions($this->remittanceId));
 
         $this->page('/admin/remittance');
-        self::assertSelectorTextContains('#remittance-'.$this->remittanceId.' .cash', 'PHP 300.00');
+        self::assertSelectorTextContains('#remittance-'.$this->remittanceId.' .cash', '₱300.00');
         self::assertSelectorNotExists('#remittance-'.$this->remittanceId.' form');
     }
 

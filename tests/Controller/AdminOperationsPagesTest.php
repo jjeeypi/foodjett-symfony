@@ -103,7 +103,7 @@ class AdminOperationsPagesTest extends WebTestCase
         self::assertSame(['payment.refunded', 'payment.refunded'], $this->auditActions($this->paymentId));
 
         $this->page('/admin/payment');
-        self::assertSelectorTextContains($row.' .refunded', 'PHP 125.00');
+        self::assertSelectorTextContains($row.' .refunded', '₱125.00');
         self::assertSelectorNotExists($row.' form');
     }
 

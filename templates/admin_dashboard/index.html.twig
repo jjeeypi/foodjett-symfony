@@ -1,61 +1,50 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Admin dashboard | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Admin dashboard</h1>
-    <p>
-        <a href="{{ path('app_admin_restaurant_index', {approval: 'pending'}) }}">Restaurant applications</a>
-        | <a href="{{ path('app_admin_rider_index', {approval: 'pending'}) }}">Rider applications</a>
-        | <a href="{{ path('app_admin_customer_index') }}">Customers</a>
-    </p>
-    <p>
-        <a href="{{ path('app_admin_order') }}">Orders</a>
-        | <a href="{{ path('app_admin_unassigned_order') }}">Waiting for a rider</a>
-        | <a href="{{ path('app_admin_order_report') }}">Order reports</a>
-        | <a href="{{ path('app_admin_payment') }}">Payments</a>
-        | <a href="{{ path('app_admin_support_ticket') }}">Support tickets</a>
-    </p>
-    <p>
-        <a href="{{ path('app_admin_remittance') }}">Cash remittances</a>
-        | <a href="{{ path('app_admin_restaurant_payout') }}">Restaurant payouts</a>
-        | <a href="{{ path('app_admin_rider_payout') }}">Rider payouts</a>
-    </p>
-    <p>
-        <a href="{{ path('app_admin_voucher_index') }}">Platform vouchers</a>
-        | <a href="{{ path('app_admin_delivery_zone_index') }}">Delivery zones</a>
-        | <a href="{{ path('app_admin_platform_setting_index') }}">Platform settings</a>
-    </p>
-    <p>
-        <a href="{{ path('app_admin_review') }}">Reviews</a>
-        | <a href="{{ path('app_admin_audit_log') }}">Audit log</a>
-        | <a href="{{ path('app_admin_account') }}">Administrators</a>
-    </p>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Admin console</div>
+            <h1>Good day, <span>{{ app.user.name|split(' ')|first }}.</span></h1>
+            <p>Everything happening on Foodjett, at a glance.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-light" href="{{ path('app_admin_restaurant_index', {approval: 'pending'}) }}">{{ icon('store', 'icon-sm') }} Restaurant applications</a>
+            <a class="btn btn-light" href="{{ path('app_admin_rider_index', {approval: 'pending'}) }}">{{ icon('bike', 'icon-sm') }} Rider applications</a>
+            <a class="btn btn-green" href="{{ path('app_admin_unassigned_order') }}">{{ icon('receipt', 'icon-sm') }} Waiting for a rider</a>
+        </div>
+    </div>
 
+    {% set money_words = ['revenue', 'amount', 'sales', 'commission', 'gmv', 'fees', 'payout'] %}
     {% for section, values in stats %}
         {% if values is iterable %}
-            <section id="{{ section }}">
+            <section id="{{ section }}" class="panel" style="margin-bottom: 20px">
                 <h2>{{ section|replace({'_': ' '})|capitalize }}</h2>
-                <dl>
+                <dl class="stats" style="margin: 16px 0 0">
                     {% for key, value in values %}
-                        <dt>{{ key|replace({'_': ' '})|capitalize }}</dt>
-                        {% if value is iterable %}
-                            <dd>
-                                <dl>
-                                    {% for part, count in value %}
-                                        <dt>{{ part|replace({'_': ' '})|capitalize }}</dt>
-                                        <dd id="{{ section }}-{{ key }}-{{ part }}">{{ count }}</dd>
-                                    {% endfor %}
-                                </dl>
-                            </dd>
-                        {% else %}
-                            <dd id="{{ section }}-{{ key }}">{{ value }}</dd>
-                        {% endif %}
+                        <div>
+                            <dt>{{ key|replace({'_': ' '})|capitalize }}</dt>
+                            {% if value is iterable %}
+                                <dd style="font: 500 13px 'DM Sans', sans-serif; letter-spacing: 0">
+                                    <dl>
+                                        {% for part, count in value %}
+                                            <div style="display: flex; justify-content: space-between; gap: 8px"><dt style="text-transform: none; letter-spacing: 0; font-size: 12px">{{ part|replace({'_': ' '})|capitalize }}</dt>
+                                            <dd id="{{ section }}-{{ key }}-{{ part }}" style="margin: 0; font-weight: 700">{{ count }}</dd></div>
+                                        {% endfor %}
+                                    </dl>
+                                </dd>
+                            {% else %}
+                                {% set is_money = money_words|filter(w => w in key)|length > 0 %}
+                                <dd id="{{ section }}-{{ key }}" class="{{ is_money ? 'money' }}">{{ value }}</dd>
+                            {% endif %}
+                        </div>
                     {% endfor %}
                 </dl>
             </section>
         {% else %}
-            <p><small>{{ section|replace({'_': ' '}) }}: {{ values }}</small></p>
+            <p class="subtle"><small>{{ section|replace({'_': ' '}) }}: {{ values }}</small></p>
         {% endif %}
     {% endfor %}
 {% endblock %}

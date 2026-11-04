@@ -60,7 +60,7 @@ class AdminCustomerPagesTest extends WebTestCase
 
         $url = '/admin/customer/'.$this->customerId;
         $crawler = $this->page($url);
-        self::assertSelectorTextContains('#order-summary', '1 orders, PHP 125.00 spent');
+        self::assertSelectorTextContains('#order-summary', '1 orders, ₱125.00 spent');
         self::assertSelectorTextContains('ul', 'ADMIN-REPORT-ORDER');
 
         $this->client->submit($crawler->selectButton('Suspend account')->form());
