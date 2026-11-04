@@ -6,10 +6,22 @@ accept and deliver orders, and administrators approve partners and run the
 platform. Order tracking, chat and the rider order pool update live through a
 Mercure hub.
 
-The Symfony application lives at the repository root. The user interface is
-moving from a separate React single-page application to Twig templates
-rendered by Symfony; during that transition the JSON endpoints under `/api`
-remain in place.
+The Symfony application lives at the repository root and renders every page
+with Twig. Signing in is a session login with an email address or phone number.
+Each role has its own area:
+
+| Area | Path | Who |
+| --- | --- | --- |
+| Browsing, cart, checkout, orders, account | `/restaurants`, `/cart`, `/checkout`, `/orders`, `/account` | Customers |
+| Dashboard, orders, menu, hours, documents, vouchers, earnings | `/restaurant` | Restaurants |
+| Dashboard, order pool, deliveries, documents, cash and pay | `/rider` | Riders |
+| Approvals, customers, orders, refunds, payouts, settings, audit log | `/admin` | Administrators |
+| Chats and help requests | `/messages`, `/support` | Everyone signed in |
+
+Pages that show changing data (order tracking, the restaurant queue, the rider
+pool, chats) subscribe to their own Mercure topics and refresh in place when
+the server signals a change. The pages are deliberately unstyled for now; the
+visual design comes later.
 
 ## Run the stack with Docker
 
@@ -49,8 +61,7 @@ remain in place.
 5. Open the application at <http://localhost:8080>. The health check is
    <http://localhost:8080/api/health>.
 
-On startup the `app` container generates the JWT key pair in a persistent
-volume when it is missing and runs all Doctrine migrations before Apache
+On startup the `app` container runs all Doctrine migrations before Apache
 starts.
 
 ### Services
@@ -67,8 +78,10 @@ the application and Mercure on the same origin
 (`http://localhost:8080/.well-known/mercure`). Symfony publishes to the hub
 internally at `http://mercure/.well-known/mercure`.
 
-MariaDB data, uploaded files, Mercure state and the JWT keys use named volumes,
-so stopping and restarting keeps data. To use other host ports, set
+MariaDB data, Mercure state and uploaded files use named volumes, so stopping
+and restarting keeps data. Menu photos are public (`public/uploads`); restaurant
+and rider documents are private (`var/uploads`) and only reachable through the
+owner's and the admins' pages. To use other host ports, set
 `WEB_PORT` (and `PUBLIC_WEB_URL` to match) in your shell before
 `docker compose up`.
 
@@ -113,7 +126,7 @@ php bin/phpunit
 ## Environment and secrets
 
 - Commit `.env` (safe defaults only) and `.env.docker.example`; never commit
-  `.env.local`, `.env.*.local` or the JWT keys.
+  `.env.local` or `.env.*.local`.
 - Do not place real secrets in `compose.yaml`, the `Dockerfile` or any committed
   `.env` file.
 - Inside Docker the application reaches the database and hub by their service

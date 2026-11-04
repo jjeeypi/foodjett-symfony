@@ -3,10 +3,9 @@
 namespace App\Tests\Controller;
 
 use App\Entity\OrderItem;
-use App\Tests\Controller\Api\RestaurantApiTestCase;
 
 /** The kitchen queue lists only the restaurant's own orders, with items and instructions. */
-class RestaurantOrderQueuePageTest extends RestaurantApiTestCase
+class RestaurantOrderQueuePageTest extends RestaurantWebTestCase
 {
     public function testQueueShowsItemsInstructionsAndOnlyOwnedOrders(): void
     {

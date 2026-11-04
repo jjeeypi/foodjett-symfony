@@ -7,11 +7,10 @@ use App\Entity\Restaurant;
 use App\Entity\RestaurantPayout;
 use App\Entity\RestaurantReview;
 use App\Entity\Voucher;
-use App\Tests\Controller\Api\RestaurantApiTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 
 /** The restaurant's earnings, reviews and vouchers. */
-class RestaurantBusinessPagesTest extends RestaurantApiTestCase
+class RestaurantBusinessPagesTest extends RestaurantWebTestCase
 {
     protected function setUp(): void
     {

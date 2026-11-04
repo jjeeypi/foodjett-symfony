@@ -8,12 +8,11 @@ use App\Entity\MenuItemAddon;
 use App\Entity\MenuItemVariant;
 use App\Entity\OrderItem;
 use App\Entity\Restaurant;
-use App\Tests\Controller\Api\RestaurantApiTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Filesystem;
 
 /** The restaurant's menu editor: categories, items, options and add-ons. */
-class RestaurantMenuPagesTest extends RestaurantApiTestCase
+class RestaurantMenuPagesTest extends RestaurantWebTestCase
 {
     protected function setUp(): void
     {

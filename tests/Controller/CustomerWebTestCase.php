@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Controller\Api;
+namespace App\Tests\Controller;
 
 use App\Entity\Customer;
 use App\Entity\CustomerAddress;
@@ -18,7 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-abstract class CustomerApiTestCase extends WebTestCase
+abstract class CustomerWebTestCase extends WebTestCase
 {
     protected const PASSWORD = 'TestPassword123!';
 
@@ -37,7 +37,6 @@ abstract class CustomerApiTestCase extends WebTestCase
     /** @var list<string> */
     protected array $uploadedPaths = [];
 
-    private ?string $token = null;
     private int $orderSequence = 0;
 
     protected function setUp(): void
@@ -81,24 +80,6 @@ abstract class CustomerApiTestCase extends WebTestCase
             $connection->rollBack();
         }
         parent::tearDown();
-    }
-
-    /** @return array<string, string> */
-    protected function auth(): array
-    {
-        if (null === $this->token) {
-            $this->client->jsonRequest('POST', '/api/login', ['login' => $this->customerUser->getEmail(), 'password' => self::PASSWORD]);
-            self::assertResponseIsSuccessful();
-            $this->token = (string) ($this->payload()['token'] ?? '');
-        }
-
-        return ['HTTP_AUTHORIZATION' => 'Bearer '.$this->token];
-    }
-
-    /** @return array<string, mixed> */
-    protected function payload(): array
-    {
-        return json_decode((string) $this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
     }
 
     protected function persist(object ...$entities): void
