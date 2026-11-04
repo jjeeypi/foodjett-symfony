@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}PlatformSetting index{% endblock %}
+
+{% block body %}
+    <h1>PlatformSetting index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Key</th>
+                <th>Value</th>
+                <th>Description</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for platform_setting in platform_settings %}
+            <tr>
+                <td>{{ platform_setting.id }}</td>
+                <td>{{ platform_setting.key }}</td>
+                <td>{{ platform_setting.value }}</td>
+                <td>{{ platform_setting.description }}</td>
+                <td>{{ platform_setting.createdAt ? platform_setting.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ platform_setting.updatedAt ? platform_setting.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_admin_platform_setting_show', {'id': platform_setting.id}) }}">show</a>
+                    <a href="{{ path('app_admin_platform_setting_edit', {'id': platform_setting.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="7">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_platform_setting_new') }}">Create new</a>
+{% endblock %}

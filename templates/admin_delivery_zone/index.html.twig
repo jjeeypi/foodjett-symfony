@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}DeliveryZone index{% endblock %}
+
+{% block body %}
+    <h1>DeliveryZone index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Polygon</th>
+                <th>IsActive</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for delivery_zone in delivery_zones %}
+            <tr>
+                <td>{{ delivery_zone.id }}</td>
+                <td>{{ delivery_zone.name }}</td>
+                <td>{{ delivery_zone.polygon ? delivery_zone.polygon|json_encode : '' }}</td>
+                <td>{{ delivery_zone.isActive ? 'Yes' : 'No' }}</td>
+                <td>{{ delivery_zone.createdAt ? delivery_zone.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ delivery_zone.updatedAt ? delivery_zone.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_admin_delivery_zone_show', {'id': delivery_zone.id}) }}">show</a>
+                    <a href="{{ path('app_admin_delivery_zone_edit', {'id': delivery_zone.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="7">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_delivery_zone_new') }}">Create new</a>
+{% endblock %}
