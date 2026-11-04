@@ -20,6 +20,7 @@ use App\Enum\RestaurantOperatingStatus;
 use App\Enum\RiderPoolEscalationStage;
 use App\Enum\UserRole;
 use App\Enum\UserStatus;
+use App\Repository\OrderRepository;
 use App\Service\RiderPoolEscalationService;
 use App\Service\OrderTransitionService;
 use App\Service\PaymentTransitionService;
@@ -203,7 +204,7 @@ final class RiderPoolEscalationServiceTest extends KernelTestCase
         $settings = new PlatformSettingService($this->entityManager);
 
         return new RiderPoolEscalationService(
-            $this->entityManager,
+            self::getContainer()->get(OrderRepository::class),
             $settings,
             new OrderTransitionService($this->entityManager, $settings, self::getContainer()->get(EventDispatcherInterface::class)),
             new PaymentTransitionService($this->entityManager),
