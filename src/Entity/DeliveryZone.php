@@ -18,11 +18,11 @@ class DeliveryZone
     private ?string $id = null;
 
     #[ORM\Column(length: 255)]
-    private string $name;
+    private string $name = '';
 
     /** @var array<string, mixed> */
     #[ORM\Column(type: Types::JSON)]
-    private array $polygon;
+    private array $polygon = [];
 
     #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;

@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New voucher | Foodjett admin{% endblock %}
+
+{% block body %}
+    <h1>Create a voucher</h1>
+
+    {{ include('admin_voucher/_form.html.twig') }}
+
+    <a href="{{ path('app_admin_voucher_index') }}">back to list</a>
+{% endblock %}

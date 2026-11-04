@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ delivery_zone.name }} | Foodjett admin{% endblock %}
+
+{% block body %}
+    <h1>{{ delivery_zone.name }}</h1>
+
+    <table class="table">
+        <tbody>
+            <tr><th>Centre</th><td>{{ delivery_zone.polygon.center[0] ?? '' }}, {{ delivery_zone.polygon.center[1] ?? '' }}</td></tr>
+            <tr><th>Radius</th><td>{{ delivery_zone.polygon.radius_km ?? '' }} km</td></tr>
+            <tr><th>Active</th><td>{{ delivery_zone.active ? 'Yes' : 'No' }}</td></tr>
+            <tr><th>Updated</th><td>{{ delivery_zone.updatedAt ? delivery_zone.updatedAt|date('M j, Y g:i A') : '' }}</td></tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_delivery_zone_index') }}">back to list</a>
+
+    <a href="{{ path('app_admin_delivery_zone_edit', {'id': delivery_zone.id}) }}">edit</a>
+
+    {{ include('admin_delivery_zone/_delete_form.html.twig') }}
+{% endblock %}

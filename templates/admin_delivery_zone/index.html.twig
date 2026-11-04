@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Delivery zones | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Delivery zones</h1>
+    <p>Checkout refuses addresses outside every active zone. With no active zone, Foodjett delivers everywhere.</p>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Centre</th>
+                <th>Radius</th>
+                <th>Active</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for delivery_zone in delivery_zones %}
+            <tr id="zone-{{ delivery_zone.id }}">
+                <td>{{ delivery_zone.name }}</td>
+                <td>{{ delivery_zone.polygon.center[0] ?? '' }}, {{ delivery_zone.polygon.center[1] ?? '' }}</td>
+                <td>{{ delivery_zone.polygon.radius_km ?? '' }} km</td>
+                <td class="active">{{ delivery_zone.active ? 'Yes' : 'No' }}</td>
+                <td>
+                    <a href="{{ path('app_admin_delivery_zone_show', {'id': delivery_zone.id}) }}">show</a>
+                    <a href="{{ path('app_admin_delivery_zone_edit', {'id': delivery_zone.id}) }}">edit</a>
+                    <form method="post" action="{{ path('app_admin_delivery_zone_toggle', {'id': delivery_zone.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ delivery_zone.id) }}">
+                        <button type="submit">{{ delivery_zone.active ? 'Switch off' : 'Switch on' }}</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">No zones yet, so every address is accepted.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_delivery_zone_new') }}">Add a zone</a>
+{% endblock %}

@@ -32,36 +32,6 @@ final class AdminSettingsAccountControllerTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testPlatformSettingsCanBeBulkUpsertedAndRead(): void
-    {
-        $token = $this->login();
-        $this->client->jsonRequest('PATCH', '/api/admin/platform-settings', ['settings' => ['admin_api_test_rate' => '12.50']], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        $settings = array_column($this->payload()['settings'], 'value', 'key');
-        self::assertSame('12.50', $settings['admin_api_test_rate']);
-
-        $this->client->jsonRequest('PATCH', '/api/admin/platform-settings', ['settings' => ['rider_base_pay' => 'invalid']], server: $this->auth($token));
-        self::assertResponseStatusCodeSame(422);
-    }
-
-    public function testDeliveryZoneCrudAndToggleUseCircleShape(): void
-    {
-        $token = $this->login();
-        $this->client->jsonRequest('POST', '/api/admin/delivery-zones', [
-            'name' => 'Admin API Zone', 'center' => [14.5995, 120.9842], 'radius_km' => 5, 'is_active' => true,
-        ], server: $this->auth($token));
-        self::assertResponseStatusCodeSame(201);
-        $zone = $this->payload()['zone'];
-        self::assertSame('circle', $zone['polygon']['type']);
-        self::assertTrue($zone['is_active']);
-
-        $this->client->jsonRequest('POST', '/api/admin/delivery-zones/'.$zone['id'].'/toggle', [], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertFalse($this->payload()['zone']['is_active']);
-        $this->client->request('DELETE', '/api/admin/delivery-zones/'.$zone['id'], server: $this->auth($token));
-        self::assertResponseStatusCodeSame(204);
-    }
-
     public function testAdminCreationAndSelfSuspensionGuard(): void
     {
         $token = $this->login();

@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New delivery zone | Foodjett admin{% endblock %}
+
+{% block body %}
+    <h1>New delivery zone</h1>
+
+    {{ include('admin_delivery_zone/_form.html.twig') }}
+
+    <a href="{{ path('app_admin_delivery_zone_index') }}">back to list</a>
+{% endblock %}

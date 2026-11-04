@@ -21,6 +21,11 @@
         | <a href="{{ path('app_admin_restaurant_payout') }}">Restaurant payouts</a>
         | <a href="{{ path('app_admin_rider_payout') }}">Rider payouts</a>
     </p>
+    <p>
+        <a href="{{ path('app_admin_voucher_index') }}">Platform vouchers</a>
+        | <a href="{{ path('app_admin_delivery_zone_index') }}">Delivery zones</a>
+        | <a href="{{ path('app_admin_platform_setting_index') }}">Platform settings</a>
+    </p>
 
     {% for section, values in stats %}
         {% if values is iterable %}

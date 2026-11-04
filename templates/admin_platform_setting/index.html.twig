@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Platform settings | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Platform settings</h1>
+    <p>Fees, rider pay and timing rules the platform reads at run time. A setting that is missing uses its built-in default.</p>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Setting</th>
+                <th>Value</th>
+                <th>Description</th>
+                <th>Updated</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for platform_setting in platform_settings %}
+            <tr id="setting-{{ platform_setting.key }}">
+                <td>{{ platform_setting.key }}</td>
+                <td class="value">{{ platform_setting.value }}</td>
+                <td>{{ platform_setting.description }}</td>
+                <td>{{ platform_setting.updatedAt ? platform_setting.updatedAt|date('M j, Y g:i A') : '' }}</td>
+                <td><a href="{{ path('app_admin_platform_setting_edit', {'id': platform_setting.id}) }}">edit</a></td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">No settings stored; every default applies.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_platform_setting_new') }}">Add a setting</a>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New setting | Foodjett admin{% endblock %}
+
+{% block body %}
+    <h1>New setting</h1>
+
+    {{ include('admin_platform_setting/_form.html.twig') }}
+
+    <a href="{{ path('app_admin_platform_setting_index') }}">back to list</a>
+{% endblock %}
