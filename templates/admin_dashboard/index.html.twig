@@ -16,6 +16,11 @@
         | <a href="{{ path('app_admin_payment') }}">Payments</a>
         | <a href="{{ path('app_admin_support_ticket') }}">Support tickets</a>
     </p>
+    <p>
+        <a href="{{ path('app_admin_remittance') }}">Cash remittances</a>
+        | <a href="{{ path('app_admin_restaurant_payout') }}">Restaurant payouts</a>
+        | <a href="{{ path('app_admin_rider_payout') }}">Rider payouts</a>
+    </p>
 
     {% for section, values in stats %}
         {% if values is iterable %}
