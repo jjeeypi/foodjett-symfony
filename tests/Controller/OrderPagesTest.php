@@ -173,7 +173,7 @@ class OrderPagesTest extends CustomerWebTestCase
         $crawler = $this->client->request('GET', $url);
         self::assertResponseIsSuccessful();
 
-        return $crawler->filter('tbody td:first-child a')->each(fn ($link) => $link->text());
+        return $crawler->filter('.order-card .order-number')->each(fn ($number) => $number->text());
     }
 
     private function reorder(Order $order): void
