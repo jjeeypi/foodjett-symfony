@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Your account | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Your account</h1>
+
+    <ul>
+        <li><a href="{{ path('app_customer_address_index') }}">Delivery addresses</a></li>
+        <li><a href="{{ path('app_orders') }}">Orders</a></li>
+        <li><a href="{{ path('app_support_ticket_index') }}">Support requests</a></li>
+    </ul>
+
+    <h2>Profile</h2>
+    {% if user.avatarPath %}<p><img src="{{ asset(user.avatarPath) }}" alt="Profile photo" width="96"></p>{% endif %}
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit">Save profile</button>
+    {{ form_end(form) }}
+
+    <h2>Delete account</h2>
+    <p>Your name, email, phone and photo are removed and you cannot sign in again. Past orders stay with the restaurants.</p>
+    <form method="post" action="{{ path('app_account_delete') }}" onsubmit="return confirm('Delete your account for good?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete-account') }}">
+        <button type="submit">Delete my account</button>
+    </form>
+{% endblock %}

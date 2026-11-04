@@ -7,7 +7,7 @@
     <p><a href="{{ path('app_cart') }}">Back to cart</a></p>
 
     {% if form is null %}
-        <p>Add a delivery address to your account before checking out.</p>
+        <p>Add a delivery address to your account before checking out. <a href="{{ path('app_customer_address_new') }}">Add an address</a></p>
     {% else %}
         {% if error %}
             <p class="error" role="alert">{{ error }}</p>

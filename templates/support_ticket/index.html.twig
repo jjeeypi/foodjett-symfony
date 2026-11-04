@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Support | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Support requests</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Sent</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for support_ticket in support_tickets %}
+            <tr>
+                <td><a href="{{ path('app_support_ticket_show', {'id': support_ticket.id}) }}">{{ support_ticket.subject }}</a></td>
+                <td>{{ support_ticket.status|replace({'_': ' '}) }}</td>
+                <td>{{ support_ticket.createdAt ? support_ticket.createdAt|date('M j, Y g:i A') : '' }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">You have not sent any requests.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(support_tickets) }}
+
+    <a href="{{ path('app_support_ticket_new') }}">Ask for help</a>
+{% endblock %}

@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CustomerAddressRepository::class)]
 #[ORM\Table(name: 'customer_addresses')]
@@ -24,21 +25,31 @@ class CustomerAddress
     #[ORM\JoinColumn(name: 'customer_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private Customer $customer;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $label;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private string $addressLine;
 
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $landmark = null;
 
+    #[Assert\Length(max: 1000)]
     #[ORM\Column(type: Types::TEXT, length: 65535, nullable: true)]
     private ?string $deliveryInstructions = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^-?(?:90(?:\.0+)?|[0-8]?\d(?:\.\d+)?)$/', message: 'Latitude must be between -90 and 90.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $latitude;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^-?(?:180(?:\.0+)?|(?:1[0-7]\d|[0-9]?\d)(?:\.\d+)?)$/', message: 'Longitude must be between -180 and 180.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7)]
     private string $longitude;
 

@@ -430,15 +430,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
     }
 
     /**
-     * Called with the user freshly loaded from the database. A changed password, role or
-     * email, or an account that is no longer active, ends the session on the next request.
+     * Called with the user freshly loaded from the database. A changed password or role, or an
+     * account that is no longer active, ends the session on the next request. A changed email
+     * does not: users may edit it on their profile while signed in.
      */
     public function isEqualTo(UserInterface $user): bool
     {
         return $user instanceof self
             && $user->getId() === $this->id
             && $user->getPassword() === $this->password
-            && $user->getUserIdentifier() === $this->getUserIdentifier()
             && $user->getRole() === $this->role
             && self::STATUS_ACTIVE === $user->getStatus();
     }

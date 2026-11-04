@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New address | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Add an address</h1>
+
+    {{ include('customer_address/_form.html.twig') }}
+
+    <a href="{{ path('app_customer_address_index') }}">back to list</a>
+{% endblock %}

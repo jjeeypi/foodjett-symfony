@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ support_ticket.subject }} | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>{{ support_ticket.subject }}</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Status</th>
+                <td>{{ support_ticket.status|replace({'_': ' '}) }}</td>
+            </tr>
+            <tr>
+                <th>Sent</th>
+                <td>{{ support_ticket.createdAt ? support_ticket.createdAt|date('M j, Y g:i A') : '' }}</td>
+            </tr>
+            <tr>
+                <th>Message</th>
+                <td>{{ support_ticket.message|nl2br }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_support_ticket_index') }}">back to list</a>
+{% endblock %}

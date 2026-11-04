@@ -45,10 +45,17 @@ class CustomerAddressRepository extends ServiceEntityRepository
     }
 
     /** Clears the default flag on every address of the customer. */
-    public function clearDefaultForCustomer(int|string|null $customerId): void
+    /**
+     * Un-marks the customer's default addresses in one query, except $keep. This bypasses the
+     * entity manager, so callers must not rely on already loaded addresses of this customer.
+     */
+    public function clearDefaultForCustomer(int|string|null $customerId, ?CustomerAddress $keep = null): void
     {
-        $this->getEntityManager()->createQueryBuilder()->update(CustomerAddress::class, 'address')->set('address.isDefault', ':false')
-            ->andWhere('IDENTITY(address.customer) = :customer')->setParameter('false', false)->setParameter('customer', $customerId)
-            ->getQuery()->execute();
+        $query = $this->getEntityManager()->createQueryBuilder()->update(CustomerAddress::class, 'address')->set('address.isDefault', ':false')
+            ->andWhere('IDENTITY(address.customer) = :customer')->setParameter('false', false)->setParameter('customer', $customerId);
+        if (null !== $keep?->getId()) {
+            $query->andWhere('address.id <> :keep')->setParameter('keep', $keep->getId());
+        }
+        $query->getQuery()->execute();
     }
 }

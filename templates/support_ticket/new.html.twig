@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ask for help | Foodjett{% endblock %}
+
+{% block body %}
+    <h1>Ask for help</h1>
+
+    {{ include('support_ticket/_form.html.twig') }}
+
+    <a href="{{ path('app_support_ticket_index') }}">back to list</a>
+{% endblock %}
