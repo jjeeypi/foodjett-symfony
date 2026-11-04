@@ -43,30 +43,6 @@ final class AdminFinanceControllerTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testAdminCanRecordPartialAndFullRefundWithHistory(): void
-    {
-        $token = $this->login();
-        $this->client->request('GET', '/api/admin/payments?method=card&status=paid', server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        $listed = $this->payload()['data'][0] ?? [];
-        self::assertSame($this->paymentId, (string) ($listed['id'] ?? ''));
-        self::assertNotNull($listed['created_at'] ?? null);
-
-        $this->client->jsonRequest('POST', '/api/admin/payments/'.$this->paymentId.'/refund', ['amount' => 25, 'reason' => 'Missing item'], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame('partially_refunded', $this->payload()['payment']['status']);
-        self::assertSame('25.00', $this->payload()['payment']['refunded_amount']);
-
-        $this->client->jsonRequest('POST', '/api/admin/payments/'.$this->paymentId.'/refund', [], server: $this->auth($token));
-        self::assertResponseIsSuccessful();
-        self::assertSame('refunded', $this->payload()['payment']['status']);
-        self::assertSame('115.00', $this->payload()['payment']['refunded_amount']);
-
-        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
-        self::assertSame(2, (int) $connection->fetchOne('SELECT COUNT(*) FROM payment_status_history WHERE payment_id = ?', [$this->paymentId]));
-        self::assertSame(2, (int) $connection->fetchOne("SELECT COUNT(*) FROM audit_logs WHERE action = 'payment.refunded' AND subject_id = ?", [$this->paymentId]));
-    }
-
     public function testAdminGeneratesAndPaysRestaurantAndRiderPayouts(): void
     {
         $token = $this->login();

@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payments | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Payments</h1>
+
+    <form method="get">
+        <label for="method">Method</label>
+        <select id="method" name="method">
+            <option value="">All</option>
+            {% for value in methods %}<option value="{{ value }}" {{ method == value ? 'selected' }}>{{ value|upper }}</option>{% endfor %}
+        </select>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>{% endfor %}
+        </select>
+        <label for="from">Paid from</label>
+        <input type="date" id="from" name="from" value="{{ from ? from|date('Y-m-d') }}">
+        <label for="to">to</label>
+        <input type="date" id="to" name="to" value="{{ to ? to|date('Y-m-d') }}">
+        <button type="submit">Filter</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr><th>Order</th><th>Customer</th><th>Method</th><th>Status</th><th>Amount</th><th>Refunded</th><th>Paid</th><th>Refund</th></tr>
+        </thead>
+        <tbody>
+        {% for payment in payments %}
+            <tr id="payment-{{ payment.id }}">
+                <td><a href="{{ path('app_admin_order_detail', {id: payment.order.id}) }}">{{ payment.order.orderNumber }}</a><br>{{ payment.order.restaurant.name }}</td>
+                <td>{{ payment.order.customer.user.name }}</td>
+                <td>{{ payment.method|upper }}</td>
+                <td class="status">{{ payment.status|replace({'_': ' '}) }}</td>
+                <td>PHP {{ payment.amount }}</td>
+                <td class="refunded">PHP {{ payment.refundedAmount }}</td>
+                <td>{{ payment.paidAt ? payment.paidAt|date('M j, Y g:i A') : '-' }}</td>
+                <td>
+                    {% if forms[payment.id] is defined %}
+                        {{ form_start(forms[payment.id], {action: path('app_admin_payment_refund', {id: payment.id})}) }}
+                            {{ form_widget(forms[payment.id]) }}
+                            <button type="submit">Refund</button>
+                        {{ form_end(forms[payment.id]) }}
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="8">no records found</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ knp_pagination_render(payments) }}
+{% endblock %}

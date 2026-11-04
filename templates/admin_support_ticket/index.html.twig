@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Support tickets | Foodjett admin{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Support tickets</h1>
+
+    <form method="get">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>{% endfor %}
+        </select>
+        <button type="submit">Filter</button>
+    </form>
+
+    {% for ticket in tickets %}
+        <section id="ticket-{{ ticket.id }}">
+            <h2>{{ ticket.subject }}</h2>
+            <p>From {{ ticket.user.name }} ({{ ticket.user.role }}) · {{ ticket.user.email }} · {{ ticket.createdAt|date('M j, Y g:i A') }}</p>
+            <blockquote>{{ ticket.message }}</blockquote>
+            <p class="status">Status: <strong>{{ ticket.status|replace({'_': ' '}) }}</strong></p>
+            {% for value in statuses|filter(value => value != ticket.status) %}
+                <form method="post" action="{{ path('app_admin_support_ticket_status', {id: ticket.id, status: value}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ticket' ~ ticket.id) }}">
+                    <button type="submit">Mark {{ value|replace({'_': ' '}) }}</button>
+                </form>
+            {% endfor %}
+        </section>
+    {% else %}
+        <p>No tickets match.</p>
+    {% endfor %}
+    {{ knp_pagination_render(tickets) }}
+{% endblock %}
