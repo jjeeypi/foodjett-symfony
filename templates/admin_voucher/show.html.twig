@@ -8,7 +8,7 @@
     <table class="table">
         <tbody>
             <tr><th>Discount</th><td>{{ voucher.type|replace({'_': ' '}) }}{% if voucher.value %}: {{ voucher.value }}{% endif %}</td></tr>
-            <tr><th>Minimum order</th><td>PHP {{ voucher.minOrderAmount }}</td></tr>
+            <tr><th>Minimum order</th><td>₱{{ voucher.minOrderAmount }}</td></tr>
             <tr><th>Uses</th><td>{{ voucher.redemptions|length }} of {{ voucher.usageLimitTotal ?? 'unlimited' }}, at most {{ voucher.usageLimitPerCustomer }} per customer</td></tr>
             <tr><th>Starts</th><td>{{ voucher.startsAt ? voucher.startsAt|date('M j, Y g:i A') : 'now' }}</td></tr>
             <tr><th>Ends</th><td>{{ voucher.endsAt ? voucher.endsAt|date('M j, Y g:i A') : 'no end' }}</td></tr>

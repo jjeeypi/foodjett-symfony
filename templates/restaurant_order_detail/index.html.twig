@@ -35,7 +35,7 @@
         {% endfor %}
     </ul>
     {% if order.customerNotes %}<p>Customer notes: {{ order.customerNotes }}</p>{% endif %}
-    <p>Subtotal PHP {{ order.subtotal }} · paid by {{ order.paymentMethod|upper }}</p>
+    <p>Subtotal ₱{{ order.subtotal }} · paid by {{ order.paymentMethod|upper }}</p>
 
     {% if accept_form %}
         <h2>Accept</h2>

@@ -37,7 +37,7 @@
                         {% if order.customerNotes %}Notes: {{ order.customerNotes }}{% endif %}
                     </td>
                     <td>{{ order.status|replace({'_': ' '}) }}</td>
-                    <td>PHP {{ order.totalAmount }}</td>
+                    <td>₱{{ order.totalAmount }}</td>
                     <td>{{ order.placedAt|date('M j, g:i A') }}</td>
                 </tr>
             {% else %}

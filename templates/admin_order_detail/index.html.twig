@@ -28,8 +28,8 @@
             <li>
                 {{ item.quantity }} × {{ item.menuItem.name }}
                 {% if item.menuItemVariant %}({{ item.menuItemVariant.name }}){% endif %}
-                · PHP {{ item.unitPrice }}
-                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }} PHP {{ addon.price }}{% endfor %}
+                · ₱{{ item.unitPrice }}
+                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }} ₱{{ addon.price }}{% endfor %}
                 {% if item.specialInstructions %}<br>Note: {{ item.specialInstructions }}{% endif %}
             </li>
         {% else %}
@@ -40,18 +40,18 @@
 
     <h2>Money</h2>
     <dl id="money">
-        <dt>Subtotal</dt><dd>PHP {{ order.subtotal }}</dd>
-        <dt>Delivery fee</dt><dd>PHP {{ order.deliveryFee }}</dd>
-        <dt>Service fee</dt><dd>PHP {{ order.serviceFee }}</dd>
-        <dt>Discount</dt><dd>PHP {{ order.discountAmount }}</dd>
-        <dt>Tip</dt><dd>PHP {{ order.tipAmount }}</dd>
-        <dt>Total</dt><dd>PHP {{ order.totalAmount }}</dd>
-        <dt>Commission</dt><dd>PHP {{ order.commissionAmount }}</dd>
+        <dt>Subtotal</dt><dd>₱{{ order.subtotal }}</dd>
+        <dt>Delivery fee</dt><dd>₱{{ order.deliveryFee }}</dd>
+        <dt>Service fee</dt><dd>₱{{ order.serviceFee }}</dd>
+        <dt>Discount</dt><dd>₱{{ order.discountAmount }}</dd>
+        <dt>Tip</dt><dd>₱{{ order.tipAmount }}</dd>
+        <dt>Total</dt><dd>₱{{ order.totalAmount }}</dd>
+        <dt>Commission</dt><dd>₱{{ order.commissionAmount }}</dd>
     </dl>
     {% if order.payment %}
         <p id="payment">
             Payment: {{ order.payment.method|upper }}, <strong>{{ order.payment.status|replace({'_': ' '}) }}</strong>,
-            PHP {{ order.payment.amount }}{% if order.payment.refundedAmount > 0 %}, PHP {{ order.payment.refundedAmount }} refunded{% endif %}
+            ₱{{ order.payment.amount }}{% if order.payment.refundedAmount > 0 %}, ₱{{ order.payment.refundedAmount }} refunded{% endif %}
             {% if order.payment.transactionReference %}· ref {{ order.payment.transactionReference }}{% endif %}
         </p>
     {% endif %}
@@ -59,7 +59,7 @@
     {% if order.riderPoolOffer %}
         <p id="pool">
             Rider search: {{ order.riderPoolOffer.escalationStage|replace({'_': ' '}) }}, radius {{ order.riderPoolOffer.searchRadiusKm }} km,
-            incentive PHP {{ order.riderPoolOffer.incentiveAmount }}{% if order.riderSearchStartedAt %}, since {{ order.riderSearchStartedAt|date('g:i A') }}{% endif %}
+            incentive ₱{{ order.riderPoolOffer.incentiveAmount }}{% if order.riderSearchStartedAt %}, since {{ order.riderSearchStartedAt|date('g:i A') }}{% endif %}
         </p>
     {% endif %}
 

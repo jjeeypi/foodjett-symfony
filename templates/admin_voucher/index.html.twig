@@ -23,8 +23,8 @@
         {% for voucher in vouchers %}
             <tr id="voucher-{{ voucher.code }}">
                 <td>{{ voucher.code }}</td>
-                <td>{{ voucher.type == 'free_delivery' ? 'Free delivery' : (voucher.type == 'percentage' ? voucher.value ~ '%' : 'PHP ' ~ voucher.value) }}</td>
-                <td>PHP {{ voucher.minOrderAmount }}</td>
+                <td>{{ voucher.type == 'free_delivery' ? 'Free delivery' : (voucher.type == 'percentage' ? voucher.value ~ '%' : '₱' ~ voucher.value) }}</td>
+                <td>₱{{ voucher.minOrderAmount }}</td>
                 <td>{{ voucher.redemptions|length }}{% if voucher.usageLimitTotal %} of {{ voucher.usageLimitTotal }}{% endif %}</td>
                 <td>{{ voucher.startsAt ? voucher.startsAt|date('M j') : 'now' }} to {{ voucher.endsAt ? voucher.endsAt|date('M j, Y') : 'no end' }}</td>
                 <td>{{ voucher.active ? 'Yes' : 'No' }}</td>

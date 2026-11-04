@@ -35,8 +35,8 @@
                 <td>{{ payment.order.customer.user.name }}</td>
                 <td>{{ payment.method|upper }}</td>
                 <td class="status">{{ payment.status|replace({'_': ' '}) }}</td>
-                <td>PHP {{ payment.amount }}</td>
-                <td class="refunded">PHP {{ payment.refundedAmount }}</td>
+                <td>₱{{ payment.amount }}</td>
+                <td class="refunded">₱{{ payment.refundedAmount }}</td>
                 <td>{{ payment.paidAt ? payment.paidAt|date('M j, Y g:i A') : '-' }}</td>
                 <td>
                     {% if forms[payment.id] is defined %}

@@ -21,7 +21,7 @@
             <tr id="item-{{ menu_item.id }}">
                 <td><a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">{{ menu_item.name }}</a></td>
                 <td>{{ menu_item.menuCategory.name }}</td>
-                <td>PHP {{ menu_item.basePrice }}</td>
+                <td>₱{{ menu_item.basePrice }}</td>
                 <td>
                     {{ menu_item.available ? 'Yes' : 'No' }}
                     <form method="post" action="{{ path('app_menu_item_toggle', {'id': menu_item.id}) }}">

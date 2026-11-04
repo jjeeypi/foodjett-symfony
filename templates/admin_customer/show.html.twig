@@ -9,7 +9,7 @@
     <table class="table">
         <tbody>
             <tr><th>Contact</th><td>{{ customer.user.email }} · {{ customer.user.phone }}</td></tr>
-            <tr><th>Orders</th><td id="order-summary">{{ order_count }} orders, PHP {{ lifetime_spend }} spent</td></tr>
+            <tr><th>Orders</th><td id="order-summary">{{ order_count }} orders, ₱{{ lifetime_spend }} spent</td></tr>
         </tbody>
     </table>
 
@@ -23,7 +23,7 @@
     <h2>Recent orders</h2>
     <ul>
         {% for order in recent_orders %}
-            <li>{{ order.orderNumber }} · {{ order.restaurant.name }} · {{ order.status|replace({'_': ' '}) }} · PHP {{ order.totalAmount }} · {{ order.placedAt|date('M j, Y') }}</li>
+            <li>{{ order.orderNumber }} · {{ order.restaurant.name }} · {{ order.status|replace({'_': ' '}) }} · ₱{{ order.totalAmount }} · {{ order.placedAt|date('M j, Y') }}</li>
         {% else %}
             <li>No orders yet.</li>
         {% endfor %}

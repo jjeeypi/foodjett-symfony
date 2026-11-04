@@ -11,7 +11,7 @@
             <tr><th>Contact</th><td>{{ rider.user.email }} · {{ rider.user.phone }}</td></tr>
             <tr><th>Vehicle</th><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td></tr>
             <tr><th>Availability</th><td>{{ rider.availabilityStatus }}</td></tr>
-            <tr><th>Cash on hand</th><td>PHP {{ rider.cashOnHand }} of PHP {{ rider.cashRemitLimit }}</td></tr>
+            <tr><th>Cash on hand</th><td>₱{{ rider.cashOnHand }} of ₱{{ rider.cashRemitLimit }}</td></tr>
         </tbody>
     </table>
     <a href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">edit</a>

@@ -36,7 +36,7 @@ class RestaurantBusinessPagesTest extends RestaurantWebTestCase
             $included = array_filter($samples, static fn (array $sample): bool => $sample[0] >= $starts[$row[0]]);
             $gross = array_reduce($included, static fn (string $sum, array $sample): string => bcadd($sum, $sample[1], 2), '0.00');
             $commission = array_reduce($included, static fn (string $sum, array $sample): string => bcadd($sum, $sample[2], 2), '0.00');
-            self::assertSame([$row[0], (string) count($included), 'PHP '.$gross, 'PHP '.$commission, 'PHP '.bcsub($gross, $commission, 2)], $row);
+            self::assertSame([$row[0], (string) count($included), '₱'.$gross, '₱'.$commission, '₱'.bcsub($gross, $commission, 2)], $row);
         }
     }
 
@@ -48,8 +48,8 @@ class RestaurantBusinessPagesTest extends RestaurantWebTestCase
 
         $crawler = $this->page('/restaurant/earnings');
         self::assertCount(1, $crawler->filter('#payouts tbody tr'));
-        self::assertSelectorTextContains('#payouts', 'PHP 1000.00');
-        self::assertSelectorTextNotContains('#payouts', 'PHP 2000.00');
+        self::assertSelectorTextContains('#payouts', '₱1000.00');
+        self::assertSelectorTextNotContains('#payouts', '₱2000.00');
     }
 
     public function testReviewsAreScopedAndRepliesAreSaved(): void

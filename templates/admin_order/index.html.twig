@@ -33,7 +33,7 @@
                 <td>{{ order.customer.user.name }}</td>
                 <td>{{ order.rider ? order.rider.user.name : '-' }}</td>
                 <td>{{ order.status|replace({'_': ' '}) }}</td>
-                <td>PHP {{ order.totalAmount }}</td>
+                <td>₱{{ order.totalAmount }}</td>
                 <td>{{ order.paymentMethod|upper }}</td>
                 <td>{{ order.placedAt|date('M j, Y g:i A') }}</td>
             </tr>
