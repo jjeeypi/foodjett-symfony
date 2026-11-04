@@ -3,79 +3,64 @@
 namespace App\Controller;
 
 use App\Entity\Customer;
-use App\Form\CustomerType;
+use App\Entity\User;
+use App\Repository\AuditLogRepository;
 use App\Repository\CustomerRepository;
+use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/** Customers for admins: search, order summary, and suspending or reactivating the account. */
+#[IsGranted('ROLE_ADMIN')]
 #[Route('/admin/customer')]
 final class AdminCustomerController extends AbstractController
 {
     #[Route(name: 'app_admin_customer_index', methods: ['GET'])]
-    public function index(CustomerRepository $customerRepository): Response
+    public function index(Request $request, CustomerRepository $customerRepository, PaginatorInterface $paginator): Response
     {
+        $search = trim($request->query->getString('search'));
+
         return $this->render('admin_customer/index.html.twig', [
-            'customers' => $customerRepository->findAll(),
+            'customers' => $paginator->paginate($customerRepository->createAdminListQuery($search), $request->query->getInt('page', 1), 20),
+            'search' => $search,
         ]);
     }
 
-    #[Route('/new', name: 'app_admin_customer_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}', name: 'app_admin_customer_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function show(Customer $customer, OrderRepository $orders): Response
     {
-        $customer = new Customer();
-        $form = $this->createForm(CustomerType::class, $customer);
-        $form->handleRequest($request);
+        $summary = $orders->summarizeForCustomer($customer);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($customer);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_admin_customer_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('admin_customer/new.html.twig', [
-            'customer' => $customer,
-            'form' => $form,
-        ]);
-    }
-
-    #[Route('/{id}', name: 'app_admin_customer_show', methods: ['GET'])]
-    public function show(Customer $customer): Response
-    {
         return $this->render('admin_customer/show.html.twig', [
             'customer' => $customer,
+            'order_count' => (int) $summary['order_count'],
+            'lifetime_spend' => bcround((string) $summary['lifetime_spend'], 2),
+            'recent_orders' => $orders->findRecentForCustomer($customer),
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_admin_customer_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Customer $customer, EntityManagerInterface $entityManager): Response
+    /** Suspends or reactivates the customer's account; a suspended customer is signed out. */
+    #[Route('/{id}/account/{status}', name: 'app_admin_customer_account', methods: ['POST'], requirements: ['id' => '\d+', 'status' => 'suspended|active'])]
+    public function account(Request $request, Customer $customer, string $status, #[CurrentUser] User $admin, EntityManagerInterface $entityManager, AuditLogRepository $audit): Response
     {
-        $form = $this->createForm(CustomerType::class, $customer);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_admin_customer_index', [], Response::HTTP_SEE_OTHER);
+        if (!$this->isCsrfTokenValid('account'.$customer->getId(), $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException('Invalid form token.');
         }
-
-        return $this->render('admin_customer/edit.html.twig', [
-            'customer' => $customer,
-            'form' => $form,
+        $user = $customer->getUser();
+        $before = $user->getStatus();
+        $user->setStatus($status)->setUpdatedAt(new \DateTimeImmutable());
+        $audit->record($admin, 'customer.'.(User::STATUS_ACTIVE === $status ? 'reactivated' : 'suspended'), 'customer', (string) $customer->getId(), [
+            'user_status' => ['from' => $before, 'to' => $status],
         ]);
-    }
+        $entityManager->flush();
+        $this->addFlash('success', User::STATUS_ACTIVE === $status ? 'Account reactivated.' : 'Account suspended.');
 
-    #[Route('/{id}', name: 'app_admin_customer_delete', methods: ['POST'])]
-    public function delete(Request $request, Customer $customer, EntityManagerInterface $entityManager): Response
-    {
-        if ($this->isCsrfTokenValid('delete'.$customer->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($customer);
-            $entityManager->flush();
-        }
-
-        return $this->redirectToRoute('app_admin_customer_index', [], Response::HTTP_SEE_OTHER);
+        return $this->redirectToRoute('app_admin_customer_show', ['id' => $customer->getId()], Response::HTTP_SEE_OTHER);
     }
 }

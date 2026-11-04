@@ -1,13 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Restaurant{% endblock %}
+{% block title %}Edit restaurant | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Edit Restaurant</h1>
+    <h1>Edit {{ restaurant.name }}</h1>
 
     {{ include('admin_restaurant/_form.html.twig', {'button_label': 'Update'}) }}
 
-    <a href="{{ path('app_admin_restaurant_index') }}">back to list</a>
-
-    {{ include('admin_restaurant/_delete_form.html.twig') }}
+    <a href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">back</a>
 {% endblock %}

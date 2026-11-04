@@ -1,37 +1,34 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Customer index{% endblock %}
+{% block title %}Customers | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Customer index</h1>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Customers</h1>
+
+    <form method="get">
+        <label for="search">Name, email or phone</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Search</button>
+    </form>
 
     <table class="table">
         <thead>
-            <tr>
-                <th>Id</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
-                <th>actions</th>
-            </tr>
+            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Account</th><th>Joined</th><th>actions</th></tr>
         </thead>
         <tbody>
         {% for customer in customers %}
-            <tr>
-                <td>{{ customer.id }}</td>
-                <td>{{ customer.createdAt ? customer.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ customer.updatedAt ? customer.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_admin_customer_show', {'id': customer.id}) }}">show</a>
-                    <a href="{{ path('app_admin_customer_edit', {'id': customer.id}) }}">edit</a>
-                </td>
+            <tr id="customer-{{ customer.id }}">
+                <td>{{ customer.user.name }}</td><td>{{ customer.user.email }}</td><td>{{ customer.user.phone }}</td>
+                <td>{{ customer.user.status }}</td><td>{{ customer.createdAt ? customer.createdAt|date('M j, Y') }}</td>
+                <td><a href="{{ path('app_admin_customer_show', {'id': customer.id}) }}">show</a></td>
             </tr>
         {% else %}
             <tr>
-                <td colspan="4">no records found</td>
+                <td colspan="6">no records found</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
-
-    <a href="{{ path('app_admin_customer_new') }}">Create new</a>
+    {{ knp_pagination_render(customers) }}
 {% endblock %}

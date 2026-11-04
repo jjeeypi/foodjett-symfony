@@ -1,61 +1,39 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Rider index{% endblock %}
+{% block title %}Riders | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Rider index</h1>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Riders</h1>
+
+    <form method="get">
+        <label for="approval">Application</label>
+        <select id="approval" name="approval">
+            <option value="">All</option>
+            {% for value in ['pending', 'approved', 'rejected'] %}
+                <option value="{{ value }}" {{ approval == value ? 'selected' }}>{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="search">Search</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Filter</button>
+    </form>
 
     <table class="table">
         <thead>
-            <tr>
-                <th>Id</th>
-                <th>VehicleType</th>
-                <th>PlateNumber</th>
-                <th>ApprovalStatus</th>
-                <th>RejectionReason</th>
-                <th>AvailabilityStatus</th>
-                <th>CurrentLatitude</th>
-                <th>CurrentLongitude</th>
-                <th>LastLocationAt</th>
-                <th>CashOnHand</th>
-                <th>CashRemitLimit</th>
-                <th>PayoutMethod</th>
-                <th>EncryptedPayoutAccountDetails</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
-                <th>actions</th>
-            </tr>
+            <tr><th>Name</th><th>Vehicle</th><th>Availability</th><th>Application</th><th>Account</th><th>actions</th></tr>
         </thead>
         <tbody>
         {% for rider in riders %}
-            <tr>
-                <td>{{ rider.id }}</td>
-                <td>{{ rider.vehicleType }}</td>
-                <td>{{ rider.plateNumber }}</td>
-                <td>{{ rider.approvalStatus }}</td>
-                <td>{{ rider.rejectionReason }}</td>
-                <td>{{ rider.availabilityStatus }}</td>
-                <td>{{ rider.currentLatitude }}</td>
-                <td>{{ rider.currentLongitude }}</td>
-                <td>{{ rider.lastLocationAt ? rider.lastLocationAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ rider.cashOnHand }}</td>
-                <td>{{ rider.cashRemitLimit }}</td>
-                <td>{{ rider.payoutMethod }}</td>
-                <td>{{ rider.encryptedPayoutAccountDetails }}</td>
-                <td>{{ rider.createdAt ? rider.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ rider.updatedAt ? rider.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">show</a>
-                    <a href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">edit</a>
-                </td>
+            <tr id="rider-{{ rider.id }}"><td>{{ rider.user.name }}</td><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td><td>{{ rider.availabilityStatus }}</td><td>{{ rider.approvalStatus }}</td><td>{{ rider.user.status }}</td>
+                <td><a href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">show</a></td>
             </tr>
         {% else %}
             <tr>
-                <td colspan="16">no records found</td>
+                <td colspan="6">no records found</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
-
-    <a href="{{ path('app_admin_rider_new') }}">Create new</a>
+    {{ knp_pagination_render(riders) }}
 {% endblock %}

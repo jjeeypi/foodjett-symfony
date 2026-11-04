@@ -24,6 +24,9 @@
                     | <a href="{{ path('app_orders') }}">Orders</a>
                     | <a href="{{ path('app_account') }}">Account</a>
                 {% endif %}
+                {% if is_granted('ROLE_ADMIN') %}
+                    | <a href="{{ path('app_admin_dashboard') }}">Admin</a>
+                {% endif %}
                 {% if is_granted('ROLE_RIDER') %}
                     | <a href="{{ path('app_rider_dashboard') }}">Rider</a>
                     | <a href="{{ path('app_rider_pool') }}">Pool</a>

@@ -1,71 +1,39 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Restaurant index{% endblock %}
+{% block title %}Restaurants | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Restaurant index</h1>
+    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
+    <h1>Restaurants</h1>
+
+    <form method="get">
+        <label for="approval">Application</label>
+        <select id="approval" name="approval">
+            <option value="">All</option>
+            {% for value in ['pending', 'approved', 'rejected'] %}
+                <option value="{{ value }}" {{ approval == value ? 'selected' }}>{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="search">Search</label>
+        <input type="search" id="search" name="search" value="{{ search }}">
+        <button type="submit">Filter</button>
+    </form>
 
     <table class="table">
         <thead>
-            <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Description</th>
-                <th>LogoPath</th>
-                <th>CoverPhotoPath</th>
-                <th>CuisineType</th>
-                <th>Address</th>
-                <th>Latitude</th>
-                <th>Longitude</th>
-                <th>DefaultPrepTimeMinutes</th>
-                <th>MinOrderAmount</th>
-                <th>CommissionRate</th>
-                <th>ApprovalStatus</th>
-                <th>RejectionReason</th>
-                <th>OperatingStatus</th>
-                <th>PayoutMethod</th>
-                <th>PayoutAccountDetails</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
-                <th>actions</th>
-            </tr>
+            <tr><th>Name</th><th>Owner</th><th>Cuisine</th><th>Application</th><th>Account</th><th>actions</th></tr>
         </thead>
         <tbody>
         {% for restaurant in restaurants %}
-            <tr>
-                <td>{{ restaurant.id }}</td>
-                <td>{{ restaurant.name }}</td>
-                <td>{{ restaurant.slug }}</td>
-                <td>{{ restaurant.description }}</td>
-                <td>{{ restaurant.logoPath }}</td>
-                <td>{{ restaurant.coverPhotoPath }}</td>
-                <td>{{ restaurant.cuisineType }}</td>
-                <td>{{ restaurant.address }}</td>
-                <td>{{ restaurant.latitude }}</td>
-                <td>{{ restaurant.longitude }}</td>
-                <td>{{ restaurant.defaultPrepTimeMinutes }}</td>
-                <td>{{ restaurant.minOrderAmount }}</td>
-                <td>{{ restaurant.commissionRate }}</td>
-                <td>{{ restaurant.approvalStatus }}</td>
-                <td>{{ restaurant.rejectionReason }}</td>
-                <td>{{ restaurant.operatingStatus }}</td>
-                <td>{{ restaurant.payoutMethod }}</td>
-                <td>{{ restaurant.payoutAccountDetails ? restaurant.payoutAccountDetails|json_encode : '' }}</td>
-                <td>{{ restaurant.createdAt ? restaurant.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ restaurant.updatedAt ? restaurant.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">show</a>
-                    <a href="{{ path('app_admin_restaurant_edit', {'id': restaurant.id}) }}">edit</a>
-                </td>
+            <tr id="restaurant-{{ restaurant.id }}"><td>{{ restaurant.name }}</td><td>{{ restaurant.user.name }}</td><td>{{ restaurant.cuisineType }}</td><td>{{ restaurant.approvalStatus }}</td><td>{{ restaurant.user.status }}</td>
+                <td><a href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">show</a></td>
             </tr>
         {% else %}
             <tr>
-                <td colspan="21">no records found</td>
+                <td colspan="6">no records found</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
-
-    <a href="{{ path('app_admin_restaurant_new') }}">Create new</a>
+    {{ knp_pagination_render(restaurants) }}
 {% endblock %}

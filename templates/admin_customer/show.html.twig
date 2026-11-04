@@ -1,30 +1,31 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Customer{% endblock %}
+{% block title %}{{ customer.user.name }} | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Customer</h1>
+    <p><a href="{{ path('app_admin_customer_index') }}">back to list</a></p>
+    <h1>{{ customer.user.name }}</h1>
 
     <table class="table">
         <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ customer.id }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ customer.createdAt ? customer.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>UpdatedAt</th>
-                <td>{{ customer.updatedAt ? customer.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
+            <tr><th>Contact</th><td>{{ customer.user.email }} · {{ customer.user.phone }}</td></tr>
+            <tr><th>Orders</th><td id="order-summary">{{ order_count }} orders, PHP {{ lifetime_spend }} spent</td></tr>
         </tbody>
     </table>
 
-    <a href="{{ path('app_admin_customer_index') }}">back to list</a>
+    <h2>Account</h2>
+    <p id="account">Login is <strong>{{ customer.user.status }}</strong>.</p>
+    <form method="post" action="{{ path('app_admin_customer_account', {'id': customer.id, 'status': customer.user.status == 'active' ? 'suspended' : 'active'}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('account' ~ customer.id) }}">
+        <button type="submit">{{ customer.user.status == 'active' ? 'Suspend account' : 'Reactivate account' }}</button>
+    </form>
 
-    <a href="{{ path('app_admin_customer_edit', {'id': customer.id}) }}">edit</a>
-
-    {{ include('admin_customer/_delete_form.html.twig') }}
+    <h2>Recent orders</h2>
+    <ul>
+        {% for order in recent_orders %}
+            <li>{{ order.orderNumber }} · {{ order.restaurant.name }} · {{ order.status|replace({'_': ' '}) }} · PHP {{ order.totalAmount }} · {{ order.placedAt|date('M j, Y') }}</li>
+        {% else %}
+            <li>No orders yet.</li>
+        {% endfor %}
+    </ul>
 {% endblock %}
