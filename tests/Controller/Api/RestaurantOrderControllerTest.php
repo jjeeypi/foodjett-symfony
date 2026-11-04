@@ -104,17 +104,8 @@ final class RestaurantOrderControllerTest extends WebTestCase
         self::assertSame($this->orderId, $poolPayload['order_id'] ?? null);
         self::assertArrayHasKey('estimated_pay', $poolPayload);
 
-        $customerToken = $this->loginAs(self::CUSTOMER_EMAIL);
-        $this->client->request('GET', '/api/customer/conversations', server: $this->auth($customerToken));
-        self::assertResponseIsSuccessful();
-        $customerConversations = $this->payload()['data'] ?? [];
-        self::assertCount(1, $customerConversations);
-        self::assertSame($message->getBody(), $customerConversations[0]['last_message']['body'] ?? null);
-        self::assertSame(1, $customerConversations[0]['unread_count'] ?? null);
-
-        $this->client->request('GET', '/api/customer/conversations/'.$conversation->getId().'/messages', server: $this->auth($customerToken));
-        self::assertResponseIsSuccessful();
-        self::assertSame($message->getBody(), $this->payload()['data'][0]['body'] ?? null);
+        // The greeting waits unread for the customer (the chat pages are covered by ConversationPagesTest).
+        self::assertNull($message->getReadAt());
 
         $this->client->jsonRequest('POST', '/api/restaurant/orders/'.$this->orderId.'/extend-prep-time', [
             'minutes' => 5,
