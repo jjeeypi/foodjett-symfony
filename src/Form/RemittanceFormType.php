@@ -18,7 +18,7 @@ class RemittanceFormType extends AbstractType
     {
         $builder
             ->add('amount', TextType::class, [
-                'label' => 'Amount (PHP)',
+                'label' => 'Amount (₱)',
                 'empty_data' => '',
                 'attr' => ['inputmode' => 'decimal'],
                 'constraints' => [

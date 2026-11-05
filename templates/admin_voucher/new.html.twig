@@ -1,11 +1,27 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New voucher | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Create a voucher</h1>
+    <a class="back-link" href="{{ path('app_admin_voucher_index') }}">{{ icon('back', 'icon-sm') }} Platform vouchers</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Promotions</div>
+            <h1>Create a voucher</h1>
+            <p>A platform voucher works at every restaurant. Foodjett pays for the discount.</p>
+        </div>
+    </div>
 
-    {{ include('admin_voucher/_form.html.twig') }}
-
-    <a href="{{ path('app_admin_voucher_index') }}">back to list</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('admin_voucher/_form.html.twig') }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">Leave the dates empty to start now and never end. Set a total limit to cap the cost.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

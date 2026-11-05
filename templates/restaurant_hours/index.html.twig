@@ -1,27 +1,53 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Opening hours | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_restaurant_profile') }}">Profile</a></p>
-    <h1>Opening hours</h1>
-    <p>Leave a day empty when you are closed. A closing time earlier than the opening time runs past midnight.
-        With no hours at all, customers can order whenever your status is open.</p>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">When you take orders</div>
+            <h1>Opening hours</h1>
+            <p>Leave a day empty when you are closed. A closing time earlier than the opening time runs past midnight.</p>
+        </div>
+    </div>
 
-    {{ form_start(form) }}
-        {{ form_errors(form) }}
-        <table>
-            <thead><tr><th>Day</th><th>Opens</th><th>Closes</th></tr></thead>
-            <tbody>
-                {% for day, name in days %}
-                    <tr>
-                        <td>{{ name }}</td>
-                        <td>{{ form_widget(form['opens_' ~ day], {attr: {'aria-label': name ~ ' opens'}}) }}{{ form_errors(form['opens_' ~ day]) }}</td>
-                        <td>{{ form_widget(form['closes_' ~ day], {attr: {'aria-label': name ~ ' closes'}}) }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <button type="submit">Save hours</button>
-    {{ form_end(form) }}
+    <div class="split">
+        <section class="panel">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                {% set has_hours = days|keys|filter(d => form['opens_' ~ d].vars.value or form['closes_' ~ d].vars.value)|length > 0 %}
+                <ul class="week">
+                    {% for day, name in days %}
+                        {% set opens = form['opens_' ~ day].vars.value %}
+                        {% set closes = form['closes_' ~ day].vars.value %}
+                        <li class="{{ has_hours and not opens and not closes ? 'closed' }}">
+                            <strong>{{ name }}</strong>
+                            <span>{{ form_widget(form['opens_' ~ day], {attr: {'aria-label': name ~ ' opens'}}) }}{{ form_errors(form['opens_' ~ day]) }}</span>
+                            <span class="to">to</span>
+                            <span>{{ form_widget(form['closes_' ~ day], {attr: {'aria-label': name ~ ' closes'}}) }}</span>
+                            {% if not opens and not closes %}<span class="badge">{{ has_hours ? 'Closed' : 'Any time' }}</span>
+                            {% elseif opens and closes and closes < opens %}<span class="badge badge-warn">Past midnight</span>
+                            {% else %}<span class="badge badge-green">Open</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {{ form_rest(form) }}
+                <button type="submit" style="margin-top: 14px">Save hours</button>
+            {{ form_end(form) }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>Right now</h2>
+                <p><span class="badge {{ app.user.restaurant.openNow ? 'badge-green' }}"><i class="dot{{ app.user.restaurant.openNow ? '' : ' dot-off' }}"></i> {{ app.user.restaurant.openNow ? 'Open now' : 'Closed' }}</span></p>
+                <p class="subtle">With no hours at all, customers can order whenever your status is open. Change your status on the dashboard.</p>
+                <a class="btn btn-light btn-sm" href="{{ path('app_restaurant_dashboard') }}">{{ icon('chart', 'icon-sm') }} Dashboard</a>
+            </section>
+            <section class="panel">
+                <h2>Profile</h2>
+                <p class="subtle">Name, address, photos and payout details.</p>
+                <a class="btn btn-light btn-sm" href="{{ path('app_restaurant_profile') }}">{{ icon('store', 'icon-sm') }} Edit profile</a>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

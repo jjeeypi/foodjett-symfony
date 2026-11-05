@@ -1,71 +1,109 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}{{ rider.user.name }} | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_rider_index') }}">back to list</a></p>
-    <h1>{{ rider.user.name }}</h1>
+    <a class="back-link" href="{{ path('app_admin_rider_index') }}">{{ icon('back', 'icon-sm') }} Riders</a>
 
-    <table class="table">
-        <tbody>
-            <tr><th>Contact</th><td>{{ rider.user.email }} · {{ rider.user.phone }}</td></tr>
-            <tr><th>Vehicle</th><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td></tr>
-            <tr><th>Availability</th><td>{{ rider.availabilityStatus }}</td></tr>
-            <tr><th>Cash on hand</th><td>₱{{ rider.cashOnHand }} of ₱{{ rider.cashRemitLimit }}</td></tr>
-        </tbody>
-    </table>
-    <a href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">edit</a>
+    <div class="order-head">
+        <div class="person">
+            <span class="avatar avatar-lg">{{ rider.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+            <span class="grow">
+                {{ status_badge(rider.approvalStatus) }}
+                <h1>{{ rider.user.name }}</h1>
+                <small>{{ rider.vehicleType|capitalize }} · {{ rider.availabilityStatus }}</small>
+            </span>
+        </div>
+    </div>
 
-    <h2>Application</h2>
-    <p id="approval">Status: <strong>{{ rider.approvalStatus }}</strong>{% if rider.rejectionReason %} · {{ rider.rejectionReason }}{% endif %}</p>
-    {% if rider.approvalStatus != 'approved' %}
-        <form method="post" action="{{ path('app_admin_rider_approve', {'id': rider.id}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ rider.id) }}">
-            <button type="submit">Approve</button>
-        </form>
-    {% endif %}
-    {% if rider.approvalStatus != 'rejected' %}
-        {{ form_start(reject_form, {'action': path('app_admin_rider_reject', {'id': rider.id})}) }}
-            {{ form_widget(reject_form) }}
-            <button type="submit">Reject application</button>
-        {{ form_end(reject_form) }}
-    {% endif %}
+    <div class="split">
+        <div class="stack">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Details</h2>
+                    <a class="btn btn-light btn-sm" href="{{ path('app_admin_rider_edit', {'id': rider.id}) }}">{{ icon('edit', 'icon-sm') }} edit</a>
+                </div>
+                <div class="table-wrap">
+                    <table class="table kv">
+                        <tbody>
+                            <tr><th>Contact</th><td>{{ rider.user.email }} · {{ rider.user.phone }}</td></tr>
+                            <tr><th>Vehicle</th><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td></tr>
+                            <tr><th>Availability</th><td>{{ rider.availabilityStatus }}</td></tr>
+                            <tr><th>Cash on hand</th><td>₱{{ rider.cashOnHand }} of ₱{{ rider.cashRemitLimit }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
-    <h2>Account</h2>
-    <p id="account">Login is <strong>{{ rider.user.status }}</strong>.</p>
-    <form method="post" action="{{ path('app_admin_rider_account', {'id': rider.id, 'status': rider.user.status == 'active' ? 'suspended' : 'active'}) }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('account' ~ rider.id) }}">
-        <button type="submit">{{ rider.user.status == 'active' ? 'Suspend account' : 'Reactivate account' }}</button>
-    </form>
+            <section class="panel">
+                <h2>Documents</h2>
+                <div class="docs">
+                    {% for document in rider.documents %}
+                        <div class="doc {{ document.status }}" id="document-{{ document.id }}">
+                            <span class="pin-box">{{ icon('file') }}</span>
+                            <span>
+                                <strong>{{ document.type|replace({'_': ' '})|capitalize }}</strong>
+                                <small>{{ document.status }}{% if document.rejectionReason %}: {{ document.rejectionReason }}{% endif %} · <a href="{{ path('app_admin_rider_document_file', {'id': rider.id, 'documentId': document.id}) }}">view</a></small>
+                            </span>
+                            <div class="doc-actions">
+                                {% if document.status == 'verified' %}{{ status_badge('verified') }}{% endif %}
+                                {% if document.status != 'verified' %}
+                                    <form method="post" action="{{ path('app_admin_rider_document_verify', {'id': rider.id, 'documentId': document.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('document' ~ document.id) }}">
+                                        <button type="submit" class="btn-green btn-sm">Verify</button>
+                                    </form>
+                                {% endif %}
 
-    <h2>Documents</h2>
-    <table class="table">
-        <thead><tr><th>Document</th><th>Status</th><th>Note</th><th>File</th><th>Review</th></tr></thead>
-        <tbody>
-        {% for document in rider.documents %}
-            <tr id="document-{{ document.id }}">
-                <td>{{ document.type|replace({'_': ' '})|capitalize }}</td>
-                <td>{{ document.status }}</td>
-                <td>{{ document.rejectionReason }}</td>
-                <td><a href="{{ path('app_admin_rider_document_file', {'id': rider.id, 'documentId': document.id}) }}">view</a></td>
-                <td>
-                    {% if document.status != 'verified' %}
-                        <form method="post" action="{{ path('app_admin_rider_document_verify', {'id': rider.id, 'documentId': document.id}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('document' ~ document.id) }}">
-                            <button type="submit">Verify</button>
-                        </form>
-                    {% endif %}
-                    {% if document.status != 'rejected' %}
-                        {{ form_start(document_forms[document.id], {'action': path('app_admin_rider_document_reject', {'id': rider.id, 'documentId': document.id})}) }}
-                            {{ form_widget(document_forms[document.id]) }}
-                            <button type="submit">Reject document</button>
-                        {{ form_end(document_forms[document.id]) }}
-                    {% endif %}
-                </td>
-            </tr>
-        {% else %}
-            <tr><td colspan="5">No documents uploaded.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                            </div>
+                            {% if document.status != 'rejected' %}
+                                <details class="doc-reject">
+                                    <summary>Reject this document</summary>
+                                    {{ form_start(document_forms[document.id], {'action': path('app_admin_rider_document_reject', {'id': rider.id, 'documentId': document.id})}) }}
+                                        {{ form_widget(document_forms[document.id]) }}
+                                        <button type="submit" class="btn-light btn-sm">Reject document</button>
+                                    {{ form_end(document_forms[document.id]) }}
+                                    </details>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="subtle">No documents uploaded.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        <aside class="stack decision">
+            <section class="panel action-card">
+                <h2>Application</h2>
+                <p id="approval">Status: <strong>{{ rider.approvalStatus }}</strong>{% if rider.rejectionReason %} · {{ rider.rejectionReason }}{% endif %}</p>
+                <ul class="checklist">
+                    {% for document in rider.documents %}
+                        <li class="{{ document.status != 'verified' ? 'todo' }}">{{ icon(document.status == 'verified' ? 'check' : (document.status == 'rejected' ? 'close' : 'clock')) }} {{ document.type|replace({'_': ' '})|capitalize }} {{ document.status }}</li>
+                    {% endfor %}
+                </ul>
+                {% if rider.approvalStatus != 'approved' %}
+                    <form method="post" action="{{ path('app_admin_rider_approve', {'id': rider.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ rider.id) }}">
+                        <button type="submit" class="btn-green btn-block">Approve</button>
+                    </form>
+                {% endif %}
+                {% if rider.approvalStatus != 'rejected' %}
+                    {{ form_start(reject_form, {'action': path('app_admin_rider_reject', {'id': rider.id})}) }}
+                        {{ form_widget(reject_form) }}
+                        <button type="submit" class="btn-danger btn-block">Reject application</button>
+                    {{ form_end(reject_form) }}
+                {% endif %}
+            </section>
+
+            <section class="panel">
+                <h2>Account</h2>
+                <p id="account" class="subtle">Login is <strong>{{ rider.user.status }}</strong>.</p>
+                <form method="post" action="{{ path('app_admin_rider_account', {'id': rider.id, 'status': rider.user.status == 'active' ? 'suspended' : 'active'}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('account' ~ rider.id) }}">
+                    <button type="submit" class="{{ rider.user.status == 'active' ? 'btn-light' : 'btn-green' }}">{{ rider.user.status == 'active' ? 'Suspend account' : 'Reactivate account' }}</button>
+                </form>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

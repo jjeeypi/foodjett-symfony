@@ -29,7 +29,7 @@ class VoucherType extends AbstractType
                 'help' => 'Percent or PHP amount; leave empty for free delivery.',
                 'attr' => ['inputmode' => 'decimal'],
             ])
-            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (PHP)', 'empty_data' => '0', 'attr' => ['inputmode' => 'decimal']])
+            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (₱)', 'empty_data' => '0', 'attr' => ['inputmode' => 'decimal']])
             ->add('usageLimitTotal', IntegerType::class, ['label' => 'Total uses', 'required' => false, 'help' => 'Leave empty for no limit.'])
             ->add('usageLimitPerCustomer', IntegerType::class, ['label' => 'Uses per customer', 'empty_data' => '1'])
             ->add('startsAt', DateTimeType::class, ['label' => 'Starts', 'input' => 'datetime_immutable', 'widget' => 'single_text', 'required' => false])

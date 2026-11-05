@@ -35,7 +35,7 @@ class RestaurantType extends AbstractType
                     new Regex(pattern: '/^(100(\.0{1,2})?|\d{1,2}(\.\d{1,2})?)$/', message: 'Enter a percentage from 0 to 100.'),
                 ],
             ])
-            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (PHP)', 'empty_data' => '0'])
+            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (₱)', 'empty_data' => '0'])
             ->add('defaultPrepTimeMinutes', IntegerType::class, ['label' => 'Usual preparation time (minutes)'])
             ->add('operatingStatus', ChoiceType::class, [
                 'label' => 'Status',

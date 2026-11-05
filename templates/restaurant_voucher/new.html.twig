@@ -1,11 +1,27 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New voucher | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Create a voucher</h1>
+    <a class="back-link" href="{{ path('app_restaurant_voucher_index') }}">{{ icon('back', 'icon-sm') }} Your vouchers</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Promotions</div>
+            <h1>Create a voucher</h1>
+            <p>Customers type the code at checkout. The discount comes out of your sales.</p>
+        </div>
+    </div>
 
-    {{ include('restaurant_voucher/_form.html.twig') }}
-
-    <a href="{{ path('app_restaurant_voucher_index') }}">back to list</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('restaurant_voucher/_form.html.twig') }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">A percentage voucher takes that share off the subtotal. Leave the dates empty to start now and never end.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

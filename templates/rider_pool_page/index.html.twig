@@ -86,7 +86,7 @@
 
         <aside class="stack">
             <div class="panel">
-                <span class="badge badge-green"><i class="dot"></i> {{ rider and rider.availabilityStatus == 'available' ? 'You’re in a good spot' : 'You’re offline' }}</span>
+                {% set online = rider and rider.availabilityStatus == 'available' %}<span class="badge {{ online ? 'badge-green' }}"><i class="dot{{ online ? '' : ' dot-off' }}"></i> {{ online ? 'You’re in a good spot' : 'You’re offline' }}</span>
                 <h3 style="margin-top: 12px">A little local. A lot of possibility.</h3>
                 <p class="subtle" style="margin-top: 8px">Orders within reach of your last shared location appear here. Exact customer addresses show only after you accept.</p>
                 <div class="line" style="border-top: 1px solid var(--line); margin-top: 8px">

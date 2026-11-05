@@ -44,7 +44,7 @@ class CheckoutFormType extends AbstractType
                 'expanded' => true,
             ])
             ->add('tipAmount', TextType::class, [
-                'label' => 'Rider tip (PHP)',
+                'label' => 'Rider tip (₱)',
                 'required' => false,
                 'empty_data' => '0',
                 'attr' => ['inputmode' => 'decimal'],

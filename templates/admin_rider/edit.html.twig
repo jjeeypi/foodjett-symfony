@@ -1,11 +1,26 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Edit rider | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Edit {{ rider.user.name }}</h1>
+    <a class="back-link" href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">{{ icon('back', 'icon-sm') }} {{ rider.user.name }}</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Fleet</div>
+            <h1>Edit {{ rider.user.name }}</h1>
+        </div>
+    </div>
 
-    {{ include('admin_rider/_form.html.twig', {'button_label': 'Update'}) }}
-
-    <a href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">back</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('admin_rider/_form.html.twig', {'button_label': 'Update'}) }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">The cash limit is how much cash a rider may hold from cash orders before they must remit it.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

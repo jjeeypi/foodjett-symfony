@@ -21,7 +21,17 @@ class RestaurantOrderQueuePageTest extends RestaurantWebTestCase
         $this->entityManager->clear();
         $this->client->loginUser($this->restaurantUser, 'main');
 
+        // The default view is the board: the new order waits in the first column.
         $crawler = $this->client->request('GET', '/restaurant/orders');
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('.ticket'));
+        $ticket = $crawler->filter('#stage-new .ticket')->text();
+        self::assertStringContainsString($order->getOrderNumber(), $ticket);
+        self::assertStringContainsString('2× '.$menuItem->getName(), $ticket);
+        self::assertStringContainsString('No onions', $ticket);
+        self::assertStringContainsString('Please include utensils.', $ticket);
+
+        $crawler = $this->client->request('GET', '/restaurant/orders?view=list');
         self::assertResponseIsSuccessful();
         self::assertCount(1, $crawler->filter('tbody tr'));
         $row = $crawler->filter('tbody tr')->text();

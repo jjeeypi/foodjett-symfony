@@ -16,7 +16,7 @@ class MenuItemVariantType extends AbstractType
         $builder
             ->add('name', TextType::class, ['empty_data' => ''])
             ->add('priceDelta', TextType::class, [
-                'label' => 'Price change (PHP)',
+                'label' => 'Price change (₱)',
                 'help' => 'Added to the base price; may be negative.',
                 'empty_data' => '0',
                 'attr' => ['inputmode' => 'decimal'],

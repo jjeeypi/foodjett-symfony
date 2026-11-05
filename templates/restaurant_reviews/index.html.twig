@@ -1,23 +1,42 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Reviews | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
-    <h1>Reviews</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">What people say</div>
+            <h1>Reviews</h1>
+            <p>Replying shows customers you are listening.</p>
+        </div>
+        <div class="page-actions"><span class="badge badge-green">{{ icon('star', 'icon-sm') }} {{ app.user.restaurant.averageRating|number_format(1) }} average</span></div>
+    </div>
 
-    {% for review in reviews %}
-        <article id="review-{{ review.id }}">
-            <p><strong>{{ review.rating }} ★</strong> from {{ review.customer.user.name }} for order {{ review.order.orderNumber }} · {{ review.createdAt|date('M j, Y') }}</p>
-            {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
-            {% if review.repliedAt %}<p>Your reply ({{ review.repliedAt|date('M j') }}): {{ review.restaurantReply }}</p>{% endif %}
-            {{ form_start(forms[review.id]) }}
-                {{ form_widget(forms[review.id]) }}
-                <button type="submit">{{ review.repliedAt ? 'Update reply' : 'Reply' }}</button>
-            {{ form_end(forms[review.id]) }}
-        </article>
-    {% else %}
-        <p>No reviews yet.</p>
-    {% endfor %}
+    <section class="panel">
+        {% for review in reviews %}
+            <article class="review" id="review-{{ review.id }}">
+                <span class="avatar">{{ review.customer.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                <div>
+                    <div class="review-head">
+                        <span><strong>{{ review.customer.user.name }}</strong> <span class="stars" aria-hidden="true">{% for star in 1..5 %}<span class="{{ star > review.rating ? 'off' }}">★</span>{% endfor %}</span> <span class="sr-only">{{ review.rating }} out of 5</span></span>
+                        <small>Order {{ review.order.orderNumber }} · {{ review.createdAt|date('M j, Y') }}</small>
+                    </div>
+                    {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+                    {% if review.repliedAt %}<div class="reply"><small>Your reply · {{ review.repliedAt|date('M j') }}</small>{{ review.restaurantReply }}</div>{% endif %}
+                    {{ form_start(forms[review.id]) }}
+                        {{ form_widget(forms[review.id]) }}
+                        <button type="submit" class="{{ review.repliedAt ? 'btn-light' : 'btn-green' }}">{{ review.repliedAt ? 'Update reply' : 'Reply' }}</button>
+                    {{ form_end(forms[review.id]) }}
+                </div>
+            </article>
+        {% else %}
+            <div class="empty">
+                {{ icon('star', 'icon-xl') }}
+                <h2>No reviews yet.</h2>
+                <p>Reviews show up here once customers rate their delivered orders.</p>
+            </div>
+        {% endfor %}
+    </section>
     {{ knp_pagination_render(reviews) }}
 {% endblock %}

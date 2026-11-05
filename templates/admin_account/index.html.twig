@@ -1,40 +1,56 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Administrators | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Administrators</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Team</div>
+            <h1>Administrators</h1>
+            <p>People who can run Foodjett. You cannot suspend yourself.</p>
+        </div>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Account</th><th>Last sign-in</th><th></th></tr>
-        </thead>
-        <tbody>
-        {% for admin in admins %}
-            <tr id="admin-{{ admin.id }}">
-                <td>{{ admin.user.name }}{% if admin.user.id == app.user.id %} (you){% endif %}</td>
-                <td>{{ admin.user.email }}</td>
-                <td>{{ admin.user.phone }}</td>
-                <td class="status">{{ admin.user.status }}</td>
-                <td>{{ admin.user.lastLoginAt ? admin.user.lastLoginAt|date('M j, Y g:i A') : 'never' }}</td>
-                <td>
-                    {% if admin.user.id != app.user.id or admin.user.status != 'active' %}
-                        <form method="post" action="{{ path('app_admin_account_status', {id: admin.id, status: admin.user.status == 'active' ? 'suspended' : 'active'}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('admin' ~ admin.id) }}">
-                            <button type="submit">{{ admin.user.status == 'active' ? 'Suspend' : 'Reactivate' }}</button>
-                        </form>
-                    {% endif %}
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="split">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Admin</th><th>Phone</th><th>Account</th><th>Last sign-in</th><th></th></tr>
+                </thead>
+                <tbody>
+                {% for admin in admins %}
+                    <tr id="admin-{{ admin.id }}">
+                        <td>
+                            <span class="entity">
+                                <span class="avatar">{{ admin.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                                <span><strong>{{ admin.user.name }}{% if admin.user.id == app.user.id %} (you){% endif %}</strong><small>{{ admin.user.email }}</small></span>
+                            </span>
+                        </td>
+                        <td>{{ admin.user.phone }}</td>
+                        <td class="status">{{ status_badge(admin.user.status) }}</td>
+                        <td>{{ admin.user.lastLoginAt ? admin.user.lastLoginAt|date('M j, Y g:i A') : 'never' }}</td>
+                        <td class="actions">
+                            {% if admin.user.id != app.user.id or admin.user.status != 'active' %}
+                                <form method="post" action="{{ path('app_admin_account_status', {id: admin.id, status: admin.user.status == 'active' ? 'suspended' : 'active'}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('admin' ~ admin.id) }}">
+                                    <button type="submit" class="{{ admin.user.status == 'active' ? 'btn-light' : 'btn-green' }} btn-sm">{{ admin.user.status == 'active' ? 'Suspend' : 'Reactivate' }}</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <h2>Add an administrator</h2>
-    <p>Give the starting password to the new admin privately; they should change it after signing in.</p>
-    {{ form_start(form, {action: path('app_admin_account_new')}) }}
-        {{ form_widget(form) }}
-        <button type="submit">Add administrator</button>
-    {{ form_end(form) }}
+        <aside class="panel action-card">
+            <h2>Add an administrator</h2>
+            <p class="subtle">Give the starting password to the new admin privately; they should change it after signing in.</p>
+            {{ form_start(form, {action: path('app_admin_account_new')}) }}
+                {{ form_widget(form) }}
+                <button type="submit" class="btn-green btn-block">Add administrator</button>
+            {{ form_end(form) }}
+        </aside>
+    </div>
 {% endblock %}

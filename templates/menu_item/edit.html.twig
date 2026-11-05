@@ -1,12 +1,32 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Edit menu item | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Edit menu item</h1>
+    <a class="back-link" href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">{{ icon('back', 'icon-sm') }} {{ menu_item.name }}</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your menu</div>
+            <h1>Edit menu item</h1>
+            <p>{{ menu_item.name }}</p>
+        </div>
+    </div>
 
-    {{ include('menu_item/_form.html.twig', {'button_label': 'Update'}) }}
-
-    <a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">back</a>
-
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('menu_item/_form.html.twig', {'button_label': 'Update'}) }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">Leave the photo empty to keep the current one. Unticking “available” hides the dish from customers right away.</p>
+            </section>
+            <section class="panel">
+                <h2>Delete</h2>
+                <p class="subtle">This cannot be undone.</p>
+                {{ include('menu_item/_delete_form.html.twig') }}
+            </section>
+        </aside>
+    </div>
 {% endblock %}

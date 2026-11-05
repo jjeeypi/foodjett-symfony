@@ -1,58 +1,78 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}{{ menu_item.name }} | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_menu_item_index') }}">Menu items</a></p>
-    <h1>{{ menu_item.name }}</h1>
+    <a class="back-link" href="{{ path('app_menu_item_index') }}">{{ icon('back', 'icon-sm') }} Menu items</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">{{ menu_item.menuCategory.name }}</div>
+            <h1>{{ menu_item.name }}</h1>
+            <p>
+                {{ menu_item.available ? 'Available' : 'Not available right now' }}{{ menu_item.featured ? ' · Featured' }} ·
+                Served {% if menu_item.availableFrom or menu_item.availableUntil %}{{ menu_item.availableFrom ? menu_item.availableFrom|date('H:i') : 'opening' }} to {{ menu_item.availableUntil ? menu_item.availableUntil|date('H:i') : 'closing' }}{% else %}all day{% endif %}
+            </p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-green" href="{{ path('app_menu_item_edit', {'id': menu_item.id}) }}">{{ icon('edit', 'icon-sm') }} Edit dish</a>
+        </div>
+    </div>
 
-    <table class="table">
-        <tbody>
-            <tr><th>Category</th><td>{{ menu_item.menuCategory.name }}</td></tr>
-            <tr><th>Price</th><td>₱{{ menu_item.basePrice }}</td></tr>
-            <tr><th>Description</th><td>{{ menu_item.description }}</td></tr>
-            <tr><th>Available</th><td>{{ menu_item.available ? 'Yes' : 'No' }}{{ menu_item.featured ? ' · Featured' }}</td></tr>
-            <tr>
-                <th>Served</th>
-                <td>
-                    {% if menu_item.availableFrom or menu_item.availableUntil %}
-                        {{ menu_item.availableFrom ? menu_item.availableFrom|date('H:i') : 'opening' }} to {{ menu_item.availableUntil ? menu_item.availableUntil|date('H:i') : 'closing' }}
+    <div class="editor">
+        <div class="stack">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Options</h2>
+                    <a class="btn btn-light btn-sm" href="{{ path('app_menu_item_variant_new', {'itemId': menu_item.id}) }}">{{ icon('plus', 'icon-sm') }} Add an option</a>
+                </div>
+                <p class="subtle">Choices like size or flavor. The price change is added to the base price.</p>
+                <ul id="variants" class="option-list">
+                    {% for variant in menu_item.variants %}
+                        <li>
+                            <span class="grow">{{ variant.name }} ({{ variant.priceDelta >= 0 ? '+' : '' }}{{ variant.priceDelta }})</span>
+                            <a class="icon-button" href="{{ path('app_menu_item_variant_edit', {'itemId': menu_item.id, 'id': variant.id}) }}" title="Edit {{ variant.name }}" aria-label="Edit {{ variant.name }}">{{ icon('edit') }}</a>
+                        </li>
                     {% else %}
-                        all day
-                    {% endif %}
-                </td>
-            </tr>
-            {% if menu_item.photoPath %}<tr><th>Photo</th><td><img src="{{ asset(menu_item.photoPath) }}" alt="{{ menu_item.name }}" width="160"></td></tr>{% endif %}
-        </tbody>
-    </table>
-    <a href="{{ path('app_menu_item_edit', {'id': menu_item.id}) }}">edit</a>
+                        <li class="subtle">No options.</li>
+                    {% endfor %}
+                </ul>
+            </section>
 
-    <h2>Options</h2>
-    <ul id="variants">
-        {% for variant in menu_item.variants %}
-            <li>
-                {{ variant.name }} ({{ variant.priceDelta >= 0 ? '+' : '' }}{{ variant.priceDelta }})
-                <a href="{{ path('app_menu_item_variant_edit', {'itemId': menu_item.id, 'id': variant.id}) }}">edit</a>
-            </li>
-        {% else %}
-            <li>No options.</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ path('app_menu_item_variant_new', {'itemId': menu_item.id}) }}">Add an option</a>
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Add-ons</h2>
+                    <a class="btn btn-light btn-sm" href="{{ path('app_menu_item_addon_new', {'itemId': menu_item.id}) }}">{{ icon('plus', 'icon-sm') }} Add an add-on</a>
+                </div>
+                <p class="subtle">Extras a customer can tick, like extra rice or gravy.</p>
+                <ul id="addons" class="option-list">
+                    {% for addon in menu_item.addons %}
+                        <li>
+                            <span class="grow">{{ addon.name }} (+{{ addon.price }}){{ addon.available ? '' : ' · unavailable' }}</span>
+                            <a class="icon-button" href="{{ path('app_menu_item_addon_edit', {'itemId': menu_item.id, 'id': addon.id}) }}" title="Edit {{ addon.name }}" aria-label="Edit {{ addon.name }}">{{ icon('edit') }}</a>
+                        </li>
+                    {% else %}
+                        <li class="subtle">No add-ons.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
 
-    <h2>Add-ons</h2>
-    <ul id="addons">
-        {% for addon in menu_item.addons %}
-            <li>
-                {{ addon.name }} (+{{ addon.price }}){{ addon.available ? '' : ' · unavailable' }}
-                <a href="{{ path('app_menu_item_addon_edit', {'itemId': menu_item.id, 'id': addon.id}) }}">edit</a>
-            </li>
-        {% else %}
-            <li>No add-ons.</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ path('app_menu_item_addon_new', {'itemId': menu_item.id}) }}">Add an add-on</a>
-
-    <h2>Delete</h2>
-    {{ include('menu_item/_delete_form.html.twig') }}
+        <aside class="stack">
+            <div class="eyebrow">What customers see</div>
+            <div class="preview-dish">
+                {% if menu_item.photoPath %}<img src="{{ asset(menu_item.photoPath) }}" alt="{{ menu_item.name }}" width="320" height="240">{% endif %}
+                <div>
+                    <h3>{{ menu_item.name }}</h3>
+                    {% if menu_item.description %}<p>{{ menu_item.description }}</p>{% endif %}
+                    <p class="dish-price" style="margin-top: 8px">₱{{ menu_item.basePrice }}</p>
+                </div>
+            </div>
+            <section class="panel">
+                <h2>Delete</h2>
+                <p class="subtle">A dish that was ever ordered is kept and marked unavailable instead, so order history stays correct.</p>
+                {{ include('menu_item/_delete_form.html.twig') }}
+            </section>
+        </aside>
+    </div>
 {% endblock %}

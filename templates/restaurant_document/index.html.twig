@@ -1,33 +1,47 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Documents | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
-    <h1>Documents</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Paperwork</div>
+            <h1>Documents</h1>
+            <p>An admin checks every permit. Upload a new file when one is rejected.</p>
+        </div>
+    </div>
 
-    <table>
-        <thead><tr><th>Document</th><th>Status</th><th>Note from the admin</th><th>File</th></tr></thead>
-        <tbody>
-            {% for type in types %}
-                {% set document = documents[type] ?? null %}
-                <tr id="document-{{ type }}">
-                    <td>{{ type|replace({'_': ' '})|capitalize }}</td>
-                    <td>{{ document ? document.status : 'missing' }}</td>
-                    <td>{{ document ? document.rejectionReason }}</td>
-                    <td>{% if document %}<a href="{{ path('app_restaurant_document_file', {id: document.id}) }}">view</a>{% endif %}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    {% if form %}
-        <h2>Upload a document</h2>
-        {{ form_start(form) }}
-            {{ form_widget(form) }}
-            <button type="submit">Upload</button>
-        {{ form_end(form) }}
-    {% else %}
-        <p>All documents are submitted.</p>
-    {% endif %}
+    <div class="split">
+        <section class="panel">
+            <div class="docs">
+                {% for type in types %}
+                    {% set document = documents[type] ?? null %}
+                    <div class="doc {{ document ? document.status }}" id="document-{{ type }}">
+                        <span class="pin-box">{{ icon('file') }}</span>
+                        <span>
+                            <strong>{{ type|replace({'_': ' '})|capitalize }}</strong>
+                            <small>
+                                {%- if document %}{% if document.rejectionReason %}Note from the admin: {{ document.rejectionReason }} · {% endif %}<a href="{{ path('app_restaurant_document_file', {id: document.id}) }}">view</a>
+                                {%- else %}Not uploaded yet{% endif -%}
+                            </small>
+                        </span>
+                        <span class="doc-actions">{{ status_badge(document ? document.status : 'missing') }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <aside class="panel">
+            {% if form %}
+                <h2>Upload a document</h2>
+                {{ form_start(form) }}
+                    {{ form_widget(form) }}
+                    <button type="submit">Upload</button>
+                {{ form_end(form) }}
+            {% else %}
+                <h2>{{ icon('check') }} All set</h2>
+                <p class="subtle">All documents are submitted.</p>
+            {% endif %}
+        </aside>
+    </div>
 {% endblock %}

@@ -1,11 +1,27 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New delivery zone | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>New delivery zone</h1>
+    <a class="back-link" href="{{ path('app_admin_delivery_zone_index') }}">{{ icon('back', 'icon-sm') }} Delivery zones</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Coverage</div>
+            <h1>New delivery zone</h1>
+            <p>A circle around a centre point. Checkout accepts addresses inside any active zone.</p>
+        </div>
+    </div>
 
-    {{ include('admin_delivery_zone/_form.html.twig') }}
-
-    <a href="{{ path('app_admin_delivery_zone_index') }}">back to list</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('admin_delivery_zone/_form.html.twig') }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">Dumaguete City hall is about 9.3068, 123.3054. A 10 km radius covers the city and the nearby towns.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

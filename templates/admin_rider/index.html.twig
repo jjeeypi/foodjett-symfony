@@ -1,39 +1,61 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Riders | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Riders</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Fleet</div>
+            <h1>Riders</h1>
+            <p>Review rider applications, see who is online and manage accounts.</p>
+        </div>
+    </div>
 
-    <form method="get">
-        <label for="approval">Application</label>
-        <select id="approval" name="approval">
-            <option value="">All</option>
-            {% for value in ['pending', 'approved', 'rejected'] %}
-                <option value="{{ value }}" {{ approval == value ? 'selected' }}>{{ value }}</option>
+    <div class="toolbar">
+        <nav class="tabs" aria-label="Application status">
+            {% for value, label in {'': 'All', 'pending': 'Pending', 'approved': 'Approved', 'rejected': 'Rejected'} %}
+                <a class="{{ approval == value ? 'current' }}" href="{{ path('app_admin_rider_index', {approval: value, search: search}|filter(v => v)) }}">{{ label }}</a>
             {% endfor %}
-        </select>
-        <label for="search">Search</label>
-        <input type="search" id="search" name="search" value="{{ search }}">
-        <button type="submit">Filter</button>
-    </form>
+        </nav>
+        <form method="get">
+            <input type="hidden" name="approval" value="{{ approval }}">
+            <div class="search">
+                {{ icon('search') }}
+                <label for="search" class="sr-only">Search</label>
+                <input type="search" id="search" name="search" value="{{ search }}" placeholder="Name, email or plate">
+            </div>
+            <button type="submit" class="btn-light">Filter</button>
+        </form>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr><th>Name</th><th>Vehicle</th><th>Availability</th><th>Application</th><th>Account</th><th>actions</th></tr>
-        </thead>
-        <tbody>
-        {% for rider in riders %}
-            <tr id="rider-{{ rider.id }}"><td>{{ rider.user.name }}</td><td>{{ rider.vehicleType }} {{ rider.plateNumber }}</td><td>{{ rider.availabilityStatus }}</td><td>{{ rider.approvalStatus }}</td><td>{{ rider.user.status }}</td>
-                <td><a href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">show</a></td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="6">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Rider</th><th>Vehicle</th><th>Availability</th><th>Application</th><th>Account</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for rider in riders %}
+                <tr id="rider-{{ rider.id }}">
+                    <td>
+                        <a class="entity" href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">
+                            <span class="avatar">{{ rider.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                            <span><strong>{{ rider.user.name }}</strong><small>{{ rider.user.phone }}</small></span>
+                        </a>
+                    </td>
+                    <td>{{ rider.vehicleType }} <small class="subtle">{{ rider.plateNumber }}</small></td>
+                    <td>{{ status_badge(rider.availabilityStatus) }}</td>
+                    <td>{{ status_badge(rider.approvalStatus) }}</td>
+                    <td>{{ status_badge(rider.user.status) }}</td>
+                    <td class="actions">
+                        <a class="btn {{ rider.approvalStatus == 'pending' ? 'btn-green' : 'btn-light' }} btn-sm" href="{{ path('app_admin_rider_show', {'id': rider.id}) }}">{{ rider.approvalStatus == 'pending' ? 'Review' : 'show' }}</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">no records found</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {{ knp_pagination_render(riders) }}
 {% endblock %}

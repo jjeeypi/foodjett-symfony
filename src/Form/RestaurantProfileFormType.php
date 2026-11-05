@@ -41,7 +41,7 @@ class RestaurantProfileFormType extends AbstractType
             ->add('latitude', HiddenType::class, ['empty_data' => '', 'attr' => ['data-location-picker-target' => 'latitude']])
             ->add('longitude', HiddenType::class, ['empty_data' => '', 'error_bubbling' => false, 'attr' => ['data-location-picker-target' => 'longitude']])
             ->add('defaultPrepTimeMinutes', IntegerType::class, ['label' => 'Usual preparation time (minutes)'])
-            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (PHP)', 'empty_data' => '0', 'attr' => ['inputmode' => 'decimal']])
+            ->add('minOrderAmount', TextType::class, ['label' => 'Minimum order (₱)', 'empty_data' => '0', 'attr' => ['inputmode' => 'decimal']])
             ->add('payoutMethod', ChoiceType::class, [
                 'label' => 'Payout method',
                 'choices' => ['Bank transfer' => Restaurant::PAYOUT_METHOD_BANK, 'E-wallet' => Restaurant::PAYOUT_METHOD_EWALLET],

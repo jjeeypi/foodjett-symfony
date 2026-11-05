@@ -1,22 +1,32 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}{{ delivery_zone.name }} | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>{{ delivery_zone.name }}</h1>
+    <a class="back-link" href="{{ path('app_admin_delivery_zone_index') }}">{{ icon('back', 'icon-sm') }} Delivery zones</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Delivery zone</div>
+            <h1>{{ delivery_zone.name }}</h1>
+            <p><span class="badge {{ delivery_zone.active ? 'badge-green' }}">{{ delivery_zone.active ? 'Active' : 'Switched off' }}</span></p>
+        </div>
+        <div class="page-actions"><a class="btn btn-green" href="{{ path('app_admin_delivery_zone_edit', {'id': delivery_zone.id}) }}">{{ icon('edit', 'icon-sm') }} Edit</a></div>
+    </div>
 
-    <table class="table">
-        <tbody>
-            <tr><th>Centre</th><td>{{ delivery_zone.polygon.center[0] ?? '' }}, {{ delivery_zone.polygon.center[1] ?? '' }}</td></tr>
-            <tr><th>Radius</th><td>{{ delivery_zone.polygon.radius_km ?? '' }} km</td></tr>
-            <tr><th>Active</th><td>{{ delivery_zone.active ? 'Yes' : 'No' }}</td></tr>
-            <tr><th>Updated</th><td>{{ delivery_zone.updatedAt ? delivery_zone.updatedAt|date('M j, Y g:i A') : '' }}</td></tr>
-        </tbody>
-    </table>
-
-    <a href="{{ path('app_admin_delivery_zone_index') }}">back to list</a>
-
-    <a href="{{ path('app_admin_delivery_zone_edit', {'id': delivery_zone.id}) }}">edit</a>
-
-    {{ include('admin_delivery_zone/_delete_form.html.twig') }}
+    <div class="split">
+        <section class="panel">
+            <dl class="facts">
+                <div><dt>Centre</dt><dd>{{ delivery_zone.polygon.center[0] ?? '' }}, {{ delivery_zone.polygon.center[1] ?? '' }}</dd></div>
+                <div><dt>Radius</dt><dd>{{ delivery_zone.polygon.radius_km ?? '' }} km</dd></div>
+                <div><dt>Active</dt><dd>{{ delivery_zone.active ? 'Yes' : 'No' }}</dd></div>
+                <div><dt>Updated</dt><dd>{{ delivery_zone.updatedAt ? delivery_zone.updatedAt|date('M j, Y g:i A') : '' }}</dd></div>
+            </dl>
+        </section>
+        <aside class="panel">
+            <h2>Delete</h2>
+            <p class="subtle">This cannot be undone.</p>
+            {{ include('admin_delivery_zone/_delete_form.html.twig') }}
+        </aside>
+    </div>
 {% endblock %}

@@ -23,7 +23,7 @@ class RiderType extends AbstractType
             ])
             ->add('plateNumber', TextType::class, ['required' => false])
             ->add('cashRemitLimit', TextType::class, [
-                'label' => 'Cash limit (PHP)',
+                'label' => 'Cash limit (₱)',
                 'empty_data' => '',
                 'help' => 'Above this amount the rider must remit before taking another COD order.',
                 'constraints' => [new NotBlank(), new Regex(pattern: '/^\d{1,8}(\.\d{1,2})?$/', message: 'Enter an amount of zero or more.')],

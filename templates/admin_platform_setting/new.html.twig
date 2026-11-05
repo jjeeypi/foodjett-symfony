@@ -1,11 +1,27 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New setting | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>New setting</h1>
+    <a class="back-link" href="{{ path('app_admin_platform_setting_index') }}">{{ icon('back', 'icon-sm') }} Platform settings</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Platform</div>
+            <h1>New setting</h1>
+            <p>Stores a value the platform reads at run time.</p>
+        </div>
+    </div>
 
-    {{ include('admin_platform_setting/_form.html.twig') }}
-
-    <a href="{{ path('app_admin_platform_setting_index') }}">back to list</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('admin_platform_setting/_form.html.twig') }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">A setting that is missing uses its built-in default.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

@@ -42,6 +42,7 @@ final class MenuItemController extends AbstractController
     {
         return $this->render('menu_item/index.html.twig', [
             'menu_items' => $this->items->createForRestaurantQuery($this->restaurant($user))->getQuery()->getResult(),
+            'menu_categories' => $this->categoryChoices($user),
         ]);
     }
 
