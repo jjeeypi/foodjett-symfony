@@ -18,10 +18,39 @@ Each role has its own area:
 | Approvals, customers, orders, refunds, payouts, settings, audit log | `/admin` | Administrators |
 | Chats and help requests | `/messages`, `/support` | Everyone signed in |
 
-Pages that show changing data (order tracking, the restaurant queue, the rider
-pool, chats) subscribe to their own Mercure topics and refresh in place when
-the server signals a change. The pages are deliberately unstyled for now; the
-visual design comes later.
+Pages that show changing data (order tracking, the restaurant order board, the
+rider pool, chats) subscribe to their own Mercure topics and refresh in place
+when the server signals a change.
+
+### Design
+
+The interface follows two Figma Make mockups: one for the customer and rider
+apps, one for the restaurant and admin back office. The styles are plain CSS in
+`assets/styles/app.css` (AssetMapper, no build step), and the icons are one SVG
+sprite in `assets/images/icons.svg`. Every page uses the same layout: a sidebar
+whose links depend on the role, which can be collapsed to icons and becomes a
+bottom bar on phones, and a top bar with the delivery address and cart, the
+rider's online switch, or the restaurant's open status.
+
+What each role sees:
+
+- **Customers:** an explore page with a craving row and restaurant cards,
+  favorites, restaurant pages with a cover photo and the menu, cart, checkout,
+  live order tracking, addresses, chat and support.
+- **Restaurants:** a dashboard, an order board with one column per kitchen
+  stage, a menu manager with an on/off switch per dish, options and add-ons,
+  hours, vouchers, reviews with replies, earnings and payouts, documents and
+  the profile.
+- **Riders:** the order pool with offer cards, status and location sharing, the
+  active delivery with step-by-step actions and directions, earnings, cash
+  remittances, the account and documents.
+- **Administrators:** a dashboard, restaurant and rider applications with
+  document checks, orders with rider assignment and cancellation, customers,
+  payments and refunds, payouts, remittances, reports, reviews, support,
+  vouchers, delivery zones, settings, the audit log and admin accounts.
+
+Prices are shown in pesos (₱). A restaurant that has not uploaded a cover photo
+gets a drawn cover with its food icon.
 
 ## Run the stack with Docker
 
@@ -45,40 +74,45 @@ visual design comes later.
    inside `DATABASE_URL`, and give the three Mercure keys the same value.
    `.env.docker.local` is gitignored and never copied into the image.
 
-3. Build and start the four services:
+3. Optionally set `SEED_CATALOG_PASSWORD` in `.env.docker.local` to load the
+   demo catalog on the first start: 50 Philippine restaurant chains with their
+   menus, approved and open, at made-up Dumaguete addresses inside a 10 km
+   delivery zone. Each owner signs in as `<slug>@restaurants.foodjett.test`
+   (for example `jollibee@restaurants.foodjett.test`) with that password.
+   Later starts skip the restaurants that already exist, so they do no extra
+   work. Leave it empty for an empty platform.
+
+4. Build and start the four services:
 
    ```bash
    docker compose up -d --build
    docker compose ps
    ```
 
-4. Create the first administrator:
+5. Create the first administrator:
 
    ```bash
    docker compose exec app php bin/console app:make-admin "Foodjett Admin" admin@example.test "<choose-a-password>"
    ```
 
-5. Optionally load the demo catalog: 50 Philippine restaurant chains with
-   their menus, approved and open, at made-up Dumaguete addresses inside a
-   10 km delivery zone. Each owner signs in as
-   `<slug>@restaurants.foodjett.test` (for example
-   `jollibee@restaurants.foodjett.test`) with the password you pass. Running it
-   again skips the restaurants that already exist.
-
-   ```bash
-   docker compose exec app php bin/console app:seed-catalog --password="<choose-a-password>"
-   ```
-
-   The menus come from `data/catalog.json`. Prices are approximate, and the
-   descriptions that the source lacked were written for this project. The dish
-   and cover pictures in `public/images/catalog` are AI-generated illustrations
-   (Stable Diffusion XL), not photos of the real dishes.
-
 6. Open the application at <http://localhost:8080>. The health check is
    <http://localhost:8080/api/health>.
 
-On startup the `app` container runs all Doctrine migrations before Apache
-starts.
+On every start the `app` container runs the Doctrine migrations, then loads the
+catalog when `SEED_CATALOG_PASSWORD` is set, before Apache starts. The services
+use `restart: unless-stopped`, so they come back on their own whenever Docker
+Desktop starts; after the first setup, opening Docker is enough.
+
+The catalog can also be loaded by hand, for example into a running stack:
+
+```bash
+docker compose exec app php bin/console app:seed-catalog --password="<choose-a-password>"
+```
+
+The menus come from `data/catalog.json`. Prices are approximate, and the
+descriptions that the source lacked were written for this project. The dish
+and cover pictures in `public/images/catalog` are AI-generated illustrations
+(Stable Diffusion XL), not photos of the real dishes.
 
 ### Services
 
@@ -114,16 +148,26 @@ docker compose down -v --remove-orphans               # stop and DELETE all data
 ## Native development
 
 Native development uses PHP 8.4 or newer with the `bcmath`, `intl`,
-`pdo_mysql` and `zip` extensions, Composer, the Symfony CLI, and a local
-MariaDB (for example XAMPP).
+`pdo_mysql` and `zip` extensions, Composer and a local MariaDB.
+
+On Windows, develop inside WSL (Ubuntu) and keep the project in the Linux file
+system (for example `~/foodjett`), not under `/mnt/c`. Pages and the test suite
+run several times faster there. Ubuntu's packages cover everything:
+
+```bash
+sudo apt install php-cli php-bcmath php-curl php-intl php-mbstring php-mysql php-xml php-zip composer mariadb-server
+```
 
 1. Install dependencies: `composer install`
 2. Create `.env.local` with your local `DATABASE_URL` (and `APP_SECRET`). It is
-   gitignored.
+   gitignored. Set `serverVersion` in the URL to your MariaDB version.
 3. Create the schema: `php bin/console doctrine:migrations:migrate`
 4. Start the Mercure hub only: `docker compose up -d mercure` (listens on
-   `http://localhost:3000/.well-known/mercure`).
-5. Start the web server: `symfony server:start --no-tls`
+   `http://localhost:3000/.well-known/mercure`). Without it the site still
+   works; pages just do not refresh live.
+5. Start the web server: `php -S 0.0.0.0:8000 -t public` (or
+   `symfony server:start --no-tls`), then open <http://localhost:8000>. From
+   WSL the Windows browser reaches it at the same address.
 6. Start the scheduler worker:
    `php bin/console messenger:consume scheduler_default -vv`
 7. Optionally load the demo catalog:
