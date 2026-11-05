@@ -1,38 +1,33 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Platform settings | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Platform settings</h1>
-    <p>Fees, rider pay and timing rules the platform reads at run time. A setting that is missing uses its built-in default.</p>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Platform</div>
+            <h1>Platform settings</h1>
+            <p>Fees, rider pay and timing rules the platform reads at run time. A setting that is missing uses its built-in default.</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-light" href="{{ path('app_admin_delivery_zone_index') }}">{{ icon('map', 'icon-sm') }} Delivery zones</a>
+            <a class="btn btn-green" href="{{ path('app_admin_platform_setting_new') }}">{{ icon('plus', 'icon-sm') }} Add a setting</a>
+        </div>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Setting</th>
-                <th>Value</th>
-                <th>Description</th>
-                <th>Updated</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
+    <section class="panel">
         {% for platform_setting in platform_settings %}
-            <tr id="setting-{{ platform_setting.key }}">
-                <td>{{ platform_setting.key }}</td>
-                <td class="value">{{ platform_setting.value }}</td>
-                <td>{{ platform_setting.description }}</td>
-                <td>{{ platform_setting.updatedAt ? platform_setting.updatedAt|date('M j, Y g:i A') : '' }}</td>
-                <td><a href="{{ path('app_admin_platform_setting_edit', {'id': platform_setting.id}) }}">edit</a></td>
-            </tr>
+            <div class="setting" id="setting-{{ platform_setting.key }}">
+                <span>
+                    <strong>{{ platform_setting.description ?: platform_setting.key }}</strong>
+                    <small><code>{{ platform_setting.key }}</code>{% if platform_setting.updatedAt %} · updated {{ platform_setting.updatedAt|date('M j, Y g:i A') }}{% endif %}</small>
+                </span>
+                <span class="value">{{ platform_setting.value }}</span>
+                <a class="btn btn-light btn-sm" href="{{ path('app_admin_platform_setting_edit', {'id': platform_setting.id}) }}">{{ icon('edit', 'icon-sm') }} edit</a>
+            </div>
         {% else %}
-            <tr>
-                <td colspan="5">No settings stored; every default applies.</td>
-            </tr>
+            <div class="empty">{{ icon('settings', 'icon-xl') }}<h2>No settings stored; every default applies.</h2></div>
         {% endfor %}
-        </tbody>
-    </table>
-
-    <a href="{{ path('app_admin_platform_setting_new') }}">Add a setting</a>
+    </section>
 {% endblock %}

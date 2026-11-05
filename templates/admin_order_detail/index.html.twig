@@ -1,92 +1,149 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Order {{ order.orderNumber }} | Foodjett admin{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('orders/' ~ order.id ~ '/status', null, {withCredentials: true}) }} hidden></div>
-    <p><a href="{{ path('app_admin_order') }}">All orders</a></p>
+    <a class="back-link" href="{{ path('app_admin_order') }}">{{ icon('back', 'icon-sm') }} All orders</a>
 
-    <h1>Order {{ order.orderNumber }}</h1>
-    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
-    {% if order.rejectionReason %}<p>Rejected by the restaurant: {{ order.rejectionReason }}</p>{% endif %}
-    {% if order.cancellationReason %}<p id="cancellation">Cancelled by {{ order.cancelledBy }}: {{ order.cancellationReason }}</p>{% endif %}
+    <div class="order-head">
+        <div>
+            <p id="status">{{ status_badge(order.status) }}<span class="sr-only">Status: {{ order.status|replace({'_': ' '}) }}</span></p>
+            <h1>Order {{ order.orderNumber }}</h1>
+            <p>Placed {{ order.placedAt|date('M j, Y g:i A') }} · paid by {{ order.paymentMethod|upper }}{% if order.deliveredAt %} · delivered {{ order.deliveredAt|date('M j, Y g:i A') }}{% endif %}</p>
+        </div>
+    </div>
 
-    <table class="table">
-        <tbody>
-            <tr><th>Restaurant</th><td><a href="{{ path('app_admin_restaurant_show', {id: order.restaurant.id}) }}">{{ order.restaurant.name }}</a></td></tr>
-            <tr><th>Customer</th><td><a href="{{ path('app_admin_customer_show', {id: order.customer.id}) }}">{{ order.customer.user.name }}</a> · {{ order.customer.user.phone }}</td></tr>
-            <tr><th>Deliver to</th><td id="address">{{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} ({{ order.customerAddress.landmark }}){% endif %}{% if order.customerAddress.deliveryInstructions %} · {{ order.customerAddress.deliveryInstructions }}{% endif %}</td></tr>
-            <tr><th>Rider</th><td id="rider">{% if order.rider %}<a href="{{ path('app_admin_rider_show', {id: order.rider.id}) }}">{{ order.rider.user.name }}</a>{% if order.riderPoolOffer and order.riderPoolOffer.adminAssigned %} (assigned by an admin){% endif %}{% else %}none yet{% endif %}</td></tr>
-            <tr><th>Placed</th><td>{{ order.placedAt|date('M j, Y g:i A') }}</td></tr>
-            {% if order.deliveredAt %}<tr><th>Delivered</th><td>{{ order.deliveredAt|date('M j, Y g:i A') }}</td></tr>{% endif %}
-        </tbody>
-    </table>
+    {% if order.rejectionReason %}<p class="callout callout-danger">Rejected by the restaurant: {{ order.rejectionReason }}</p>{% endif %}
+    {% if order.cancellationReason %}<p id="cancellation" class="callout callout-danger">Cancelled by {{ order.cancelledBy }}: {{ order.cancellationReason }}</p>{% endif %}
 
-    <h2>Items</h2>
-    <ul>
-        {% for item in order.items %}
-            <li>
-                {{ item.quantity }} × {{ item.menuItem.name }}
-                {% if item.menuItemVariant %}({{ item.menuItemVariant.name }}){% endif %}
-                · ₱{{ item.unitPrice }}
-                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }} ₱{{ addon.price }}{% endfor %}
-                {% if item.specialInstructions %}<br>Note: {{ item.specialInstructions }}{% endif %}
-            </li>
-        {% else %}
-            <li>No items.</li>
-        {% endfor %}
-    </ul>
-    {% if order.customerNotes %}<p>Customer notes: {{ order.customerNotes }}</p>{% endif %}
+    <div class="parties">
+        <section class="panel">
+            <h3>Customer</h3>
+            <div class="person">
+                <span class="avatar">{{ order.customer.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                <span class="grow">
+                    <strong><a href="{{ path('app_admin_customer_show', {id: order.customer.id}) }}">{{ order.customer.user.name }}</a></strong>
+                    <small>{{ order.customer.user.phone }}</small>
+                    <small id="address">{{ order.customerAddress.addressLine }}{% if order.customerAddress.landmark %} ({{ order.customerAddress.landmark }}){% endif %}{% if order.customerAddress.deliveryInstructions %} · {{ order.customerAddress.deliveryInstructions }}{% endif %}</small>
+                </span>
+            </div>
+        </section>
+        <section class="panel">
+            <h3>Restaurant</h3>
+            <div class="person">
+                <span class="avatar">{% if order.restaurant.coverPhotoPath %}<img src="{{ asset(order.restaurant.coverPhotoPath) }}" alt="">{% else %}{{ order.restaurant.name|first|upper }}{% endif %}</span>
+                <span class="grow">
+                    <strong><a href="{{ path('app_admin_restaurant_show', {id: order.restaurant.id}) }}">{{ order.restaurant.name }}</a></strong>
+                    <small>{{ order.restaurant.address }}</small>
+                </span>
+            </div>
+        </section>
+        <section class="panel">
+            <h3>Rider</h3>
+            <div class="person" id="rider">
+                {% if order.rider %}
+                    <span class="avatar">{{ order.rider.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                    <span class="grow">
+                        <strong><a href="{{ path('app_admin_rider_show', {id: order.rider.id}) }}">{{ order.rider.user.name }}</a></strong>
+                        <small>{{ order.rider.vehicleType|capitalize }}{% if order.riderPoolOffer and order.riderPoolOffer.adminAssigned %} (assigned by an admin){% endif %}</small>
+                    </span>
+                {% else %}
+                    <span class="avatar">{{ icon('bike', 'icon-sm') }}</span>
+                    <span class="grow"><strong>none yet</strong><small>Waiting for the rider pool</small></span>
+                {% endif %}
+            </div>
+        </section>
+    </div>
 
-    <h2>Money</h2>
-    <dl id="money">
-        <dt>Subtotal</dt><dd>₱{{ order.subtotal }}</dd>
-        <dt>Delivery fee</dt><dd>₱{{ order.deliveryFee }}</dd>
-        <dt>Service fee</dt><dd>₱{{ order.serviceFee }}</dd>
-        <dt>Discount</dt><dd>₱{{ order.discountAmount }}</dd>
-        <dt>Tip</dt><dd>₱{{ order.tipAmount }}</dd>
-        <dt>Total</dt><dd>₱{{ order.totalAmount }}</dd>
-        <dt>Commission</dt><dd>₱{{ order.commissionAmount }}</dd>
-    </dl>
-    {% if order.payment %}
-        <p id="payment">
-            Payment: {{ order.payment.method|upper }}, <strong>{{ order.payment.status|replace({'_': ' '}) }}</strong>,
-            ₱{{ order.payment.amount }}{% if order.payment.refundedAmount > 0 %}, ₱{{ order.payment.refundedAmount }} refunded{% endif %}
-            {% if order.payment.transactionReference %}· ref {{ order.payment.transactionReference }}{% endif %}
-        </p>
-    {% endif %}
+    <div class="split">
+        <div class="stack">
+            <section class="panel">
+                <h2>Items</h2>
+                <ul class="receipt">
+                    {% for item in order.items %}
+                        <li>
+                            <span class="qty-tag">{{ item.quantity }}×</span>
+                            <span>
+                                <strong>{{ item.menuItem.name }}</strong>
+                                {% if item.menuItemVariant %}<small>{{ item.menuItemVariant.name }}</small>{% endif %}
+                                {% for addon in item.addons %}<small>+ {{ addon.menuItemAddon.name }} ₱{{ addon.price }}</small>{% endfor %}
+                                {% if item.specialInstructions %}<small class="note">Note: {{ item.specialInstructions }}</small>{% endif %}
+                            </span>
+                            <span>₱{{ item.unitPrice }}</span>
+                        </li>
+                    {% else %}
+                        <li><span></span><span>No items.</span><span></span></li>
+                    {% endfor %}
+                </ul>
+                {% if order.customerNotes %}<p class="note-box">Customer notes: {{ order.customerNotes }}</p>{% endif %}
+            </section>
 
-    {% if order.riderPoolOffer %}
-        <p id="pool">
-            Rider search: {{ order.riderPoolOffer.escalationStage|replace({'_': ' '}) }}, radius {{ order.riderPoolOffer.searchRadiusKm }} km,
-            incentive ₱{{ order.riderPoolOffer.incentiveAmount }}{% if order.riderSearchStartedAt %}, since {{ order.riderSearchStartedAt|date('g:i A') }}{% endif %}
-        </p>
-    {% endif %}
+            <section class="panel">
+                <h2>Timeline</h2>
+                <ol id="timeline" class="timeline">
+                    {% for entry in history %}
+                        <li class="done">{{ entry.createdAt|date('M j, g:i A') }} · {{ entry.status|replace({'_': ' '}) }} by {{ entry.changedBy }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
+                    {% else %}
+                        <li class="todo">No status changes yet.</li>
+                    {% endfor %}
+                </ol>
+            </section>
+        </div>
 
-    {% if assign_form %}
-        <h2>Assign a rider</h2>
-        <p>Nobody took this order from the pool. The rider must be within the search radius and free of another delivery.</p>
-        {{ form_start(assign_form, {action: path('app_admin_order_assign', {id: order.id})}) }}
-            {{ form_widget(assign_form) }}
-            <button type="submit">Assign rider</button>
-        {{ form_end(assign_form) }}
-    {% endif %}
+        <aside class="stack">
+            <section class="panel">
+                <h2>Money</h2>
+                <dl id="money" class="money-list">
+                    <div><dt>Subtotal</dt><dd>₱{{ order.subtotal }}</dd></div>
+                    <div><dt>Delivery fee</dt><dd>₱{{ order.deliveryFee }}</dd></div>
+                    <div><dt>Service fee</dt><dd>₱{{ order.serviceFee }}</dd></div>
+                    <div><dt>Discount</dt><dd>₱{{ order.discountAmount }}</dd></div>
+                    <div><dt>Tip</dt><dd>₱{{ order.tipAmount }}</dd></div>
+                    <div class="grand"><dt>Total</dt><dd>₱{{ order.totalAmount }}</dd></div>
+                    <div><dt>Commission</dt><dd>₱{{ order.commissionAmount }}</dd></div>
+                </dl>
+                {% if order.payment %}
+                    <p id="payment" class="subtle" style="margin-top: 10px">
+                        Payment: {{ order.payment.method|upper }}, <strong>{{ order.payment.status|replace({'_': ' '}) }}</strong>,
+                        ₱{{ order.payment.amount }}{% if order.payment.refundedAmount > 0 %}, ₱{{ order.payment.refundedAmount }} refunded{% endif %}
+                        {% if order.payment.transactionReference %}· ref {{ order.payment.transactionReference }}{% endif %}
+                    </p>
+                {% endif %}
+            </section>
 
-    {% if cancel_form %}
-        <h2>Cancel</h2>
-        <p>Cancelling refunds any online payment in full.</p>
-        {{ form_start(cancel_form, {action: path('app_admin_order_cancel', {id: order.id})}) }}
-            {{ form_widget(cancel_form) }}
-            <button type="submit">Cancel order</button>
-        {{ form_end(cancel_form) }}
-    {% endif %}
+            {% if order.riderPoolOffer %}
+                <section class="panel">
+                    <h2>Rider search</h2>
+                    <p id="pool" class="subtle">
+                        Rider search: {{ order.riderPoolOffer.escalationStage|replace({'_': ' '}) }}, radius {{ order.riderPoolOffer.searchRadiusKm }} km,
+                        incentive ₱{{ order.riderPoolOffer.incentiveAmount }}{% if order.riderSearchStartedAt %}, since {{ order.riderSearchStartedAt|date('g:i A') }}{% endif %}
+                    </p>
+                </section>
+            {% endif %}
 
-    <h2>Timeline</h2>
-    <ol id="timeline">
-        {% for entry in history %}
-            <li>{{ entry.createdAt|date('M j, g:i A') }}: {{ entry.status|replace({'_': ' '}) }} by {{ entry.changedBy }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
-        {% else %}
-            <li>No status changes yet.</li>
-        {% endfor %}
-    </ol>
+            {% if assign_form %}
+                <section class="panel action-card">
+                    <h2>Assign a rider</h2>
+                    <p class="subtle">Nobody took this order from the pool. The rider must be within the search radius and free of another delivery.</p>
+                    {{ form_start(assign_form, {action: path('app_admin_order_assign', {id: order.id})}) }}
+                        {{ form_widget(assign_form) }}
+                        <button type="submit" class="btn-green">Assign rider</button>
+                    {{ form_end(assign_form) }}
+                </section>
+            {% endif %}
+
+            {% if cancel_form %}
+                <section class="panel">
+                    <h2>Cancel</h2>
+                    <p class="subtle">Cancelling refunds any online payment in full.</p>
+                    {{ form_start(cancel_form, {action: path('app_admin_order_cancel', {id: order.id})}) }}
+                        {{ form_widget(cancel_form) }}
+                        <button type="submit" class="btn-danger">Cancel order</button>
+                    {{ form_end(cancel_form) }}
+                </section>
+            {% endif %}
+        </aside>
+    </div>
 {% endblock %}

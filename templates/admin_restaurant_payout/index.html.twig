@@ -1,52 +1,70 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Restaurant payouts | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a> | <a href="{{ path('app_admin_rider_payout') }}">Rider payouts</a></p>
-    <h1>Restaurant payouts</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Money out</div>
+            <h1>Restaurant payouts</h1>
+            <p>Food sales minus commission, owed to each restaurant.</p>
+        </div>
+        <div class="page-actions"><a class="btn btn-light" href="{{ path('app_admin_rider_payout') }}">{{ icon('bike', 'icon-sm') }} Rider payouts</a></div>
+    </div>
 
-    <h2>Generate</h2>
-    <p>One payout per restaurant: food sales on orders delivered in the period, minus commission. Restaurants already paid for an overlapping period are skipped.</p>
-    {{ form_start(form, {action: path('app_admin_restaurant_payout_generate')}) }}
-        {{ form_widget(form) }}
-        <button type="submit">Generate payouts</button>
-    {{ form_end(form) }}
+    <div class="split">
+        <div>
+            <div class="toolbar">
+                <nav class="tabs" aria-label="Payout status">
+                    <a class="{{ status is empty ? 'current' }}" href="{{ path('app_admin_restaurant_payout') }}">All</a>
+                    {% for value in statuses %}<a class="{{ status == value ? 'current' }}" href="{{ path('app_admin_restaurant_payout', {status: value}) }}">{{ value|capitalize }}</a>{% endfor %}
+                </nav>
+            </div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr><th>Restaurant</th><th>Period</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Net</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    {% for payout in payouts %}
+                        <tr id="payout-{{ payout.id }}">
+                            <td>
+                                <a class="entity" href="{{ path('app_admin_restaurant_show', {id: payout.restaurant.id}) }}">
+                                    <span class="thumb">{% if payout.restaurant.coverPhotoPath %}<img src="{{ asset(payout.restaurant.coverPhotoPath) }}" alt="" width="38" height="38" loading="lazy">{% else %}{{ payout.restaurant.name|first|upper }}{% endif %}</span>
+                                    <strong>{{ payout.restaurant.name }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ payout.periodStart|date('M j, Y') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
+                            <td class="num">₱{{ payout.grossSales }}</td>
+                            <td class="num">₱{{ payout.commissionDeducted }}</td>
+                            <td class="num net"><b>₱{{ payout.netAmount }}</b></td>
+                            <td class="status">{{ status_badge(payout.status) }}{% if payout.paidAt %} <small class="subtle">{{ payout.paidAt|date('M j, Y') }}</small>{% endif %}</td>
+                            <td class="actions">
+                                {% if payout.status == 'pending' %}
+                                    <form method="post" action="{{ path('app_admin_restaurant_payout_paid', {id: payout.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('payout' ~ payout.id) }}">
+                                        <button type="submit" class="btn-green btn-sm">Mark paid</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7">no records found</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ knp_pagination_render(payouts) }}
+        </div>
 
-    <h2>Payouts</h2>
-    <form method="get">
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            <option value="">All</option>
-            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value }}</option>{% endfor %}
-        </select>
-        <button type="submit">Filter</button>
-    </form>
-
-    <table class="table">
-        <thead>
-            <tr><th>Restaurant</th><th>Period</th><th>Sales</th><th>Commission</th><th>Net</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-        {% for payout in payouts %}
-            <tr id="payout-{{ payout.id }}">
-                <td><a href="{{ path('app_admin_restaurant_show', {id: payout.restaurant.id}) }}">{{ payout.restaurant.name }}</a></td>
-                <td>{{ payout.periodStart|date('M j, Y') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
-                <td>₱{{ payout.grossSales }}</td><td>₱{{ payout.commissionDeducted }}</td><td class="net">₱{{ payout.netAmount }}</td>
-                <td class="status">{{ payout.status }}{% if payout.paidAt %} {{ payout.paidAt|date('M j, Y') }}{% endif %}</td>
-                <td>
-                    {% if payout.status == 'pending' %}
-                        <form method="post" action="{{ path('app_admin_restaurant_payout_paid', {id: payout.id}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('payout' ~ payout.id) }}">
-                            <button type="submit">Mark paid</button>
-                        </form>
-                    {% endif %}
-                </td>
-            </tr>
-        {% else %}
-            <tr><td colspan="7">no records found</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {{ knp_pagination_render(payouts) }}
+        <aside class="panel action-card">
+            <h2>Generate</h2>
+            <p class="subtle">One payout per restaurant: food sales on orders delivered in the period, minus commission. Restaurants already paid for an overlapping period are skipped.</p>
+            {{ form_start(form, {action: path('app_admin_restaurant_payout_generate')}) }}
+                {{ form_widget(form) }}
+                <button type="submit" class="btn-green btn-block">Generate payouts</button>
+            {{ form_end(form) }}
+        </aside>
+    </div>
 {% endblock %}

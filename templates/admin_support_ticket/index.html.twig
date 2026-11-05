@@ -1,35 +1,47 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Support tickets | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Support tickets</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Help desk</div>
+            <h1>Support tickets</h1>
+            <p>Questions and problems sent from the Help & support page.</p>
+        </div>
+    </div>
 
-    <form method="get">
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            <option value="">All</option>
-            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>{% endfor %}
-        </select>
-        <button type="submit">Filter</button>
-    </form>
+    <div class="toolbar">
+        <nav class="tabs" aria-label="Ticket status">
+            <a class="{{ status is empty ? 'current' }}" href="{{ path('app_admin_support_ticket') }}">All</a>
+            {% for value in statuses %}<a class="{{ status == value ? 'current' }}" href="{{ path('app_admin_support_ticket', {status: value}) }}">{{ value|replace({'_': ' '})|capitalize }}</a>{% endfor %}
+        </nav>
+    </div>
 
     {% for ticket in tickets %}
-        <section id="ticket-{{ ticket.id }}">
-            <h2>{{ ticket.subject }}</h2>
-            <p>From {{ ticket.user.name }} ({{ ticket.user.role }}) · {{ ticket.user.email }} · {{ ticket.createdAt|date('M j, Y g:i A') }}</p>
-            <blockquote>{{ ticket.message }}</blockquote>
-            <p class="status">Status: <strong>{{ ticket.status|replace({'_': ' '}) }}</strong></p>
-            {% for value in statuses|filter(value => value != ticket.status) %}
-                <form method="post" action="{{ path('app_admin_support_ticket_status', {id: ticket.id, status: value}) }}">
-                    <input type="hidden" name="_token" value="{{ csrf_token('ticket' ~ ticket.id) }}">
-                    <button type="submit">Mark {{ value|replace({'_': ' '}) }}</button>
-                </form>
-            {% endfor %}
+        <section class="panel" id="ticket-{{ ticket.id }}">
+            <div class="panel-head">
+                <h2>{{ ticket.subject }}</h2>
+                {{ status_badge(ticket.status) }}
+            </div>
+            <div class="person">
+                <span class="avatar">{{ ticket.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                <span class="grow"><strong>From {{ ticket.user.name }} ({{ ticket.user.role }})</strong><small>{{ ticket.user.email }} · {{ ticket.createdAt|date('M j, Y g:i A') }}</small></span>
+            </div>
+            <p class="note-box" style="margin-top: 12px">{{ ticket.message }}</p>
+            <p class="status sr-only">Status: <strong>{{ ticket.status|replace({'_': ' '}) }}</strong></p>
+            <div class="button-row">
+                {% for value in statuses|filter(value => value != ticket.status) %}
+                    <form method="post" action="{{ path('app_admin_support_ticket_status', {id: ticket.id, status: value}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ticket' ~ ticket.id) }}">
+                        <button type="submit" class="{{ value == 'resolved' ? 'btn-green' : 'btn-light' }} btn-sm">Mark {{ value|replace({'_': ' '}) }}</button>
+                    </form>
+                {% endfor %}
+            </div>
         </section>
     {% else %}
-        <p>No tickets match.</p>
+        <div class="empty">{{ icon('help', 'icon-xl') }}<h2>No tickets match.</h2></div>
     {% endfor %}
     {{ knp_pagination_render(tickets) }}
 {% endblock %}

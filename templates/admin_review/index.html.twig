@@ -1,46 +1,63 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Reviews | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Reviews</h1>
-    <p>Remove a review only when it is abusive or not about the order. Removal is permanent and audited.</p>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Moderation</div>
+            <h1>Reviews</h1>
+            <p>Remove a review only when it is abusive or not about the order. Removal is permanent and audited.</p>
+        </div>
+    </div>
 
     <form method="get">
-        <label for="type">Reviews of</label>
-        <select id="type" name="type">
-            <option value="restaurant" {{ type == 'restaurant' ? 'selected' }}>restaurants</option>
-            <option value="rider" {{ type == 'rider' ? 'selected' }}>riders</option>
-        </select>
-        <label for="max_rating">Rating</label>
-        <select id="max_rating" name="max_rating">
-            <option value="">Any</option>
-            {% for stars in 1..4 %}<option value="{{ stars }}" {{ max_rating == stars ? 'selected' }}>{{ stars }} star{{ stars > 1 ? 's' }} or less</option>{% endfor %}
-        </select>
-        <button type="submit">Filter</button>
+        <div>
+            <label for="type">Reviews of</label>
+            <select id="type" name="type">
+                <option value="restaurant" {{ type == 'restaurant' ? 'selected' }}>restaurants</option>
+                <option value="rider" {{ type == 'rider' ? 'selected' }}>riders</option>
+            </select>
+        </div>
+        <div>
+            <label for="max_rating">Rating</label>
+            <select id="max_rating" name="max_rating">
+                <option value="">Any</option>
+                {% for stars in 1..4 %}<option value="{{ stars }}" {{ max_rating == stars ? 'selected' }}>{{ stars }} star{{ stars > 1 ? 's' }} or less</option>{% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn-light">Filter</button>
     </form>
 
-    {% for review in reviews %}
-        <section id="review-{{ review.id }}">
-            <h2>
-                {{ review.rating }}/5 for
-                {% if type == 'rider' %}{{ review.rider.user.name }}{% else %}{{ review.restaurant.name }}{% endif %}
-            </h2>
-            <p>
-                By {{ review.customer.user.name }} on order
-                <a href="{{ path('app_admin_order_detail', {id: review.order.id}) }}">{{ review.order.orderNumber }}</a>,
-                {{ review.createdAt|date('M j, Y') }}
-            </p>
-            {% if review.comment %}<blockquote>{{ review.comment }}</blockquote>{% endif %}
-            {% if type == 'restaurant' and review.restaurantReply %}<p>Restaurant replied: {{ review.restaurantReply }}</p>{% endif %}
-            <form method="post" action="{{ path('app_admin_review_delete', {type: type, id: review.id}) }}" onsubmit="return confirm('Remove this review for good?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('review' ~ type ~ review.id) }}">
-                <button type="submit">Remove review</button>
-            </form>
-        </section>
-    {% else %}
-        <p>No reviews match.</p>
-    {% endfor %}
+    <section class="panel">
+        {% for review in reviews %}
+            <article class="review" id="review-{{ review.id }}">
+                <span class="avatar">{{ review.customer.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                <div>
+                    <div class="review-head">
+                        <h2 style="font-size: 15px; margin: 0">
+                            {{ review.rating }}/5 for
+                            {% if type == 'rider' %}{{ review.rider.user.name }}{% else %}{{ review.restaurant.name }}{% endif %}
+                            <span class="stars" aria-hidden="true">{% for star in 1..5 %}<span class="{{ star > review.rating ? 'off' }}">★</span>{% endfor %}</span>
+                        </h2>
+                        <small>
+                            By {{ review.customer.user.name }} on order
+                            <a href="{{ path('app_admin_order_detail', {id: review.order.id}) }}">{{ review.order.orderNumber }}</a>,
+                            {{ review.createdAt|date('M j, Y') }}
+                        </small>
+                    </div>
+                    {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+                    {% if type == 'restaurant' and review.restaurantReply %}<div class="reply"><small>Restaurant replied</small>{{ review.restaurantReply }}</div>{% endif %}
+                    <form method="post" action="{{ path('app_admin_review_delete', {type: type, id: review.id}) }}" onsubmit="return confirm('Remove this review for good?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('review' ~ type ~ review.id) }}">
+                        <button type="submit" class="btn-danger btn-sm">Remove review</button>
+                    </form>
+                </div>
+            </article>
+        {% else %}
+            <div class="empty">{{ icon('star', 'icon-xl') }}<h2>No reviews match.</h2></div>
+        {% endfor %}
+    </section>
     {{ knp_pagination_render(reviews) }}
 {% endblock %}

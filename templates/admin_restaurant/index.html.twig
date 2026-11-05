@@ -1,39 +1,61 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Restaurants | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Restaurants</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Partners</div>
+            <h1>Restaurants</h1>
+            <p>Review applications and manage restaurant accounts.</p>
+        </div>
+    </div>
 
-    <form method="get">
-        <label for="approval">Application</label>
-        <select id="approval" name="approval">
-            <option value="">All</option>
-            {% for value in ['pending', 'approved', 'rejected'] %}
-                <option value="{{ value }}" {{ approval == value ? 'selected' }}>{{ value }}</option>
+    <div class="toolbar">
+        <nav class="tabs" aria-label="Application status">
+            {% for value, label in {'': 'All', 'pending': 'Pending', 'approved': 'Approved', 'rejected': 'Rejected'} %}
+                <a class="{{ approval == value ? 'current' }}" href="{{ path('app_admin_restaurant_index', {approval: value, search: search}|filter(v => v)) }}">{{ label }}</a>
             {% endfor %}
-        </select>
-        <label for="search">Search</label>
-        <input type="search" id="search" name="search" value="{{ search }}">
-        <button type="submit">Filter</button>
-    </form>
+        </nav>
+        <form method="get">
+            <input type="hidden" name="approval" value="{{ approval }}">
+            <div class="search">
+                {{ icon('search') }}
+                <label for="search" class="sr-only">Search</label>
+                <input type="search" id="search" name="search" value="{{ search }}" placeholder="Name, owner or cuisine">
+            </div>
+            <button type="submit" class="btn-light">Filter</button>
+        </form>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr><th>Name</th><th>Owner</th><th>Cuisine</th><th>Application</th><th>Account</th><th>actions</th></tr>
-        </thead>
-        <tbody>
-        {% for restaurant in restaurants %}
-            <tr id="restaurant-{{ restaurant.id }}"><td>{{ restaurant.name }}</td><td>{{ restaurant.user.name }}</td><td>{{ restaurant.cuisineType }}</td><td>{{ restaurant.approvalStatus }}</td><td>{{ restaurant.user.status }}</td>
-                <td><a href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">show</a></td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="6">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Restaurant</th><th>Owner</th><th>Type</th><th>Application</th><th>Account</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for restaurant in restaurants %}
+                <tr id="restaurant-{{ restaurant.id }}">
+                    <td>
+                        <a class="entity" href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">
+                            <span class="thumb">{% if restaurant.coverPhotoPath %}<img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="38" height="38" loading="lazy">{% else %}{{ restaurant.name|first|upper }}{% endif %}</span>
+                            <span><strong>{{ restaurant.name }}</strong><small>{{ restaurant.cuisineType }}</small></span>
+                        </a>
+                    </td>
+                    <td><span class="entity"><span><strong>{{ restaurant.user.name }}</strong><small>{{ restaurant.user.email }}</small></span></span></td>
+                    <td>{{ restaurant.kindLabel }}</td>
+                    <td>{{ status_badge(restaurant.approvalStatus) }}</td>
+                    <td>{{ status_badge(restaurant.user.status) }}</td>
+                    <td class="actions">
+                        <a class="btn {{ restaurant.approvalStatus == 'pending' ? 'btn-green' : 'btn-light' }} btn-sm" href="{{ path('app_admin_restaurant_show', {'id': restaurant.id}) }}">{{ restaurant.approvalStatus == 'pending' ? 'Review' : 'show' }}</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">no records found</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {{ knp_pagination_render(restaurants) }}
 {% endblock %}

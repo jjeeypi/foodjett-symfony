@@ -1,34 +1,53 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Customers | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Customers</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">People</div>
+            <h1>Customers</h1>
+            <p>Everyone who orders on Foodjett.</p>
+        </div>
+    </div>
 
-    <form method="get">
-        <label for="search">Name, email or phone</label>
-        <input type="search" id="search" name="search" value="{{ search }}">
-        <button type="submit">Search</button>
-    </form>
+    <div class="toolbar">
+        <span></span>
+        <form method="get">
+            <div class="search">
+                {{ icon('search') }}
+                <label for="search" class="sr-only">Name, email or phone</label>
+                <input type="search" id="search" name="search" value="{{ search }}" placeholder="Name, email or phone">
+            </div>
+            <button type="submit" class="btn-light">Search</button>
+        </form>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Account</th><th>Joined</th><th>actions</th></tr>
-        </thead>
-        <tbody>
-        {% for customer in customers %}
-            <tr id="customer-{{ customer.id }}">
-                <td>{{ customer.user.name }}</td><td>{{ customer.user.email }}</td><td>{{ customer.user.phone }}</td>
-                <td>{{ customer.user.status }}</td><td>{{ customer.createdAt ? customer.createdAt|date('M j, Y') }}</td>
-                <td><a href="{{ path('app_admin_customer_show', {'id': customer.id}) }}">show</a></td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="6">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Customer</th><th>Phone</th><th>Account</th><th>Joined</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for customer in customers %}
+                <tr id="customer-{{ customer.id }}">
+                    <td>
+                        <a class="entity" href="{{ path('app_admin_customer_show', {'id': customer.id}) }}">
+                            <span class="avatar">{{ customer.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                            <span><strong>{{ customer.user.name }}</strong><small>{{ customer.user.email }}</small></span>
+                        </a>
+                    </td>
+                    <td>{{ customer.user.phone }}</td>
+                    <td>{{ status_badge(customer.user.status) }}</td>
+                    <td>{{ customer.createdAt ? customer.createdAt|date('M j, Y') }}</td>
+                    <td class="actions"><a class="btn btn-light btn-sm" href="{{ path('app_admin_customer_show', {'id': customer.id}) }}">show</a></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">no records found</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {{ knp_pagination_render(customers) }}
 {% endblock %}

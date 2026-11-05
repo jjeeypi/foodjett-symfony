@@ -1,24 +1,34 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Voucher {{ voucher.code }} | Foodjett admin{% endblock %}
 
 {% block body %}
-    <h1>Voucher {{ voucher.code }}</h1>
+    <a class="back-link" href="{{ path('app_admin_voucher_index') }}">{{ icon('back', 'icon-sm') }} Platform vouchers</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Platform voucher</div>
+            <h1>Voucher {{ voucher.code }}</h1>
+            <p><span class="badge {{ voucher.active ? 'badge-green' }}">{{ voucher.active ? 'Active' : 'Paused' }}</span></p>
+        </div>
+        <div class="page-actions"><a class="btn btn-green" href="{{ path('app_admin_voucher_edit', {'id': voucher.id}) }}">{{ icon('edit', 'icon-sm') }} Edit</a></div>
+    </div>
 
-    <table class="table">
-        <tbody>
-            <tr><th>Discount</th><td>{{ voucher.type|replace({'_': ' '}) }}{% if voucher.value %}: {{ voucher.value }}{% endif %}</td></tr>
-            <tr><th>Minimum order</th><td>₱{{ voucher.minOrderAmount }}</td></tr>
-            <tr><th>Uses</th><td>{{ voucher.redemptions|length }} of {{ voucher.usageLimitTotal ?? 'unlimited' }}, at most {{ voucher.usageLimitPerCustomer }} per customer</td></tr>
-            <tr><th>Starts</th><td>{{ voucher.startsAt ? voucher.startsAt|date('M j, Y g:i A') : 'now' }}</td></tr>
-            <tr><th>Ends</th><td>{{ voucher.endsAt ? voucher.endsAt|date('M j, Y g:i A') : 'no end' }}</td></tr>
-            <tr><th>Active</th><td>{{ voucher.active ? 'Yes' : 'No' }}</td></tr>
-        </tbody>
-    </table>
-
-    <a href="{{ path('app_admin_voucher_index') }}">back to list</a>
-
-    <a href="{{ path('app_admin_voucher_edit', {'id': voucher.id}) }}">edit</a>
-
-    {{ include('admin_voucher/_delete_form.html.twig') }}
+    <div class="split">
+        <section class="panel">
+            <dl class="facts">
+                <div><dt>Discount</dt><dd>{{ voucher.type|replace({'_': ' '}) }}{% if voucher.value %}: {{ voucher.value }}{% endif %}</dd></div>
+                <div><dt>Minimum order</dt><dd>₱{{ voucher.minOrderAmount }}</dd></div>
+                <div><dt>Uses</dt><dd>{{ voucher.redemptions|length }} of {{ voucher.usageLimitTotal ?? 'unlimited' }}, at most {{ voucher.usageLimitPerCustomer }} per customer</dd></div>
+                <div><dt>Active</dt><dd>{{ voucher.active ? 'Yes' : 'No' }}</dd></div>
+                <div><dt>Starts</dt><dd>{{ voucher.startsAt ? voucher.startsAt|date('M j, Y g:i A') : 'now' }}</dd></div>
+                <div><dt>Ends</dt><dd>{{ voucher.endsAt ? voucher.endsAt|date('M j, Y g:i A') : 'no end' }}</dd></div>
+            </dl>
+        </section>
+        <aside class="panel">
+            <h2>Delete</h2>
+            <p class="subtle">This cannot be undone.</p>
+            {{ include('admin_voucher/_delete_form.html.twig') }}
+        </aside>
+    </div>
 {% endblock %}

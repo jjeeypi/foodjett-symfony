@@ -1,32 +1,43 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Order reports | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Order reports</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Problems</div>
+            <h1>Order reports</h1>
+            <p>Complaints customers, restaurants and riders filed about an order.</p>
+        </div>
+    </div>
 
     <form method="get">
         {% for name, values in choices %}
-            <label for="{{ name }}">{{ name|capitalize }}</label>
-            <select id="{{ name }}" name="{{ name }}">
-                <option value="">All</option>
-                {% for value in values %}
-                    <option value="{{ value }}" {{ filters[name] == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>
-                {% endfor %}
-            </select>
+            <div>
+                <label for="{{ name }}">{{ name|capitalize }}</label>
+                <select id="{{ name }}" name="{{ name }}">
+                    <option value="">All</option>
+                    {% for value in values %}
+                        <option value="{{ value }}" {{ filters[name] == value ? 'selected' }}>{{ value|replace({'_': ' '}) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         {% endfor %}
-        <button type="submit">Filter</button>
+        <button type="submit" class="btn-light">Filter</button>
     </form>
 
     {% for report in reports %}
-        <section id="report-{{ report.id }}">
-            <h2>{{ report.type|replace({'_': ' '})|capitalize }} · against {{ report.against }}</h2>
-            <p>
+        <section class="panel" id="report-{{ report.id }}">
+            <div class="panel-head">
+                <h2>{{ report.type|replace({'_': ' '})|capitalize }} · against {{ report.against }}</h2>
+                {{ status_badge(report.status) }}
+            </div>
+            <p class="subtle">
                 Order <a href="{{ path('app_admin_order_detail', {id: report.order.id}) }}">{{ report.order.orderNumber }}</a>,
                 reported by {{ report.reportedBy.name }} on {{ report.createdAt|date('M j, Y g:i A') }}.
             </p>
-            <blockquote>{{ report.description }}</blockquote>
+            <p class="note-box">{{ report.description }}</p>
             <p class="status">Status: <strong>{{ report.status|replace({'_': ' '}) }}</strong>
                 {% if report.resolution %} · {{ report.resolution }}{% endif %}
                 {% if report.resolvedAt %} · closed {{ report.resolvedAt|date('M j, Y g:i A') }} by {{ report.resolvedByAdmin.user.name }}{% endif %}
@@ -34,13 +45,15 @@
             {% if forms[report.id] is defined %}
                 {{ form_start(forms[report.id], {action: path('app_admin_order_report_decide', {id: report.id})}) }}
                     {{ form_widget(forms[report.id]) }}
-                    <button type="submit" name="decision" value="resolved">Resolve</button>
-                    <button type="submit" name="decision" value="rejected">Reject report</button>
+                    <div class="button-row">
+                        <button type="submit" name="decision" value="resolved" class="btn-green">Resolve</button>
+                        <button type="submit" name="decision" value="rejected" class="btn-light">Reject report</button>
+                    </div>
                 {{ form_end(forms[report.id]) }}
             {% endif %}
         </section>
     {% else %}
-        <p>No reports match.</p>
+        <div class="empty">{{ icon('flag', 'icon-xl') }}<h2>No reports match.</h2></div>
     {% endfor %}
     {{ knp_pagination_render(reports) }}
 {% endblock %}

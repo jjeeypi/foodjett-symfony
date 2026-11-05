@@ -1,47 +1,57 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Cash remittances | Foodjett admin{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></p>
-    <h1>Cash remittances</h1>
-    <p>Confirm a remittance only once the money has arrived. It lowers the rider's cash on hand by the amount.</p>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Cash orders</div>
+            <h1>Cash remittances</h1>
+            <p>Confirm a remittance only once the money has arrived. It lowers the rider's cash on hand by the amount.</p>
+        </div>
+    </div>
 
-    <form method="get">
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            <option value="">All</option>
-            {% for value in statuses %}<option value="{{ value }}" {{ status == value ? 'selected' }}>{{ value }}</option>{% endfor %}
-        </select>
-        <button type="submit">Filter</button>
-    </form>
+    <div class="toolbar">
+        <nav class="tabs" aria-label="Remittance status">
+            <a class="{{ status is empty ? 'current' }}" href="{{ path('app_admin_remittance') }}">All</a>
+            {% for value in statuses %}<a class="{{ status == value ? 'current' }}" href="{{ path('app_admin_remittance', {status: value}) }}">{{ value|capitalize }}</a>{% endfor %}
+        </nav>
+    </div>
 
-    <table class="table">
-        <thead>
-            <tr><th>Rider</th><th>Amount</th><th>Reference</th><th>Cash on hand</th><th>Status</th><th>Sent</th><th></th></tr>
-        </thead>
-        <tbody>
-        {% for remittance in remittances %}
-            <tr id="remittance-{{ remittance.id }}">
-                <td><a href="{{ path('app_admin_rider_show', {id: remittance.rider.id}) }}">{{ remittance.rider.user.name }}</a></td>
-                <td>₱{{ remittance.amount }}</td>
-                <td>{{ remittance.referenceNote }}</td>
-                <td class="cash">₱{{ remittance.rider.cashOnHand }}</td>
-                <td class="status">{{ remittance.status }}{% if remittance.confirmedByAdmin %} by {{ remittance.confirmedByAdmin.user.name }}{% endif %}</td>
-                <td>{{ remittance.createdAt|date('M j, Y g:i A') }}</td>
-                <td>
-                    {% if remittance.status == 'pending' %}
-                        <form method="post" action="{{ path('app_admin_remittance_confirm', {id: remittance.id}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('remittance' ~ remittance.id) }}">
-                            <button type="submit">Confirm received</button>
-                        </form>
-                    {% endif %}
-                </td>
-            </tr>
-        {% else %}
-            <tr><td colspan="7">no records found</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Rider</th><th class="num">Amount</th><th>Reference</th><th class="num">Cash on hand</th><th>Status</th><th>Sent</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for remittance in remittances %}
+                <tr id="remittance-{{ remittance.id }}">
+                    <td>
+                        <a class="entity" href="{{ path('app_admin_rider_show', {id: remittance.rider.id}) }}">
+                            <span class="avatar">{{ remittance.rider.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                            <strong>{{ remittance.rider.user.name }}</strong>
+                        </a>
+                    </td>
+                    <td class="num"><b>₱{{ remittance.amount }}</b></td>
+                    <td>{{ remittance.referenceNote }}</td>
+                    <td class="num cash">₱{{ remittance.rider.cashOnHand }}</td>
+                    <td class="status">{{ status_badge(remittance.status) }}{% if remittance.confirmedByAdmin %} <small class="subtle">by {{ remittance.confirmedByAdmin.user.name }}</small>{% endif %}</td>
+                    <td>{{ remittance.createdAt|date('M j, Y g:i A') }}</td>
+                    <td class="actions">
+                        {% if remittance.status == 'pending' %}
+                            <form method="post" action="{{ path('app_admin_remittance_confirm', {id: remittance.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('remittance' ~ remittance.id) }}">
+                                <button type="submit" class="btn-green btn-sm">Confirm received</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7">no records found</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {{ knp_pagination_render(remittances) }}
 {% endblock %}
