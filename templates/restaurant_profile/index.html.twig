@@ -1,16 +1,37 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, cover %}
 
 {% block title %}Restaurant profile | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a> | <a href="{{ path('app_restaurant_hours') }}">Opening hours</a> | <a href="{{ path('app_restaurant_documents') }}">Documents</a></p>
-    <h1>Restaurant profile</h1>
+    <div class="review-hero">
+        {{ cover(restaurant) }}
+        <div>
+            <div class="eyebrow" style="color: #e3efd2">Restaurant profile</div>
+            <h1>{{ restaurant.name }}</h1>
+            <p>Commission: {{ restaurant.commissionRate }}% · Public page: <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}" style="color: #fff">{{ restaurant.slug }}</a></p>
+        </div>
+    </div>
 
-    <p>Commission: {{ restaurant.commissionRate }}% · Public page: <a href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}">{{ restaurant.slug }}</a></p>
-    {% if restaurant.logoPath %}<p><img src="{{ asset(restaurant.logoPath) }}" alt="Logo" width="96"></p>{% endif %}
-
-    {{ form_start(form, {attr: {'data-controller': 'location-picker', 'data-location-picker-coverage-url-value': path('app_delivery_coverage')}}) }}
-        {{ form_widget(form) }}
-        <button type="submit">Save profile</button>
-    {{ form_end(form) }}
+    <div class="split">
+        <section class="panel form-card">
+            {{ form_start(form, {attr: {'data-controller': 'location-picker', 'data-location-picker-coverage-url-value': path('app_delivery_coverage')}}) }}
+                {{ form_widget(form) }}
+                <button type="submit">Save profile</button>
+            {{ form_end(form) }}
+        </section>
+        <aside class="stack">
+            {% if restaurant.logoPath %}
+                <section class="panel">
+                    <h2>Logo</h2>
+                    <img src="{{ asset(restaurant.logoPath) }}" alt="Logo" width="96" height="96" style="border-radius: 12px; object-fit: cover">
+                </section>
+            {% endif %}
+            <nav class="panel" aria-label="Restaurant settings">
+                <a class="line" href="{{ path('app_restaurant_hours') }}"><span class="pin-box">{{ icon('clock') }}</span><span class="grow"><strong>Opening hours</strong><div class="subtle">When you take orders</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_restaurant_documents') }}"><span class="pin-box">{{ icon('file') }}</span><span class="grow"><strong>Documents</strong><div class="subtle">Permits the admin reviews</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}"><span class="pin-box">{{ icon('store') }}</span><span class="grow"><strong>Public page</strong><div class="subtle">What customers see</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+            </nav>
+        </aside>
+    </div>
 {% endblock %}

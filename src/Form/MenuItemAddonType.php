@@ -16,7 +16,7 @@ class MenuItemAddonType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, ['empty_data' => ''])
-            ->add('price', TextType::class, ['label' => 'Price (PHP)', 'empty_data' => '', 'attr' => ['inputmode' => 'decimal']])
+            ->add('price', TextType::class, ['label' => 'Price (₱)', 'empty_data' => '', 'attr' => ['inputmode' => 'decimal']])
             ->add('isAvailable', CheckboxType::class, ['label' => 'Available', 'required' => false])
         ;
     }

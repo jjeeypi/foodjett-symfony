@@ -1,5 +1,5 @@
 {% extends 'base.html.twig' %}
-{% from 'base.html.twig' import icon %}
+{% from 'base.html.twig' import icon, cover %}
 
 {% block title %}{{ restaurant.name }} | Foodjett{% endblock %}
 
@@ -7,7 +7,7 @@
     <a class="back-link" href="{{ path('app_restaurants') }}">{{ icon('back', 'icon-sm') }} All restaurants</a>
 
     <section class="store-hero">
-        {% if restaurant.coverPhotoPath %}<img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="1024" height="576">{% endif %}
+        {{ cover(restaurant) }}
         <div class="store-hero-copy">
             <div class="eyebrow" style="color: #e3efd2">{{ restaurant.kindLabel }} · {{ restaurant.cuisineType }}</div>
             <h1>{{ restaurant.name }}</h1>

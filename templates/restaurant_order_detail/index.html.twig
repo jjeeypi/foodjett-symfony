@@ -1,77 +1,125 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Order {{ order.orderNumber }} | Foodjett{% endblock %}
 
 {% block body %}
     <div id="live" {{ turbo_stream_listen('orders/' ~ order.id ~ '/status', null, {withCredentials: true}) }} hidden></div>
-    <p><a href="{{ path('app_restaurant_orders') }}">All orders</a></p>
+    <a class="back-link" href="{{ path('app_restaurant_orders') }}">{{ icon('back', 'icon-sm') }} All orders</a>
 
-    <h1>Order {{ order.orderNumber }}</h1>
-    <p id="status">Status: <strong>{{ order.status|replace({'_': ' '}) }}</strong></p>
-    <p>
-        For {{ order.customer.user.name }}, placed {{ order.placedAt|date('M j, Y g:i A') }}.
-        {% if order.estimatedReadyAt %}Ready by {{ order.estimatedReadyAt|date('g:i A') }}{% if order.prepExtendedMinutes %} (extended {{ order.prepExtendedMinutes }} min){% endif %}.{% endif %}
-        {% if order.readyAt %}Food ready since {{ order.readyAt|date('g:i A') }}.{% endif %}
-    </p>
-    {% if order.rejectionReason %}<p>Rejected: {{ order.rejectionReason }}</p>{% endif %}
-    {% if order.cancellationReason %}<p>Cancelled: {{ order.cancellationReason }}</p>{% endif %}
+    <div class="order-head">
+        <div>
+            <p id="status">{{ status_badge(order.status) }}<span class="sr-only">Status: {{ order.status|replace({'_': ' '}) }}</span></p>
+            <h1>Order {{ order.orderNumber }}</h1>
+            <p>
+                For {{ order.customer.user.name }}, placed {{ order.placedAt|date('M j, Y g:i A') }} · paid by {{ order.paymentMethod|upper }}.
+                {% if order.estimatedReadyAt %}Ready by {{ order.estimatedReadyAt|date('g:i A') }}{% if order.prepExtendedMinutes %} (extended {{ order.prepExtendedMinutes }} min){% endif %}.{% endif %}
+                {% if order.readyAt %}Food ready since {{ order.readyAt|date('g:i A') }}.{% endif %}
+            </p>
+        </div>
+    </div>
 
-    {% if order.rider %}
-        <p id="rider">
-            Rider: {{ order.rider.user.name }} ({{ order.rider.vehicleType }})
-            · Pickup code <strong>{{ order.pickupCode }}</strong>: ask the rider for it before handing over the food.
-        </p>
-    {% endif %}
+    {% if order.rejectionReason %}<p class="callout callout-danger">Rejected: {{ order.rejectionReason }}</p>{% endif %}
+    {% if order.cancellationReason %}<p class="callout callout-danger">Cancelled: {{ order.cancellationReason }}</p>{% endif %}
 
-    <h2>Items</h2>
-    <ul>
-        {% for item in order.items %}
-            <li>
-                {{ item.quantity }} × {{ item.menuItem.name }}
-                {% if item.menuItemVariant %}({{ item.menuItemVariant.name }}){% endif %}
-                {% for addon in item.addons %}<br>+ {{ addon.menuItemAddon.name }}{% endfor %}
-                {% if item.specialInstructions %}<br>Note: {{ item.specialInstructions }}{% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-    {% if order.customerNotes %}<p>Customer notes: {{ order.customerNotes }}</p>{% endif %}
-    <p>Subtotal ₱{{ order.subtotal }} · paid by {{ order.paymentMethod|upper }}</p>
+    <div class="split">
+        <div class="stack">
+            <section class="panel">
+                <div class="panel-head"><h2>Items</h2><span class="subtle">{{ order.items|reduce((sum, i) => sum + i.quantity, 0) }} items</span></div>
+                <ul class="receipt">
+                    {% for item in order.items %}
+                        <li>
+                            <span class="qty-tag">{{ item.quantity }}×</span>
+                            <span>
+                                <strong>{{ item.menuItem.name }}</strong>
+                                {% if item.menuItemVariant or item.addons is not empty %}
+                                    <small>{{ item.menuItemVariant ? item.menuItemVariant.name }}{% for addon in item.addons %}{{ item.menuItemVariant or not loop.first ? ' · ' }}+ {{ addon.menuItemAddon.name }}{% endfor %}</small>
+                                {% endif %}
+                                {% if item.specialInstructions %}<small class="note">Note: {{ item.specialInstructions }}</small>{% endif %}
+                            </span>
+                            <span>₱{{ item.unitPrice }}{% if item.quantity > 1 %} <small>each</small>{% endif %}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <dl class="money-list" style="margin-top: 8px">
+                    <div class="grand"><dt>Subtotal</dt><dd>₱{{ order.subtotal }}</dd></div>
+                </dl>
+            </section>
 
-    {% if accept_form %}
-        <h2>Accept</h2>
-        {{ form_start(accept_form, {action: path('app_restaurant_order_accept', {id: order.id})}) }}
-            {{ form_widget(accept_form) }}
-            <button type="submit">Accept order</button>
-        {{ form_end(accept_form) }}
-    {% endif %}
+            {% if order.customerNotes %}
+                <section class="panel">
+                    <h2>Customer notes</h2>
+                    <p class="subtle">{{ order.customerNotes }}</p>
+                </section>
+            {% endif %}
 
-    {% if reject_form %}
-        <h2>Reject</h2>
-        {{ form_start(reject_form, {action: path('app_restaurant_order_reject', {id: order.id})}) }}
-            {{ form_widget(reject_form) }}
-            <button type="submit">Reject order</button>
-        {{ form_end(reject_form) }}
-    {% endif %}
+            <section class="panel">
+                <h2>Timeline</h2>
+                <ol id="timeline" class="timeline">
+                    {% for entry in history %}
+                        <li class="done">{{ entry.createdAt|date('M j, g:i A') }} · {{ entry.status|replace({'_': ' '}) }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
+                    {% endfor %}
+                </ol>
+            </section>
+        </div>
 
-    {% if extend_form %}
-        <h2>Need more time?</h2>
-        {{ form_start(extend_form, {action: path('app_restaurant_order_extend', {id: order.id})}) }}
-            {{ form_widget(extend_form) }}
-            <button type="submit">Add time</button>
-        {{ form_end(extend_form) }}
-    {% endif %}
+        <aside class="stack">
+            {% if accept_form %}
+                <section class="panel action-card">
+                    <h2>{{ icon('check') }} Accept this order</h2>
+                    <p class="subtle">How long until the food is ready?</p>
+                    {{ form_start(accept_form, {action: path('app_restaurant_order_accept', {id: order.id})}) }}
+                        {{ form_row(accept_form.minutes, {attr: {placeholder: 'Usually ' ~ order.restaurant.defaultPrepTimeMinutes ~ ' minutes'}}) }}
+                        {{ form_rest(accept_form) }}
+                        <button type="submit" class="btn-green btn-block">Accept order</button>
+                    {{ form_end(accept_form) }}
+                </section>
+            {% endif %}
 
-    {% if can_mark_ready %}
-        <form method="post" action="{{ path('app_restaurant_order_ready', {id: order.id}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('ready' ~ order.id) }}">
-            <button type="submit">Food is ready</button>
-        </form>
-    {% endif %}
+            {% if can_mark_ready %}
+                <section class="panel action-card">
+                    <h2>{{ icon('bag') }} Food ready?</h2>
+                    <p class="subtle">Tell the rider the order is packed and waiting.</p>
+                    <form method="post" action="{{ path('app_restaurant_order_ready', {id: order.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ready' ~ order.id) }}">
+                        <button type="submit" class="btn-green btn-block">Food is ready</button>
+                    </form>
+                </section>
+            {% endif %}
 
-    <h2>Timeline</h2>
-    <ol id="timeline">
-        {% for entry in history %}
-            <li>{{ entry.createdAt|date('M j, g:i A') }}: {{ entry.status|replace({'_': ' '}) }}{% if entry.note %} · {{ entry.note }}{% endif %}</li>
-        {% endfor %}
-    </ol>
+            {% if extend_form %}
+                <section class="panel">
+                    <h2>Need more time?</h2>
+                    {{ form_start(extend_form, {action: path('app_restaurant_order_extend', {id: order.id})}) }}
+                        {{ form_widget(extend_form) }}
+                        <button type="submit" class="btn-light">Add time</button>
+                    {{ form_end(extend_form) }}
+                </section>
+            {% endif %}
+
+            {% if reject_form %}
+                <section class="panel">
+                    <h2>Can't make it?</h2>
+                    {{ form_start(reject_form, {action: path('app_restaurant_order_reject', {id: order.id})}) }}
+                        {{ form_widget(reject_form) }}
+                        <button type="submit" class="btn-danger">Reject order</button>
+                    {{ form_end(reject_form) }}
+                </section>
+            {% endif %}
+
+            {% if order.rider %}
+                <section class="panel" id="rider">
+                    <h2>Rider</h2>
+                    <div class="person">
+                        <span class="avatar">{{ order.rider.user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}</span>
+                        <span class="grow"><strong>{{ order.rider.user.name }}</strong><small>{{ order.rider.vehicleType|capitalize }}</small></span>
+                    </div>
+                    <div class="pickup" style="margin-top: 12px">
+                        {{ icon('shield', 'icon-lg') }}
+                        <span><small>Pickup code {{ order.pickupCode }}: ask the rider for it before handing over the food.</small><strong>{{ order.pickupCode }}</strong></span>
+                    </div>
+                </section>
+            {% endif %}
+        </aside>
+    </div>
 {% endblock %}

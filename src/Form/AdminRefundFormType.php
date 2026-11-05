@@ -17,7 +17,7 @@ class AdminRefundFormType extends AbstractType
     {
         $builder
             ->add('amount', TextType::class, [
-                'label' => 'Amount (PHP)',
+                'label' => 'Amount (₱)',
                 'required' => false,
                 'help' => 'Leave empty to refund everything not yet refunded.',
                 'constraints' => [new Regex(pattern: '/^\d{1,8}(\.\d{1,2})?$/', message: 'Enter an amount like 50 or 50.25.')],

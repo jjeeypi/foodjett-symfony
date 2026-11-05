@@ -1,11 +1,27 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New category | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Add a menu category</h1>
+    <a class="back-link" href="{{ path('app_menu_category_index') }}">{{ icon('back', 'icon-sm') }} Menu categories</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your menu</div>
+            <h1>Add a menu category</h1>
+            <p>Categories group your dishes on your public page.</p>
+        </div>
+    </div>
 
-    {{ include('menu_category/_form.html.twig') }}
-
-    <a href="{{ path('app_menu_category_index') }}">back to list</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('menu_category/_form.html.twig') }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">Lower positions show first. Use 1, 2, 3… to set the order.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

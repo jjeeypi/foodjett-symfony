@@ -1,42 +1,63 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, status_badge %}
 
 {% block title %}Earnings | Foodjett{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('app_restaurant_dashboard') }}">Dashboard</a></p>
-    <h1>Earnings</h1>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Money</div>
+            <h1>Earnings</h1>
+            <p>Sales from delivered orders, after the Foodjett commission.</p>
+        </div>
+    </div>
 
-    <table id="periods">
-        <thead><tr><th>Period</th><th>Delivered orders</th><th>Sales</th><th>Commission</th><th>Net</th></tr></thead>
-        <tbody>
-            {% for label, period in periods %}
-                <tr>
-                    <td>{{ label }}</td>
-                    <td>{{ period.orders }}</td>
-                    <td>₱{{ period.gross }}</td>
-                    <td>₱{{ period.commission }}</td>
-                    <td>₱{{ period.net }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <dl class="stats">
+        {% for label, period in periods %}
+            <div><dt>{{ label }}</dt><dd>₱{{ period.net }}</dd></div>
+        {% endfor %}
+    </dl>
 
-    <h2>Payouts</h2>
-    <table id="payouts">
-        <thead><tr><th>Period</th><th>Sales</th><th>Commission</th><th>Paid to you</th><th>Status</th></tr></thead>
-        <tbody>
-            {% for payout in payouts %}
-                <tr>
-                    <td>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
-                    <td>₱{{ payout.grossSales }}</td>
-                    <td>₱{{ payout.commissionDeducted }}</td>
-                    <td>₱{{ payout.netAmount }}</td>
-                    <td>{{ payout.status }}{% if payout.paidAt %} on {{ payout.paidAt|date('M j, Y') }}{% endif %}</td>
-                </tr>
-            {% else %}
-                <tr><td colspan="5">No payouts yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {{ knp_pagination_render(payouts) }}
+    <section class="panel">
+        <h2>By period</h2>
+        <div class="table-wrap">
+            <table id="periods">
+                <thead><tr><th>Period</th><th class="num">Delivered orders</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Net</th></tr></thead>
+                <tbody>
+                    {% for label, period in periods %}
+                        <tr>
+                            <td>{{ label }}</td>
+                            <td class="num">{{ period.orders }}</td>
+                            <td class="num">₱{{ period.gross }}</td>
+                            <td class="num">₱{{ period.commission }}</td>
+                            <td class="num"><b>₱{{ period.net }}</b></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Payouts</h2>
+        <div class="table-wrap">
+            <table id="payouts">
+                <thead><tr><th>Period</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Paid to you</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for payout in payouts %}
+                        <tr>
+                            <td>{{ payout.periodStart|date('M j') }} to {{ payout.periodEnd|date('M j, Y') }}</td>
+                            <td class="num">₱{{ payout.grossSales }}</td>
+                            <td class="num">₱{{ payout.commissionDeducted }}</td>
+                            <td class="num"><b>₱{{ payout.netAmount }}</b></td>
+                            <td>{{ status_badge(payout.status) }}{% if payout.paidAt %} <small class="subtle">on {{ payout.paidAt|date('M j, Y') }}</small>{% endif %}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5">No payouts yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {{ knp_pagination_render(payouts) }}
+    </section>
 {% endblock %}

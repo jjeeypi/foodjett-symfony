@@ -1,13 +1,31 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}Edit add-on | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Edit add-on of {{ menu_item.name }}</h1>
+    <a class="back-link" href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">{{ icon('back', 'icon-sm') }} {{ menu_item.name }}</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Add-ons</div>
+            <h1>Edit add-on of {{ menu_item.name }}</h1>
+        </div>
+    </div>
 
-    {{ include('menu_item_addon/_form.html.twig', {'button_label': 'Update'}) }}
-
-    <a href="{{ path('app_menu_item_show', {'id': menu_item.id}) }}">back</a>
-
-    {{ include('menu_item_addon/_delete_form.html.twig') }}
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('menu_item_addon/_form.html.twig', {'button_label': 'Update'}) }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">Untick “available” when you run out, instead of deleting it.</p>
+            </section>
+            <section class="panel">
+                <h2>Delete</h2>
+                <p class="subtle">This cannot be undone.</p>
+                {{ include('menu_item_addon/_delete_form.html.twig') }}
+            </section>
+        </aside>
+    </div>
 {% endblock %}

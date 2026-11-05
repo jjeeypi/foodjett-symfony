@@ -29,7 +29,7 @@ class MenuItemType extends AbstractType
             ])
             ->add('name', TextType::class, ['empty_data' => ''])
             ->add('description', TextareaType::class, ['required' => false])
-            ->add('basePrice', TextType::class, ['label' => 'Price (PHP)', 'empty_data' => '', 'attr' => ['inputmode' => 'decimal']])
+            ->add('basePrice', TextType::class, ['label' => 'Price (₱)', 'empty_data' => '', 'attr' => ['inputmode' => 'decimal']])
             ->add('isAvailable', CheckboxType::class, ['label' => 'Available to order', 'required' => false])
             ->add('isFeatured', CheckboxType::class, ['label' => 'Featured', 'required' => false])
             ->add('availableFrom', TimeType::class, [

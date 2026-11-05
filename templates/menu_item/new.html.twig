@@ -1,11 +1,27 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
 {% block title %}New menu item | Foodjett{% endblock %}
 
 {% block body %}
-    <h1>Add a menu item</h1>
+    <a class="back-link" href="{{ path('app_menu_item_index') }}">{{ icon('back', 'icon-sm') }} Menu items</a>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Your menu</div>
+            <h1>Add a menu item</h1>
+            <p>Name, price and photo. You can add options and add-ons after saving.</p>
+        </div>
+    </div>
 
-    {{ include('menu_item/_form.html.twig') }}
-
-    <a href="{{ path('app_menu_item_index') }}">back to list</a>
+    <div class="split">
+        <section class="panel form-card">
+            {{ include('menu_item/_form.html.twig') }}
+        </section>
+        <aside class="stack">
+            <section class="panel">
+                <h2>{{ icon('help') }} Good to know</h2>
+                <p class="subtle">Square photos look best. Set “served from” and “until” for dishes you only sell part of the day, like breakfast.</p>
+            </section>
+        </aside>
+    </div>
 {% endblock %}

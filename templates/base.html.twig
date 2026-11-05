@@ -2,17 +2,42 @@
 {% macro icon(name, class = '') -%}
     <svg class="icon {{ class }}" aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#{{ name }}"></use></svg>
 {%- endmacro %}
+{#- A colored pill for any status word: orders, applications, accounts, payouts, documents, tickets. -#}
+{% macro status_badge(status) -%}
+    {%- set value = status ?? 'missing' -%}
+    {%- if value in ['delivered', 'approved', 'active', 'verified', 'paid', 'resolved', 'confirmed', 'available', 'open', 'completed', 'succeeded'] -%}
+        {%- set tone = 'badge-green' -%}
+    {%- elseif value starts with 'rejected' or value starts with 'cancelled' or value starts with 'failed' or value in ['suspended', 'removed', 'refunded', 'missing', 'expired', 'offline'] -%}
+        {%- set tone = 'badge-danger' -%}
+    {%- elseif value in ['picked_up', 'on_the_way', 'arrived', 'in_progress', 'busy', 'closed'] -%}
+        {%- set tone = 'badge-ink' -%}
+    {%- else -%}
+        {%- set tone = 'badge-warn' -%}
+    {%- endif -%}
+    <span class="badge {{ tone }}">{{ value|replace({'_': ' '}) }}</span>
+{%- endmacro %}
+{#- The restaurant's cover photo, or a drawn cover with its food icon when it has not uploaded one. -#}
+{% macro cover(restaurant, width = 1024, height = 576, lazy = false) -%}
+    {% if restaurant.coverPhotoPath %}
+        <img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="{{ width }}" height="{{ height }}"{{ lazy ? ' loading="lazy"' }}>
+    {% else %}
+        {%- set art = 'crave-all' -%}
+        {%- for key, craving in constant('App\\Entity\\Restaurant::CRAVINGS')|reverse -%}
+            {%- if restaurant.matchesCraving(key) %}{% set art = craving.icon %}{% endif -%}
+        {%- endfor -%}
+        <span class="cover-fallback" aria-hidden="true">
+            {% for spot in 1..6 %}<svg class="icon spot-{{ spot }}"><use href="{{ asset('images/icons.svg') }}#{{ art }}"></use></svg>{% endfor %}
+            <b>{{ restaurant.name|first|upper }}</b>
+        </span>
+    {% endif %}
+{%- endmacro %}
 {#- Restaurant card used by explore, the restaurant list, search and favorites. -#}
 {% macro restaurant_card(restaurant, favoriteIds = [], distance = null) -%}
-    {% from _self import icon %}
+    {% from _self import icon, cover %}
     {% set saved = (restaurant.id ~ '') in favoriteIds %}
     <article class="restaurant-card" id="restaurant-{{ restaurant.id }}">
         <a class="card-photo" href="{{ path('app_restaurant_menu', {slug: restaurant.slug}) }}" tabindex="-1" aria-hidden="true">
-            {% if restaurant.coverPhotoPath %}
-                <img src="{{ asset(restaurant.coverPhotoPath) }}" alt="" width="640" height="360" loading="lazy">
-            {% else %}
-                <span class="placeholder">{{ restaurant.name|first|upper }}</span>
-            {% endif %}
+            {{ cover(restaurant, 640, 360, true) }}
             <span class="food-tag{{ restaurant.openNow ? '' : ' closed' }}">{% if restaurant.openNow %}{{ icon('bolt', 'icon-sm') }} {{ restaurant.kindLabel }}{% else %}Closed now{% endif %}</span>
         </a>
         {% if is_granted('ROLE_CUSTOMER') %}
@@ -45,8 +70,8 @@
         ['Dashboard', 'chart', 'app_admin_dashboard', 'app_admin_dashboard'],
         ['Orders', 'receipt', 'app_admin_order', 'app_admin_order'],
         ['Unassigned', 'bike', 'app_admin_unassigned_order', 'app_admin_unassigned'],
-        ['Restaurants', 'store', 'app_admin_restaurant_index', 'app_admin_restaurant'],
-        ['Riders', 'bike', 'app_admin_rider_index', 'app_admin_rider'],
+        ['Restaurants', 'store', 'app_admin_restaurant_index', 'app_admin_restaurant_index|app_admin_restaurant_show|app_admin_restaurant_edit|app_admin_restaurant_approve|app_admin_restaurant_reject|app_admin_restaurant_account|app_admin_restaurant_document'],
+        ['Riders', 'bike', 'app_admin_rider_index', 'app_admin_rider_index|app_admin_rider_show|app_admin_rider_edit|app_admin_rider_approve|app_admin_rider_reject|app_admin_rider_account|app_admin_rider_document'],
         ['Customers', 'users', 'app_admin_customer_index', 'app_admin_customer'],
         ['Payments', 'wallet', 'app_admin_payment', 'app_admin_payment'],
         ['Restaurant payouts', 'cash', 'app_admin_restaurant_payout', 'app_admin_restaurant_payout'],

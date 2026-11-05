@@ -144,6 +144,28 @@ class OrderRepository extends ServiceEntityRepository
         return $builder;
     }
 
+    /**
+     * Orders the kitchen still has to deal with, oldest first, for the order board.
+     *
+     * @return list<Order>
+     */
+    public function findActiveForRestaurant(Restaurant $restaurant): array
+    {
+        return $this->createQueryBuilder('orders')
+            ->addSelect('customer', 'customerUser', 'items', 'menuItem', 'variant', 'rider', 'riderUser')
+            ->join('orders.customer', 'customer')
+            ->join('customer.user', 'customerUser')
+            ->leftJoin('orders.items', 'items')
+            ->leftJoin('items.menuItem', 'menuItem')
+            ->leftJoin('items.menuItemVariant', 'variant')
+            ->leftJoin('orders.rider', 'rider')
+            ->leftJoin('rider.user', 'riderUser')
+            ->andWhere('orders.restaurant = :restaurant')->setParameter('restaurant', $restaurant)
+            ->andWhere('orders.status NOT IN (:done)')->setParameter('done', Order::TERMINAL_STATUSES)
+            ->orderBy('orders.placedAt', 'ASC')
+            ->getQuery()->getResult();
+    }
+
     public function findOneForRestaurant(int|string $id, Restaurant $restaurant): ?Order
     {
         return $this->createQueryBuilder('orders')
