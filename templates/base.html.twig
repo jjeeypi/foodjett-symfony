@@ -143,6 +143,8 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
         {% block stylesheets %}{% endblock %}
+        {# Applies a hidden sidebar before the first paint so it does not flash open; sidebar_controller.js keeps it in sync. #}
+        <script>try { if ('collapsed' === localStorage.getItem('foodjett.sidebar')) document.documentElement.classList.add('sidebar-collapsed'); } catch (e) {}</script>
 
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
@@ -170,8 +172,9 @@
             </div>
         {% else %}
         <div class="app">
-            <aside class="sidebar">
+            <aside class="sidebar" id="sidebar">
                 <a class="logo" href="{{ path('app_home') }}" aria-label="Foodjett home">foodjett{{ icon('bolt') }}</a>
+                <button type="button" class="icon-button sidebar-toggle" data-controller="sidebar" data-action="sidebar#toggle" aria-controls="sidebar" aria-expanded="true" aria-label="Hide the menu" title="Hide the menu">{{ icon('sidebar') }}</button>
                 <div class="workspace-label">{{ workspace }}</div>
 
                 <nav class="side-nav" aria-label="Main navigation">

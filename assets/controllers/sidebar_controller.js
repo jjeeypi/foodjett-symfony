@@ -1,38 +1,44 @@
 import { Controller } from '@hotwired/stimulus';
 
+// Must match the inline script in base.html.twig that restores the choice before the page paints.
+const STORAGE_KEY = 'foodjett.sidebar';
+const COLLAPSED = 'sidebar-collapsed';
+
 /*
-* The following line makes this controller "lazy": it won't be downloaded until needed
-* See https://symfony.com/bundles/StimulusBundle/current/index.html#lazy-stimulus-controllers
-*/
-
-/* stimulusFetch: 'lazy' */
+ * The button in the top bar that hides the sidebar down to its icons and brings it back.
+ * The choice is remembered in this browser, so it stays the same on every page.
+ */
 export default class extends Controller {
-
-    initialize() {
-        // Called once when the controller is first instantiated (per element)
-
-        // Here you can initialize variables, create scoped callables for event
-        // listeners, instantiate external libraries, etc.
-        // this._fooBar = this.fooBar.bind(this)
-    }
-
     connect() {
-        // Called every time the controller is connected to the DOM
-        // (on page load, when it's added to the DOM, moved in the DOM, etc.)
-
-        // Here you can add event listeners on the element or target elements,
-        // add or remove classes, attributes, dispatch custom events, etc.
-        // this.fooTarget.addEventListener('click', this._fooBar)
+        if (this.stored() === 'collapsed') {
+            document.documentElement.classList.add(COLLAPSED);
+        }
+        this.sync();
     }
 
-    // Add custom controller actions here
-    // fooBar() { this.fooTarget.classList.toggle(this.bazClass) }
+    toggle() {
+        const collapsed = document.documentElement.classList.toggle(COLLAPSED);
+        try {
+            localStorage.setItem(STORAGE_KEY, collapsed ? 'collapsed' : 'open');
+        } catch {
+            // Private windows can refuse storage; the toggle still works for this page.
+        }
+        this.sync();
+    }
 
-    disconnect() {
-        // Called anytime its element is disconnected from the DOM
-        // (on page change, when it's removed from or moved in the DOM, etc.)
+    sync() {
+        const collapsed = document.documentElement.classList.contains(COLLAPSED);
+        const label = collapsed ? 'Show the menu' : 'Hide the menu';
+        this.element.setAttribute('aria-expanded', String(!collapsed));
+        this.element.setAttribute('aria-label', label);
+        this.element.title = label;
+    }
 
-        // Here you should remove all event listeners added in "connect()" 
-        // this.fooTarget.removeEventListener('click', this._fooBar)
+    stored() {
+        try {
+            return localStorage.getItem(STORAGE_KEY);
+        } catch {
+            return null;
+        }
     }
 }
