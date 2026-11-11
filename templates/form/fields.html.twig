@@ -1,0 +1,11 @@
+{% extends 'form_div_layout.html.twig' %}
+
+{#- Every password field in every form gets the show/hide eye button. -#}
+{% block password_widget -%}
+    {%- set type = type|default('password') -%}
+    {%- set attr = attr|merge({'data-password-visibility-target': 'input'}) -%}
+    <div class="password-field" data-controller="password-visibility">
+        {{- block('form_widget_simple') -}}
+        {{- include('form/_password_toggle.html.twig') -}}
+    </div>
+{%- endblock password_widget %}
