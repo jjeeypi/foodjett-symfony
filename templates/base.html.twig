@@ -64,7 +64,11 @@
 {% from _self import icon %}
 {%- set route = app.request.attributes.get('_route') ?? '' -%}
 {%- set user = app.user -%}
+{#- Where the logo leads and where the phone account menu points, per role. -#}
+{%- set home_route = 'app_home' -%}
+{%- set account_route = null -%}
 {%- if is_granted('ROLE_ADMIN') -%}
+    {%- set home_route = 'app_admin_dashboard' -%}
     {%- set workspace = 'Admin console' -%}
     {%- set nav = [
         ['Dashboard', 'chart', 'app_admin_dashboard', 'app_admin_dashboard'],
@@ -87,6 +91,8 @@
         ['Admin accounts', 'shield', 'app_admin_account', 'app_admin_account'],
     ] -%}
 {%- elseif is_granted('ROLE_RESTAURANT') -%}
+    {%- set home_route = 'app_restaurant_dashboard' -%}
+    {%- set account_route = 'app_restaurant_profile' -%}
     {%- set workspace = 'Restaurant workspace' -%}
     {%- set nav = [
         ['Dashboard', 'chart', 'app_restaurant_dashboard', 'app_restaurant_dashboard'],
@@ -101,16 +107,19 @@
         ['Profile', 'store', 'app_restaurant_profile', 'app_restaurant_profile'],
     ] -%}
 {%- elseif is_granted('ROLE_RIDER') -%}
+    {%- set home_route = 'app_rider_dashboard' -%}
+    {%- set account_route = 'app_rider_account' -%}
     {%- set workspace = 'Rider workspace' -%}
     {%- set nav = [
+        ['Home', 'home', 'app_rider_dashboard', 'app_rider_dashboard'],
         ['Order pool', 'bag', 'app_rider_pool', 'app_rider_pool'],
+        ['Status', 'pin', 'app_rider_status', 'app_rider_status'],
         ['Active delivery', 'bike', 'app_rider_delivery', 'app_rider_delivery'],
-        ['Status', 'pin', 'app_rider_dashboard', 'app_rider_dashboard'],
         ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
-        ['Earnings', 'bolt', 'app_rider_finance', 'app_rider_finance'],
-        ['My account', 'user', 'app_rider_account', 'app_rider_account|app_rider_document'],
+        ['My account', 'user', 'app_rider_account', 'app_rider_account|app_rider_document|app_rider_finance'],
     ] -%}
 {%- elseif is_granted('ROLE_CUSTOMER') -%}
+    {%- set account_route = 'app_account' -%}
     {%- set workspace = 'Your daily good food' -%}
     {%- set nav = [
         ['Explore', 'home', 'app_home', 'app_home|app_restaurant|app_search'],
@@ -173,7 +182,7 @@
         {% else %}
         <div class="app">
             <aside class="sidebar" id="sidebar">
-                <a class="logo" href="{{ path('app_home') }}" aria-label="Foodjett home">foodjett{{ icon('bolt') }}</a>
+                <a class="logo" href="{{ path(home_route) }}" aria-label="Foodjett home">foodjett{{ icon('bolt') }}</a>
                 <button type="button" class="icon-button sidebar-toggle" data-controller="sidebar" data-action="sidebar#toggle" aria-controls="sidebar" aria-expanded="true" aria-label="Hide the menu" title="Hide the menu">{{ icon('sidebar') }}</button>
                 <div class="workspace-label">{{ workspace }}</div>
 
@@ -244,12 +253,13 @@
                             </div>
                         {% elseif is_granted('ROLE_RIDER') and user.rider %}
                             {% set availability = user.rider.availabilityStatus %}
-                            <a class="topbar-place" href="{{ path('app_rider_dashboard') }}">
+                            {% set statusPage = user.rider.approvalStatus == 'approved' ? path('app_rider_status') : path('app_rider_dashboard') %}
+                            <a class="topbar-place" href="{{ statusPage }}">
                                 <span class="pin-box">{{ icon('pin') }}</span>
                                 <span><small>Your delivery area</small><strong>Dumaguete City {{ icon('down', 'icon-sm') }}</strong></span>
                             </a>
                             <div class="topbar-actions">
-                                <a class="toggle{{ availability == 'available' ? ' on' }}" href="{{ path('app_rider_dashboard') }}">
+                                <a class="toggle{{ availability == 'available' ? ' on' }}" href="{{ statusPage }}">
                                     <i class="dot{{ availability == 'offline' ? ' dot-off' }}"></i>
                                     {{ availability == 'available' ? 'You’re online' : (availability == 'busy' ? 'On a delivery' : 'You’re offline') }}
                                     <span class="toggle-track"></span>
@@ -284,6 +294,23 @@
                             </div>
                         {% endif %}
                     {% endblock %}
+                    {% if user %}
+                        {# Phones hide the sidebar footer, so the account, help and log-out links live here. #}
+                        <details class="account-menu">
+                            <summary aria-label="Account menu" title="Account menu">
+                                <span class="avatar">
+                                    {%- if user.avatarPath %}<img src="{{ asset(user.avatarPath) }}" alt="">{% else %}{{ user.name|split(' ')|map(p => p|first)|slice(0, 2)|join|upper }}{% endif -%}
+                                </span>
+                            </summary>
+                            <div class="account-menu-panel">
+                                <p class="account-menu-head"><strong>{{ user.name }}</strong><span>Signed in as {{ user.role }}</span></p>
+                                {% if account_route %}<a href="{{ path(account_route) }}">{{ icon('user', 'icon-sm') }} My account</a>{% endif %}
+                                {% if is_granted('ROLE_RIDER') and user.rider and user.rider.approvalStatus == 'approved' %}<a href="{{ path('app_rider_finance') }}">{{ icon('wallet', 'icon-sm') }} Earnings</a>{% endif %}
+                                <a href="{{ path('app_support_ticket_index') }}">{{ icon('help', 'icon-sm') }} Help &amp; support</a>
+                                <a href="{{ path('app_logout') }}">{{ icon('logout', 'icon-sm') }} Log out</a>
+                            </div>
+                        </details>
+                    {% endif %}
                 </header>
 
                 <main class="content">

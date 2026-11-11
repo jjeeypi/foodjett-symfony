@@ -82,7 +82,7 @@ class RegistrationControllerTest extends WebTestCase
         }
         $this->client->submit($form);
 
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects('/restaurant');
         $restaurant = $this->user('register-restaurant@foodjett.test')->getRestaurant();
         self::assertInstanceOf(Restaurant::class, $restaurant);
         self::assertSame(Restaurant::APPROVAL_PENDING, $restaurant->getApprovalStatus());
@@ -101,7 +101,7 @@ class RegistrationControllerTest extends WebTestCase
         $form = $this->riderForm('register-rider@foodjett.test', '+639180000003', Rider::VEHICLE_MOTORCYCLE, 'ABC 1234');
         $this->client->submit($form);
 
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects('/rider');
         $rider = $this->user('register-rider@foodjett.test')->getRider();
         self::assertInstanceOf(Rider::class, $rider);
         self::assertSame(Rider::APPROVAL_PENDING, $rider->getApprovalStatus());
@@ -114,7 +114,7 @@ class RegistrationControllerTest extends WebTestCase
     {
         $this->client->submit($this->riderForm('register-bicycle@foodjett.test', '+639180000004', Rider::VEHICLE_BICYCLE, ''));
 
-        self::assertResponseRedirects('/');
+        self::assertResponseRedirects('/rider');
         self::assertNull($this->user('register-bicycle@foodjett.test')->getRider()->getPlateNumber());
     }
 

@@ -52,6 +52,29 @@ class SecurityControllerTest extends WebTestCase
         self::assertResponseRedirects('/');
     }
 
+    public function testRidersAndRestaurantsLandOnTheirDashboards(): void
+    {
+        $this->createUser('web-rider@foodjett.test', '+639170000007', role: User::ACCOUNT_RIDER);
+        $this->createUser('web-restaurant@foodjett.test', '+639170000008', role: User::ACCOUNT_RESTAURANT);
+
+        $this->login('web-rider@foodjett.test');
+        self::assertResponseRedirects('/rider');
+        $this->client->request('GET', '/logout');
+
+        $this->login('web-restaurant@foodjett.test');
+        self::assertResponseRedirects('/restaurant');
+    }
+
+    public function testThePageAskedForFirstStillWinsAfterLogin(): void
+    {
+        $this->createUser('web-target@foodjett.test', '+639170000009', role: User::ACCOUNT_RESTAURANT);
+
+        $this->client->request('GET', '/restaurant/orders');
+        self::assertResponseRedirects('/login');
+        $this->login('web-target@foodjett.test');
+        self::assertResponseRedirects('http://localhost/restaurant/orders');
+    }
+
     public function testWrongPasswordShowsAnError(): void
     {
         $this->createUser('web-wrong@foodjett.test', '+639170000003');
@@ -108,7 +131,7 @@ class SecurityControllerTest extends WebTestCase
         ]));
     }
 
-    private function createUser(string $email, string $phone, string $status = User::STATUS_ACTIVE): void
+    private function createUser(string $email, string $phone, string $status = User::STATUS_ACTIVE, string $role = User::ACCOUNT_CUSTOMER): void
     {
         $now = new \DateTimeImmutable();
         $user = (new User())
@@ -116,7 +139,7 @@ class SecurityControllerTest extends WebTestCase
             ->setEmail($email)
             ->setPhone($phone)
             ->setPassword(password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]))
-            ->setRole(User::ACCOUNT_CUSTOMER)
+            ->setRole($role)
             ->setStatus($status)
             ->setCreatedAt($now)
             ->setUpdatedAt($now);

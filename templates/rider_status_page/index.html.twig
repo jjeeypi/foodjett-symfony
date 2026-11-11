@@ -1,20 +1,55 @@
 {% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon %}
 
-{% block title %}Hello RiderStatusPageController!{% endblock %}
+{% block title %}Your status | Foodjett{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <div id="live" {% if active_order %}{{ turbo_stream_listen('orders/' ~ active_order.id ~ '/status', null, {withCredentials: true}) }}{% endif %} hidden></div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Rider workspace</div>
+            <h1>Your <span>status.</span></h1>
+            <p>Go online to get offers, and keep sharing where you are.</p>
+        </div>
+    </div>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <div class="stack">
+        <section class="panel" id="availability">
+            <div class="panel-head">
+                <div>
+                    <h2>You are <strong>{{ rider.availabilityStatus }}</strong>.</h2>
+                    <p class="subtle" style="margin: 4px 0 0">{{ rider.availabilityStatus == 'offline' ? 'A little break? You’ve earned it.' : 'Nearby offers show up in the order pool.' }}</p>
+                </div>
+                {% if not active_order %}
+                    <form method="post" action="{{ path('app_rider_availability') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('availability') }}">
+                        <button class="{{ rider.availabilityStatus == 'offline' ? 'btn-green' : 'btn-light' }}" type="submit">{{ rider.availabilityStatus == 'offline' ? 'Go online' : 'Go offline' }}</button>
+                    </form>
+                {% endif %}
+            </div>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/home/jjeeypi/foodjett/src/Controller/RiderStatusPageController.php</code></li>
-        <li>Your template at <code>/home/jjeeypi/foodjett/templates/rider_status_page/index.html.twig</code></li>
-    </ul>
-</div>
+            {% if active_order %}
+                <p id="active-order" class="callout" style="margin: 0">
+                    {{ icon('bike') }}
+                    <span>Delivering order {{ active_order.orderNumber }} ({{ active_order.status|replace({'_': ' '}) }}).
+                    <a href="{{ path('app_rider_delivery') }}"><strong>Open delivery</strong></a></span>
+                </p>
+            {% else %}
+                <a class="btn" href="{{ path('app_rider_pool') }}">{{ icon('bag', 'icon-sm') }} Find orders</a>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <h2>Your location</h2>
+            <p class="subtle">
+                {% if rider.lastLocationAt %}Last shared {{ rider.lastLocationAt|date('M j, g:i:s A') }}.{% else %}Not shared yet; the pool needs it.{% endif %}
+                This page keeps sharing your position while it is open.
+            </p>
+            {# Shares the position automatically while this page is open; the pin is the fallback when location access is blocked. #}
+            {{ form_start(location_form, {attr: {id: 'rider-location-picker', 'data-turbo-permanent': '', 'data-controller': 'location-picker', 'data-location-picker-live-value': 'true'}}) }}
+                {{ form_widget(location_form) }}
+                <button type="submit">{{ icon('pin', 'icon-sm') }} Share location</button>
+            {{ form_end(location_form) }}
+        </section>
+    </div>
 {% endblock %}

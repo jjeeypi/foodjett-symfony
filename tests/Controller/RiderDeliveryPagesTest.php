@@ -14,7 +14,7 @@ use App\Tests\Double\RecordingMercureHub;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Filesystem;
 
-/** The rider dashboard (availability, location) and the delivery steps. */
+/** The rider home, the status page (availability, location) and the delivery steps. */
 class RiderDeliveryPagesTest extends RiderWebTestCase
 {
     private string $photo;
@@ -35,18 +35,44 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
 
     public function testRiderGoesOnlineAndOfflineButNotDuringADelivery(): void
     {
-        $this->submit('/rider', 'Go online');
+        $this->submit('/rider/status', 'Go online');
         self::assertSame(Rider::AVAILABILITY_AVAILABLE, $this->reload(Rider::class, $this->rider->getId())->getAvailabilityStatus());
-        $this->submit('/rider', 'Go offline');
+        $this->submit('/rider/status', 'Go offline');
         self::assertSame(Rider::AVAILABILITY_OFFLINE, $this->reload(Rider::class, $this->rider->getId())->getAvailabilityStatus());
 
         $this->reattach();
         $this->rider->setAvailabilityStatus(Rider::AVAILABILITY_BUSY);
         $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider);
         $this->entityManager->flush();
-        $crawler = $this->page('/rider');
+        $crawler = $this->page('/rider/status');
         self::assertCount(0, $crawler->filter('#availability button'), 'No switch during a delivery.');
         self::assertSelectorExists('#active-order');
+    }
+
+    public function testHomeShowsTheDayAndTheNavigationFitsAPhone(): void
+    {
+        $order = $this->createOrder(Order::STATUS_DELIVERED, $this->rider);
+        $now = new \DateTimeImmutable();
+        $this->persist((new RiderEarning())->setRider($this->rider)->setOrder($order)->setBasePay('40.00')->setDistancePay('12.50')
+            ->setWaitingPay('0.00')->setIncentivePay('0.00')->setTipAmount('10.00')->setTotalEarned('62.50')->setCreatedAt($now)->setUpdatedAt($now));
+        $this->entityManager->flush();
+
+        $crawler = $this->page('/rider');
+        self::assertSelectorTextContains('#today', 'Deliveries today');
+        self::assertSelectorTextContains('#today', '₱62.50');
+        self::assertSelectorTextContains('#recent-deliveries', $order->getOrderNumber());
+        self::assertSelectorExists('#status-summary a[href="/rider/status"]');
+
+        $tabs = $crawler->filter('.side-nav .nav-item:not(.mobile-hidden) span')->each(static fn (Crawler $tab): string => $tab->text());
+        self::assertSame(['Home', 'Order pool', 'Status', 'Active delivery', 'Messages'], $tabs, 'The phone bar holds the five delivery tabs.');
+        self::assertSelectorTextContains('.side-nav .nav-item.mobile-hidden', 'My account');
+        self::assertSelectorNotExists('.side-nav a[href="/rider/finance"]');
+        self::assertSelectorExists('.account-menu a[href="/rider/account"]');
+        self::assertSelectorExists('.account-menu a[href="/logout"]');
+
+        $this->page('/rider/account');
+        self::assertSelectorTextContains('#account-earnings', '₱62.50');
+        self::assertSelectorExists('#account-earnings a[href="/rider/finance"]');
     }
 
     public function testAPendingRiderSeesTheApplicationStatusButNotThePool(): void
@@ -66,13 +92,13 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
         $this->reload(Rider::class, $this->rider->getId())->setLastLocationAt(new \DateTimeImmutable('-10 seconds'));
         $this->entityManager->flush();
         $hub->reset();
-        $crawler = $this->client->request('GET', '/rider');
+        $crawler = $this->client->request('GET', '/rider/status');
         $picker = $crawler->filter('#rider-location-picker');
         self::assertSame('location-picker', $picker->attr('data-controller'));
-        self::assertSame('true', $picker->attr('data-location-picker-live-value'), 'The dashboard shares the position by itself.');
+        self::assertSame('true', $picker->attr('data-location-picker-live-value'), 'The status page shares the position by itself.');
         self::assertNotNull($picker->attr('data-turbo-permanent'), 'Live refreshes keep the map and the location watch running.');
         self::assertSame('hidden', $crawler->filter('#location_form_latitude')->attr('type'));
-        $this->submit('/rider', 'Share location', ['location_form[latitude]' => '9.315412', 'location_form[longitude]' => '123.302528']);
+        $this->submit('/rider/status', 'Share location', ['location_form[latitude]' => '9.315412', 'location_form[longitude]' => '123.302528']);
         self::assertSame('9.3154120', $this->reload(Rider::class, $this->rider->getId())->getCurrentLatitude());
         self::assertCount(0, $hub->updates(), 'Nothing is published without a delivery.');
 
@@ -81,13 +107,13 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
         $order = $this->createOrder(Order::STATUS_RIDER_ASSIGNED, $this->rider);
         $this->entityManager->flush();
         $hub->reset();
-        $this->submit('/rider', 'Share location', ['location_form[latitude]' => '14.601', 'location_form[longitude]' => '120.986']);
+        $this->submit('/rider/status', 'Share location', ['location_form[latitude]' => '14.601', 'location_form[longitude]' => '120.986']);
         self::assertCount(1, $hub->updates());
         self::assertSame(['orders/'.$order->getId().'/status'], $hub->updates()[0]->getTopics());
         self::assertSame('<turbo-stream action="refresh"></turbo-stream>', $hub->updates()[0]->getData());
         self::assertSame('14.6010000', $this->reload(Rider::class, $this->rider->getId())->getCurrentLatitude());
 
-        $this->submit('/rider', 'Share location', ['location_form[latitude]' => '14.700', 'location_form[longitude]' => '121.100']);
+        $this->submit('/rider/status', 'Share location', ['location_form[latitude]' => '14.700', 'location_form[longitude]' => '121.100']);
         self::assertCount(1, $hub->updates(), 'A second update within five seconds is ignored.');
         self::assertSame('14.6010000', $this->reload(Rider::class, $this->rider->getId())->getCurrentLatitude());
     }

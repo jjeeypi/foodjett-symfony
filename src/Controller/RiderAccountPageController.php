@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Rider;
 use App\Entity\User;
 use App\Form\RiderProfileFormType;
+use App\Repository\RiderEarningRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -38,7 +39,7 @@ final class RiderAccountPageController extends AbstractController
     }
 
     #[Route('', name: 'app_rider_account', methods: ['GET', 'POST'])]
-    public function index(Request $request, #[CurrentUser] User $user, UserRepository $users): Response
+    public function index(Request $request, #[CurrentUser] User $user, UserRepository $users, RiderEarningRepository $earnings): Response
     {
         $rider = $this->rider($user);
         $form = $this->createForm(RiderProfileFormType::class, $rider);
@@ -84,9 +85,16 @@ final class RiderAccountPageController extends AbstractController
             $this->entityManager->refresh($rider);
         }
 
+        $today = (new \DateTimeImmutable())->setTime(0, 0);
+
         return $this->render('rider_account_page/index.html.twig', [
             'form' => $form,
             'rider' => $rider,
+            'earnings' => Rider::APPROVAL_APPROVED === $rider->getApprovalStatus() ? [
+                'Today' => bcround($earnings->sumEarnedByRiderSince($rider, $today), 2),
+                'This week' => bcround($earnings->sumEarnedByRiderSince($rider, $today->modify('monday this week')), 2),
+                'This month' => bcround($earnings->sumEarnedByRiderSince($rider, $today->modify('first day of this month')), 2),
+            ] : null,
         ], new Response(status: $form->isSubmitted() ? 422 : 200));
     }
 

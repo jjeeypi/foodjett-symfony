@@ -37,6 +37,14 @@ class RiderEarningRepository extends ServiceEntityRepository
             ->andWhere('earning.createdAt >= :since')->setParameter('since', $since)->getQuery()->getSingleScalarResult();
     }
 
+    /** How many deliveries the rider completed (one earning each) since the given moment. */
+    public function countByRiderSince(Rider $rider, \DateTimeImmutable $since): int
+    {
+        return (int) $this->createQueryBuilder('earning')
+            ->select('COUNT(earning.id)')->andWhere('earning.rider = :rider')->setParameter('rider', $rider)
+            ->andWhere('earning.createdAt >= :since')->setParameter('since', $since)->getQuery()->getSingleScalarResult();
+    }
+
     /**
      * Earnings on orders delivered between $startAt and $endAt, with rider and order loaded.
      *

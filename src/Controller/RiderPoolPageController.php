@@ -39,7 +39,7 @@ final class RiderPoolPageController extends AbstractController
         $offers = [];
         $reason = null;
         if (null === $rider->getCurrentLatitude() || null === $rider->getCurrentLongitude()) {
-            $reason = 'Share your location on the dashboard to see orders near you.';
+            $reason = 'Share your location on your status page to see orders near you.';
         } elseif (Rider::AVAILABILITY_AVAILABLE !== $rider->getAvailabilityStatus()) {
             $reason = 'Go online to see available orders.';
         } else {

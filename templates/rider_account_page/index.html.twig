@@ -30,13 +30,35 @@
             {{ form_end(form) }}
         </section>
 
-        <aside class="panel">
+        <aside class="stack account-side">
+            {% if earnings %}
+                <section class="panel" id="account-earnings">
+                    <div class="panel-head">
+                        <h2>Earnings</h2>
+                        <a class="btn btn-light btn-sm" href="{{ path('app_rider_finance') }}">{{ icon('wallet', 'icon-sm') }} Details</a>
+                    </div>
+                    <dl class="money-list">
+                        {% for label, amount in earnings %}
+                            <div><dt>{{ label }}</dt><dd>₱{{ amount }}</dd></div>
+                        {% endfor %}
+                        <div><dt>Cash on hand</dt><dd>₱{{ rider.cashOnHand }}</dd></div>
+                    </dl>
+                    <a class="line" href="{{ path('app_rider_finance') }}"><span class="pin-box">{{ icon('cash') }}</span><span class="grow"><strong>Payouts and cash remittances</strong><div class="subtle">Every delivery and payment</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                </section>
+            {% endif %}
+            <section class="panel">
+                <a class="line" href="{{ path('app_rider_documents') }}"><span class="pin-box">{{ icon('file') }}</span><span class="grow"><strong>Documents</strong><div class="subtle">License, ID and clearances</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_support_ticket_index') }}"><span class="pin-box">{{ icon('help') }}</span><span class="grow"><strong>Help &amp; support</strong><div class="subtle">Questions and problems</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_logout') }}"><span class="pin-box">{{ icon('logout') }}</span><span class="grow"><strong>Log out</strong></span></a>
+            </section>
+            <section class="panel">
             <h2>Delete account</h2>
             <p class="subtle">Your details and documents are removed and you cannot sign in again. Past deliveries stay on record.</p>
             <form method="post" action="{{ path('app_rider_account_delete') }}" onsubmit="return confirm('Delete your rider account for good?');">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete-rider-account') }}">
                 <button type="submit">Delete my account</button>
             </form>
+            </section>
         </aside>
     </div>
 {% endblock %}
