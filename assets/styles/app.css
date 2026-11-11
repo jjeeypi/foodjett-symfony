@@ -100,6 +100,19 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .avatar { height: 35px; width: 35px; background: #eceddf; color: #737b54; border: 3px solid #f7f8f2; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-lg { height: 64px; width: 64px; font-size: 21px; }
+.account-menu { display: none; position: relative; flex-shrink: 0; }
+.account-menu summary { list-style: none; cursor: pointer; border-radius: 50%; }
+.account-menu summary::-webkit-details-marker { display: none; }
+.account-menu summary:focus-visible { outline: 2px solid #b6d18f; outline-offset: 2px; }
+.account-menu-panel {
+    position: absolute; right: 0; top: calc(100% + 10px); z-index: 40; width: 220px; padding: 6px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px #2a33201f;
+}
+.account-menu-panel a { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 600; text-decoration: none; }
+.account-menu-panel a:hover { background: var(--green-soft); }
+.account-menu-head { margin: 0; padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.account-menu-head strong { display: block; font-size: 13px; color: var(--text); }
+.account-menu-head span { display: block; font-size: 11px; color: #95998f; margin-top: 2px; }
 .icon-button { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 0; background: none; color: #777e70; }
 .icon-button:hover { background: #f1f4ec; }
 
@@ -477,6 +490,7 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
     .status-note, .local-note { display: none; }
     .restaurant-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .split { grid-template-columns: 1fr; }
+    .split > .account-side { order: -1; }
     .hero h2 { font-size: 34px; }
     .hero-sticker { width: 104px; height: 104px; right: 14px; }
     .menu-grid { grid-template-columns: 1fr; }
@@ -515,8 +529,14 @@ button.favorite.saved { background: #e0edca; color: #5a782f; }
     .side-nav .nav-item.mobile-hidden { display: none; }
     .nav-item .nav-count { position: absolute; top: 2px; right: 10px; margin: 0; min-width: 16px; height: 16px; font-size: 9px; }
     .main-shell { margin-left: 0; width: 100%; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
-    .topbar { height: 68px; padding: 0 16px; }
-    .topbar-place strong { max-width: 52vw; }
+    .topbar { height: 68px; padding: 0 16px; gap: 10px; }
+    .topbar-place, .topbar-place > span { min-width: 0; }
+    .topbar-place strong, .topbar-place small { display: block; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    dl.stats > div, .stat { padding: 14px; }
+    dl.stats dd { font-size: 20px; }
+    .topbar-actions { margin-left: auto; }
+    .account-menu { display: block; }
     .cart-button .cart-label { display: none; }
     .content { padding: 24px 16px 0; }
     .site-footer { padding: 26px 16px; flex-direction: column; }

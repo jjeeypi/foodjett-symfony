@@ -9,7 +9,7 @@
         <div>
             <div class="eyebrow">Rider workspace</div>
             <h1>Hi, {{ rider.user.name }}</h1>
-            <p>Ready for the road? Set your status and share where you are.</p>
+            <p>{{ approved ? 'Here is your day on the road.' : 'Your application is being looked at.' }}</p>
         </div>
     </div>
 
@@ -25,22 +25,23 @@
             <a class="btn btn-light" href="{{ path('app_rider_documents') }}">{{ icon('file', 'icon-sm') }} Your documents</a>
         </section>
     {% else %}
+        <dl id="today" class="stats">
+            <div><dt>Deliveries today</dt><dd>{{ stats.deliveries_today }}</dd></div>
+            <div><dt>Earned today</dt><dd>₱{{ stats.earned_today }}</dd></div>
+            <div><dt>Earned this week</dt><dd>₱{{ stats.earned_week }}</dd></div>
+            <div><dt>Cash on hand</dt><dd>₱{{ rider.cashOnHand }}{% if stats.cash_at_limit %} <em>remit soon</em>{% endif %}</dd></div>
+        </dl>
+
         <div class="split">
             <div class="stack">
-                <section class="panel" id="availability">
+                <section class="panel" id="status-summary">
                     <div class="panel-head">
                         <div>
                             <h2>You are <strong>{{ rider.availabilityStatus }}</strong>.</h2>
-                            <p class="subtle" style="margin: 4px 0 0">{{ rider.availabilityStatus == 'offline' ? 'A little break? You’ve earned it.' : 'Nearby offers show up in the order pool.' }}</p>
+                            <p class="subtle" style="margin: 4px 0 0">{{ rider.availabilityStatus == 'offline' ? 'Go online on your status page to get offers.' : 'Nearby offers show up in the order pool.' }}</p>
                         </div>
-                        {% if not active_order %}
-                            <form method="post" action="{{ path('app_rider_availability') }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('availability') }}">
-                                <button class="{{ rider.availabilityStatus == 'offline' ? 'btn-green' : 'btn-light' }}" type="submit">{{ rider.availabilityStatus == 'offline' ? 'Go online' : 'Go offline' }}</button>
-                            </form>
-                        {% endif %}
+                        <a class="btn btn-light btn-sm" href="{{ path('app_rider_status') }}">{{ icon('pin', 'icon-sm') }} Status</a>
                     </div>
-
                     {% if active_order %}
                         <p id="active-order" class="callout" style="margin: 0">
                             {{ icon('bike') }}
@@ -52,26 +53,29 @@
                     {% endif %}
                 </section>
 
-                <section class="panel">
-                    <h2>Your location</h2>
-                    <p class="subtle">
-                        {% if rider.lastLocationAt %}Last shared {{ rider.lastLocationAt|date('M j, g:i:s A') }}.{% else %}Not shared yet; the pool needs it.{% endif %}
-                        This page keeps sharing your position while it is open.
-                    </p>
-                    {# Shares the position automatically while this page is open; the pin is the fallback when location access is blocked. #}
-                    {{ form_start(location_form, {attr: {id: 'rider-location-picker', 'data-turbo-permanent': '', 'data-controller': 'location-picker', 'data-location-picker-live-value': 'true'}}) }}
-                        {{ form_widget(location_form) }}
-                        <button type="submit">{{ icon('pin', 'icon-sm') }} Share location</button>
-                    {{ form_end(location_form) }}
+                <section class="panel" id="recent-deliveries">
+                    <div class="panel-head">
+                        <h2>Recent deliveries</h2>
+                        <a class="btn btn-light btn-sm" href="{{ path('app_rider_finance') }}">Earnings {{ icon('arrow', 'icon-sm') }}</a>
+                    </div>
+                    {% for earning in stats.recent %}
+                        <div class="line">
+                            <span class="pin-box">{{ icon('receipt') }}</span>
+                            <span class="grow"><strong>{{ earning.order.restaurant.name }}</strong><div class="subtle">{{ earning.order.orderNumber }} · {{ earning.createdAt|date('M j, g:i A') }}</div></span>
+                            <span class="amount">₱{{ earning.totalEarned }}</span>
+                        </div>
+                    {% else %}
+                        <p class="subtle">No deliveries yet. Your first one shows up here.</p>
+                    {% endfor %}
                 </section>
             </div>
 
             <aside class="panel">
                 <h2>Shortcuts</h2>
+                <a class="line" href="{{ path('app_rider_pool') }}"><span class="pin-box">{{ icon('bag') }}</span><span class="grow"><strong>Order pool</strong><div class="subtle">Offers near you</div></span>{{ icon('arrow', 'icon-sm') }}</a>
                 <a class="line" href="{{ path('app_messages') }}"><span class="pin-box">{{ icon('message') }}</span><span class="grow"><strong>Messages</strong><div class="subtle">Chat with customers</div></span>{{ icon('arrow', 'icon-sm') }}</a>
-                <a class="line" href="{{ path('app_rider_finance') }}"><span class="pin-box">{{ icon('wallet') }}</span><span class="grow"><strong>Earnings and cash</strong><div class="subtle">Every little win</div></span>{{ icon('arrow', 'icon-sm') }}</a>
-                <a class="line" href="{{ path('app_rider_account') }}"><span class="pin-box">{{ icon('user') }}</span><span class="grow"><strong>Account</strong><div class="subtle">Profile and payout details</div></span>{{ icon('arrow', 'icon-sm') }}</a>
-                <a class="line" href="{{ path('app_rider_documents') }}"><span class="pin-box">{{ icon('file') }}</span><span class="grow"><strong>Documents</strong><div class="subtle">License, ID and clearances</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_rider_finance') }}"><span class="pin-box">{{ icon('wallet') }}</span><span class="grow"><strong>Earnings and cash</strong><div class="subtle">Payouts and remittances</div></span>{{ icon('arrow', 'icon-sm') }}</a>
+                <a class="line" href="{{ path('app_rider_account') }}"><span class="pin-box">{{ icon('user') }}</span><span class="grow"><strong>Account</strong><div class="subtle">Profile, documents and earnings</div></span>{{ icon('arrow', 'icon-sm') }}</a>
             </aside>
         </div>
     {% endif %}

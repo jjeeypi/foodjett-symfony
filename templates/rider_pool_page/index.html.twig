@@ -32,7 +32,7 @@
                     <h2>Nearby deliveries <span class="badge badge-green">{{ offers|length }}</span></h2>
                     <p>One delivery at a time. Pick what works for you.</p>
                 </div>
-                <a class="btn btn-light btn-sm" href="{{ path('app_rider_dashboard') }}">{{ icon('pin', 'icon-sm') }} Update location</a>
+                <a class="btn btn-light btn-sm" href="{{ path('app_rider_status') }}">{{ icon('pin', 'icon-sm') }} Update location</a>
             </div>
 
             {% if reason %}
@@ -40,7 +40,7 @@
                     {{ icon('bike') }}
                     <h2>Nothing to pick up right now</h2>
                     <p>{{ reason }}</p>
-                    <a class="btn" href="{{ path('app_rider_dashboard') }}">Check your status</a>
+                    <a class="btn" href="{{ path('app_rider_status') }}">Check your status</a>
                 </div>
             {% elseif offers is empty %}
                 <div class="empty">
@@ -92,7 +92,7 @@
                 <div class="line" style="border-top: 1px solid var(--line); margin-top: 8px">
                     {{ icon('pin', 'icon-sm') }}
                     <span class="grow subtle">{% if rider and rider.lastLocationAt %}Location shared {{ rider.lastLocationAt|date('g:i A') }}{% else %}Location not shared yet{% endif %}</span>
-                    <a href="{{ path('app_rider_dashboard') }}">Update</a>
+                    <a href="{{ path('app_rider_status') }}">Update</a>
                 </div>
             </div>
             <div class="callout">{{ icon('bolt') }}<span><strong>A good day starts with a safe ride.</strong><br><span class="subtle">Take your time. We’re with you every kilometer.</span></span></div>
