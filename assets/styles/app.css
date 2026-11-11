@@ -212,6 +212,18 @@ input[type=url], input[type=date], input[type=time], input[type=datetime-local],
 }
 textarea { min-height: 96px; resize: vertical; }
 input:focus, select:focus, textarea:focus { outline: 2px solid #b6d18f; outline-offset: 0; border-color: #a9c682; background: #fff; }
+.password-field { position: relative; }
+.password-field input { padding-right: 48px; }
+.password-field input::-ms-reveal, .password-field input::-ms-clear { display: none; }
+.password-toggle {
+    position: absolute; top: 50%; right: 5px; transform: translateY(-50%);
+    width: 36px; height: 36px; min-height: 0; padding: 0; border: 0; border-radius: 50%;
+    display: grid; place-items: center; background: none; color: #777e70; box-shadow: none;
+}
+.password-toggle:hover { background: #f1f4ec; color: #3b4831; }
+.password-toggle:focus-visible { outline: 2px solid #b6d18f; }
+.password-toggle .icon-hide, .password-toggle[aria-pressed=true] .icon-show { display: none; }
+.password-toggle[aria-pressed=true] .icon-hide { display: block; }
 input[type=checkbox], input[type=radio] { accent-color: #7c9a5b; width: 18px; height: 18px; vertical-align: middle; margin: 0 8px 0 0; }
 input[type=checkbox] + label, input[type=radio] + label { display: inline; font-weight: 500; color: var(--text); font-size: 13px; }
 input[type=file] { display: block; width: 100%; font-size: 13px; padding: 10px; border: 1px dashed #cfd9c3; border-radius: var(--radius-sm); background: var(--field); }

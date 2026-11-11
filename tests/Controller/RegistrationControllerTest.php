@@ -52,6 +52,7 @@ class RegistrationControllerTest extends WebTestCase
     {
         $form = $this->form('/register', 'registration_form');
         self::assertNull($this->client->getCrawler()->filter('form[name="registration_form"]')->attr('data-controller'), 'Customers give addresses later, not here.');
+        self::assertCount(2, $this->client->getCrawler()->filter('.password-field input[type="password"] + button.password-toggle'), 'Both password fields can be shown.');
         $this->fillAccount($form, 'registration_form', 'Register.Customer@Foodjett.test', '+639180000001');
         $this->client->submit($form);
 

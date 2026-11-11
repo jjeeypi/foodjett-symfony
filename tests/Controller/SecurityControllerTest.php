@@ -26,6 +26,8 @@ class SecurityControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Log in');
+        self::assertSelectorExists('.password-field[data-controller="password-visibility"] #password[type="password"]');
+        self::assertSelectorExists('.password-field button.password-toggle[type="button"][aria-label="Show password"]');
     }
 
     public function testCustomerLogsInWithEmailAndLogsOut(): void

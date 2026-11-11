@@ -1,38 +1,34 @@
 import { Controller } from '@hotwired/stimulus';
 
 /*
-* The following line makes this controller "lazy": it won't be downloaded until needed
-* See https://symfony.com/bundles/StimulusBundle/current/index.html#lazy-stimulus-controllers
-*/
-
+ * The eye button inside a password field: shows the typed password so a typo can be spotted,
+ * and hides it again. The field always goes back to hidden before the form is sent,
+ * so the browser never stores the password as plain text in its autofill history.
+ */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-
-    initialize() {
-        // Called once when the controller is first instantiated (per element)
-
-        // Here you can initialize variables, create scoped callables for event
-        // listeners, instantiate external libraries, etc.
-        // this._fooBar = this.fooBar.bind(this)
-    }
+    static targets = ['input', 'button'];
 
     connect() {
-        // Called every time the controller is connected to the DOM
-        // (on page load, when it's added to the DOM, moved in the DOM, etc.)
-
-        // Here you can add event listeners on the element or target elements,
-        // add or remove classes, attributes, dispatch custom events, etc.
-        // this.fooTarget.addEventListener('click', this._fooBar)
+        this.hideBeforeSubmit = () => this.show(false);
+        this.inputTarget.form?.addEventListener('submit', this.hideBeforeSubmit);
+        this.show(false);
     }
 
-    // Add custom controller actions here
-    // fooBar() { this.fooTarget.classList.toggle(this.bazClass) }
-
     disconnect() {
-        // Called anytime its element is disconnected from the DOM
-        // (on page change, when it's removed from or moved in the DOM, etc.)
+        this.inputTarget.form?.removeEventListener('submit', this.hideBeforeSubmit);
+    }
 
-        // Here you should remove all event listeners added in "connect()" 
-        // this.fooTarget.removeEventListener('click', this._fooBar)
+    toggle() {
+        this.show(this.inputTarget.type === 'password');
+        this.inputTarget.focus();
+    }
+
+    show(visible) {
+        this.inputTarget.type = visible ? 'text' : 'password';
+        const label = visible ? 'Hide password' : 'Show password';
+        this.buttonTarget.setAttribute('aria-pressed', String(visible));
+        this.buttonTarget.setAttribute('aria-label', label);
+        this.buttonTarget.title = label;
     }
 }
