@@ -8,6 +8,7 @@ use App\Entity\OrderStatusHistory;
 use App\Entity\Payment;
 use App\Entity\Rider;
 use App\Entity\RiderEarning;
+use App\Entity\RiderPoolDecline;
 use App\Entity\RiderPoolOffer;
 use App\Repository\DeliveryZoneRepository;
 use App\Tests\Double\RecordingMercureHub;
@@ -242,7 +243,13 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
 
         $this->submit('/rider/delivery', 'Cancel this delivery', ['cancel_delivery[reason]' => 'Motorcycle problem.']);
         self::assertResponseRedirects('/rider');
-        self::assertSame(Order::STATUS_FAILED_DELIVERY, $this->reload(Order::class, $order->getId())->getStatus());
+        $released = $this->reload(Order::class, $order->getId());
+        self::assertSame(Order::STATUS_FINDING_RIDER, $released->getStatus(), 'The order goes back to the pool instead of ending.');
+        self::assertNull($released->getRider());
+        self::assertNull($released->getCancelledBy());
+        self::assertSame(Rider::AVAILABILITY_AVAILABLE, $this->reload(Rider::class, $this->rider->getId())->getAvailabilityStatus());
+        $decline = $this->entityManager->getRepository(RiderPoolDecline::class)->findOneBy(['order' => $order->getId(), 'rider' => $this->rider->getId()]);
+        self::assertSame(RiderPoolDecline::ACTION_SKIPPED, $decline?->getAction(), 'The same rider is not offered it again.');
 
         $this->reattach();
         $picked = $this->createOrder(Order::STATUS_PICKED_UP, $this->rider);

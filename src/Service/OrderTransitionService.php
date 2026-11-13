@@ -969,6 +969,47 @@ final class OrderTransitionService
         );
     }
 
+    /**
+     * Hands an order its rider gave up before pickup back to the rider pool. The rider is freed
+     * and never offered this order again, and the search starts over for the other riders.
+     */
+    public function releaseToPool(Order $order, Rider $rider, string $reason): Order
+    {
+        if (null === $rider->getId()) {
+            throw new \InvalidArgumentException('The rider must be persisted before releasing an order.');
+        }
+
+        return $this->transition(
+            $order,
+            Order::STATUS_FINDING_RIDER,
+            Order::ACTOR_RIDER,
+            'Rider cancelled before pickup: '.$reason,
+            function (Order $locked, \DateTimeImmutable $now) use ($rider): void {
+                if (!in_array($locked->getStatus(), [Order::STATUS_RIDER_ASSIGNED, Order::STATUS_AT_RESTAURANT], true)
+                    || $locked->getRider()?->getId() !== $rider->getId()) {
+                    throw new \DomainException('A rider can only cancel their own delivery before pickup.');
+                }
+                $lockedRider = $this->entityManager->find(Rider::class, $rider->getId(), LockMode::PESSIMISTIC_WRITE)
+                    ?? throw new \DomainException('Rider profile not found.');
+                $lockedRider->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)->setUpdatedAt($now);
+                $locked
+                    ->setRider(null)
+                    ->setRiderAssignedAt(null)
+                    ->setRiderArrivedRestaurantAt(null)
+                    ->setPickupCode(null)
+                    ->setRiderSearchStartedAt($now);
+                $locked->getRiderPoolOffer()?->setAcceptedPickupDistanceKm(null)->setAdminAssigned(false)->setUpdatedAt($now);
+
+                $decline = $this->entityManager->getRepository(RiderPoolDecline::class)->findOneBy(['order' => $locked, 'rider' => $lockedRider]);
+                if (!$decline instanceof RiderPoolDecline) {
+                    $decline = (new RiderPoolDecline())->setOrder($locked)->setRider($lockedRider)->setCreatedAt($now);
+                    $this->entityManager->persist($decline);
+                }
+                $decline->setAction(RiderPoolDecline::ACTION_SKIPPED);
+            },
+        );
+    }
+
     public function declinePoolOrder(Order $order, Rider $rider): RiderPoolDecline
     {
         if (null === $order->getId() || null === $rider->getId()) {
