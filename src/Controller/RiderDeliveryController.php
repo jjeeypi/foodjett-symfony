@@ -185,7 +185,7 @@ final class RiderDeliveryController extends AbstractController
     }
 
     #[Route('/cancel', name: 'app_rider_delivery_cancel', methods: ['POST'])]
-    public function cancel(Request $request, #[CurrentUser] User $user, PlatformSettingRepository $settings, PaymentTransitionService $payments): Response
+    public function cancel(Request $request, #[CurrentUser] User $user, PlatformSettingRepository $settings): Response
     {
         $order = $this->current($user);
         if (!in_array($order->getStatus(), [Order::STATUS_RIDER_ASSIGNED, Order::STATUS_AT_RESTAURANT], true)) {
@@ -196,7 +196,14 @@ final class RiderDeliveryController extends AbstractController
             return $this->renderDelivery($order, $settings, cancel: $form);
         }
 
-        return $this->fail($order, trim((string) $form->get('reason')->getData()), $payments);
+        try {
+            $this->transitions->releaseToPool($order, $this->rider($user), trim((string) $form->get('reason')->getData()));
+        } catch (\DomainException $exception) {
+            return $this->back($exception->getMessage());
+        }
+        $this->addFlash('success', 'The order went back to the pool for another rider.');
+
+        return $this->redirectToRoute('app_rider_dashboard');
     }
 
     #[Route('/issue', name: 'app_rider_delivery_issue', methods: ['POST'])]

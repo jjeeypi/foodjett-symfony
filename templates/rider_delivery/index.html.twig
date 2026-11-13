@@ -105,6 +105,7 @@
             {% if cancel_form %}
                 <section class="panel">
                     <h2>Cannot make it?</h2>
+                    <p class="subtle">The order goes back to the pool so another rider can take it.</p>
                     {{ form_start(cancel_form, {action: path('app_rider_delivery_cancel')}) }}
                         {{ form_widget(cancel_form) }}
                         <button class="btn-danger" type="submit">Cancel this delivery</button>
