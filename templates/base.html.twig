@@ -16,6 +16,11 @@
     {%- endif -%}
     <span class="badge {{ tone }}">{{ value|replace({'_': ' '}) }}</span>
 {%- endmacro %}
+{#- A report's status: open and under review still wait on an admin, resolved and rejected are decided. -#}
+{% macro report_status(status) -%}
+    {%- set tone = {'open': 'badge-warn', 'under_review': 'badge-ink', 'resolved': 'badge-green', 'rejected': 'badge-danger'}[status] ?? 'badge-warn' -%}
+    <span class="badge {{ tone }}">{{ status|replace({'_': ' '}) }}</span>
+{%- endmacro %}
 {#- The restaurant's cover photo, or a drawn cover with its food icon when it has not uploaded one. -#}
 {% macro cover(restaurant, width = 1024, height = 576, lazy = false) -%}
     {% if restaurant.coverPhotoPath %}
@@ -102,6 +107,7 @@
         ['Hours', 'clock', 'app_restaurant_hours', 'app_restaurant_hours'],
         ['Vouchers', 'ticket', 'app_restaurant_voucher_index', 'app_restaurant_voucher'],
         ['Reviews', 'star', 'app_restaurant_reviews', 'app_restaurant_reviews'],
+        ['Reports', 'flag', 'app_restaurant_reports', 'app_restaurant_reports'],
         ['Earnings', 'wallet', 'app_restaurant_earnings', 'app_restaurant_earnings'],
         ['Documents', 'file', 'app_restaurant_documents', 'app_restaurant_documents'],
         ['Profile', 'store', 'app_restaurant_profile', 'app_restaurant_profile'],
@@ -116,6 +122,7 @@
         ['Status', 'pin', 'app_rider_status', 'app_rider_status'],
         ['Active delivery', 'bike', 'app_rider_delivery', 'app_rider_delivery'],
         ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
+        ['Reports', 'flag', 'app_rider_reports', 'app_rider_reports'],
         ['My account', 'user', 'app_rider_account', 'app_rider_account|app_rider_document|app_rider_finance'],
     ] -%}
 {%- elseif is_granted('ROLE_CUSTOMER') -%}
@@ -126,7 +133,7 @@
         ['My orders', 'bag', 'app_orders', 'app_order'],
         ['Favorites', 'heart', 'app_favorites', 'app_favorite'],
         ['Messages', 'message', 'app_messages', 'app_messages|app_conversation'],
-        ['My account', 'user', 'app_account', 'app_account|app_customer_address|app_support'],
+        ['My account', 'user', 'app_account', 'app_account|app_customer_address|app_support|app_customer_reports'],
     ] -%}
 {%- else -%}
     {%- set workspace = 'Your daily good food' -%}
@@ -306,6 +313,7 @@
                                 <p class="account-menu-head"><strong>{{ user.name }}</strong><span>Signed in as {{ user.role }}</span></p>
                                 {% if account_route %}<a href="{{ path(account_route) }}">{{ icon('user', 'icon-sm') }} My account</a>{% endif %}
                                 {% if is_granted('ROLE_RIDER') and user.rider and user.rider.approvalStatus == 'approved' %}<a href="{{ path('app_rider_finance') }}">{{ icon('wallet', 'icon-sm') }} Earnings</a>{% endif %}
+                                {% if is_granted('ROLE_CUSTOMER') %}<a href="{{ path('app_customer_reports') }}">{{ icon('flag', 'icon-sm') }} My reports</a>{% endif %}
                                 <a href="{{ path('app_support_ticket_index') }}">{{ icon('help', 'icon-sm') }} Help &amp; support</a>
                                 <a href="{{ path('app_logout') }}">{{ icon('logout', 'icon-sm') }} Log out</a>
                             </div>
