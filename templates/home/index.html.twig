@@ -51,10 +51,13 @@
                 <h2>{{ craving ? cravings[craving].label ~ ' near you' : 'Good eats near you' }} <span class="badge badge-green"><i class="dot"></i> Open now</span></h2>
                 <p>{{ total }} {{ total == 1 ? 'place' : 'places' }} ready to make your day a little tastier</p>
             </div>
-            <form class="search" method="get" action="{{ path('app_search') }}" role="search">
+            <form class="search search-box" method="get" action="{{ path('app_search') }}" role="search"
+                  data-controller="search-suggestions" data-search-suggestions-url-value="{{ path('app_search_suggestion') }}">
                 {{ icon('search', 'icon-sm') }}
                 <label class="sr-only" for="home-search">Search dishes</label>
-                <input type="search" id="home-search" name="q" placeholder="Search restaurants or dishes">
+                <input type="search" id="home-search" name="q" placeholder="Search restaurants or dishes" autocomplete="off"
+                       data-search-suggestions-target="input" data-action="input->search-suggestions#query keydown->search-suggestions#navigate">
+                <div class="suggestions" id="home-search-suggestions" role="listbox" aria-label="Suggestions" data-search-suggestions-target="list" hidden></div>
             </form>
         </div>
 
