@@ -167,7 +167,7 @@ final class RiderDeliveryController extends AbstractController
     }
 
     #[Route('/unreachable', name: 'app_rider_delivery_unreachable', methods: ['POST'])]
-    public function unreachable(Request $request, #[CurrentUser] User $user, PlatformSettingRepository $settings): Response
+    public function unreachable(Request $request, #[CurrentUser] User $user, PlatformSettingRepository $settings, PaymentTransitionService $payments): Response
     {
         $order = $this->current($user);
         if (!$this->isCsrfTokenValid('delivery'.$order->getId(), $request->getPayload()->getString('_token'))) {
@@ -181,11 +181,11 @@ final class RiderDeliveryController extends AbstractController
             return $this->back(sprintf('Please wait for the customer until %s.', $eligibleAt->format('g:i:s A')));
         }
 
-        return $this->fail($order, 'Customer unreachable after the required wait.');
+        return $this->fail($order, 'Customer unreachable after the required wait.', $payments);
     }
 
     #[Route('/cancel', name: 'app_rider_delivery_cancel', methods: ['POST'])]
-    public function cancel(Request $request, #[CurrentUser] User $user, PlatformSettingRepository $settings): Response
+    public function cancel(Request $request, #[CurrentUser] User $user, PlatformSettingRepository $settings, PaymentTransitionService $payments): Response
     {
         $order = $this->current($user);
         if (!in_array($order->getStatus(), [Order::STATUS_RIDER_ASSIGNED, Order::STATUS_AT_RESTAURANT], true)) {
@@ -196,7 +196,7 @@ final class RiderDeliveryController extends AbstractController
             return $this->renderDelivery($order, $settings, cancel: $form);
         }
 
-        return $this->fail($order, trim((string) $form->get('reason')->getData()));
+        return $this->fail($order, trim((string) $form->get('reason')->getData()), $payments);
     }
 
     #[Route('/issue', name: 'app_rider_delivery_issue', methods: ['POST'])]
@@ -285,13 +285,20 @@ final class RiderDeliveryController extends AbstractController
         return $this->redirectToRoute('app_rider_delivery');
     }
 
-    private function fail(Order $order, string $reason): Response
+    /**
+     * Ends the order as a failed delivery. Cash on delivery can no longer be collected, so its
+     * payment is closed as failed; a prepaid payment is left for an admin to refund or keep.
+     */
+    private function fail(Order $order, string $reason, PaymentTransitionService $payments): Response
     {
         try {
             $this->transitions->transition($order, Order::STATUS_FAILED_DELIVERY, Order::ACTOR_RIDER, $reason,
-                static function (Order $locked, \DateTimeImmutable $now) use ($reason): void {
+                static function (Order $locked, \DateTimeImmutable $now) use ($reason, $payments): void {
                     $locked->setCancellationReason($reason)->setCancelledBy(Order::ACTOR_RIDER);
                     $locked->getRider()?->setAvailabilityStatus(Rider::AVAILABILITY_AVAILABLE)->setUpdatedAt($now);
+                    if (Payment::METHOD_COD === $locked->getPaymentMethod() && null !== $locked->getPayment()) {
+                        $payments->cancelOrRefund($locked->getPayment(), Payment::ACTOR_SYSTEM, 'Delivery failed: '.$reason, $now);
+                    }
                 });
         } catch (\DomainException $exception) {
             return $this->back($exception->getMessage());
