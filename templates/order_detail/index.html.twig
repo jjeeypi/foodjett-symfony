@@ -103,7 +103,7 @@
             {% if report_form %}
                 <section class="panel">
                     <h2>Report a problem</h2>
-                    <p class="subtle">Something wrong with your order? Tell us and an admin will look into it.</p>
+                    <p class="subtle">Something wrong with your order? Tell us and an admin will look into it. Follow up on <a href="{{ path('app_customer_reports') }}">My reports</a>.</p>
                     {{ form_start(report_form, {action: path('app_order_report', {id: order.id})}) }}
                         {{ form_widget(report_form) }}
                         <button class="btn-light" type="submit">Send report</button>

@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, report_status %}
+
+{% block title %}My reports | Foodjett{% endblock %}
+
+{% block body %}
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">We are on it</div>
+            <h1>My reports</h1>
+            <p>Problems you reported on your orders, and what our team decided.</p>
+        </div>
+        <div class="page-actions"><a class="btn btn-light" href="{{ path('app_orders') }}">{{ icon('bag', 'icon-sm') }} My orders</a></div>
+    </div>
+
+    <section class="panel" id="reports">
+        {% for report in reports %}
+            <article class="review" id="report-{{ report.id }}">
+                <span class="avatar">{{ icon('flag', 'icon-sm') }}</span>
+                <div>
+                    <div class="review-head">
+                        <span><strong>{{ report.type|replace({'_': ' '})|capitalize }}</strong> · about the {{ report.against }} {{ report_status(report.status) }}</span>
+                        <small><a href="{{ path('app_order_detail', {id: report.order.id}) }}">Order {{ report.order.orderNumber }}</a> · {{ report.order.restaurant.name }} · {{ report.createdAt|date('M j, Y') }}</small>
+                    </div>
+                    <p>{{ report.description }}</p>
+                    {% if report.resolution %}
+                        <div class="reply"><small>Foodjett decision{{ report.resolvedAt ? ' · ' ~ report.resolvedAt|date('M j') }}</small>{{ report.resolution }}</div>
+                    {% elseif report.status in ['open', 'under_review'] %}
+                        <p class="subtle">An admin will look into this and reply here.</p>
+                    {% endif %}
+                </div>
+            </article>
+        {% else %}
+            <div class="empty">
+                {{ icon('flag', 'icon-xl') }}
+                <h2>No reports.</h2>
+                <p>If something goes wrong with an order, use "Report a problem" on the order page.</p>
+            </div>
+        {% endfor %}
+    </section>
+    {{ knp_pagination_render(reports) }}
+{% endblock %}

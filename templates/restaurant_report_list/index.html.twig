@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+{% from 'base.html.twig' import icon, report_status %}
+
+{% block title %}Reports | Foodjett{% endblock %}
+
+{% block body %}
+    <div class="page-head">
+        <div>
+            <div class="eyebrow">Room to improve</div>
+            <h1>Reports</h1>
+            <p>Problems customers and riders reported about your orders, and how Foodjett resolved them.</p>
+        </div>
+    </div>
+
+    <dl id="summary" class="stats">
+        <div><dt>Reports</dt><dd>{{ summary.total }}</dd></div>
+        <div><dt>Waiting for a decision</dt><dd>{{ summary.open }}</dd></div>
+        <div><dt>Resolved</dt><dd>{{ summary.resolved }}</dd></div>
+        <div><dt>Most common</dt><dd>{{ summary.by_type is empty ? '–' : summary.by_type|keys|first|replace({'_': ' '})|capitalize }}</dd></div>
+    </dl>
+
+    <section class="panel" id="reports">
+        {% for report in reports %}
+            <article class="review" id="report-{{ report.id }}">
+                <span class="avatar">{{ icon('flag', 'icon-sm') }}</span>
+                <div>
+                    <div class="review-head">
+                        <span><strong>{{ report.type|replace({'_': ' '})|capitalize }}</strong> {{ report_status(report.status) }}</span>
+                        <small><a href="{{ path('app_restaurant_order_detail', {id: report.order.id}) }}">Order {{ report.order.orderNumber }}</a> · reported by a {{ report.reportedBy.role }} · {{ report.createdAt|date('M j, Y') }}</small>
+                    </div>
+                    <p>{{ report.description }}</p>
+                    {% if report.resolution %}
+                        <div class="reply"><small>Foodjett decision{{ report.resolvedAt ? ' · ' ~ report.resolvedAt|date('M j') }}</small>{{ report.resolution }}</div>
+                    {% endif %}
+                </div>
+            </article>
+        {% else %}
+            <div class="empty">
+                {{ icon('flag', 'icon-xl') }}
+                <h2>No reports about your restaurant.</h2>
+                <p>Keep it up. Problems customers or riders report about your orders show up here.</p>
+            </div>
+        {% endfor %}
+    </section>
+    {{ knp_pagination_render(reports) }}
+{% endblock %}
