@@ -206,7 +206,7 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
         self::assertSame(Order::STATUS_ARRIVED, $this->reload(Order::class, $order->getId())->getStatus());
     }
 
-    public function testCustomerUnreachableWaitsForTheTimerAndLeavesCodPending(): void
+    public function testCustomerUnreachableWaitsForTheTimerAndClosesTheCodPayment(): void
     {
         $order = $this->createOrder(Order::STATUS_ARRIVED, $this->rider, Payment::METHOD_COD);
         $arrival = (new OrderStatusHistory())->setOrder($order)->setStatus(Order::STATUS_ARRIVED)->setChangedBy(Order::ACTOR_RIDER)
@@ -226,7 +226,7 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
         self::assertResponseRedirects('/rider');
         $saved = $this->reload(Order::class, $order->getId());
         self::assertSame(Order::STATUS_FAILED_DELIVERY, $saved->getStatus());
-        self::assertSame(Payment::STATUS_PENDING, $saved->getPayment()?->getStatus());
+        self::assertSame(Payment::STATUS_FAILED, $saved->getPayment()?->getStatus(), 'No cash can be collected any more.');
         self::assertSame('50.00', $saved->getRider()?->getCashOnHand());
         self::assertNull($saved->getRiderEarning());
     }
