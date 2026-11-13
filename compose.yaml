@@ -14,7 +14,9 @@ x-app-environment: &app-environment
   MAILER_DSN: null://null
   MESSENGER_TRANSPORT_DSN: doctrine://default?auto_setup=0
   MERCURE_URL: http://mercure/.well-known/mercure
-  MERCURE_PUBLIC_URL: ${PUBLIC_WEB_URL:-http://localhost:8080}/.well-known/mercure
+  # Same-origin path: Apache proxies it to the hub, so the subscriber cookie works on
+  # every address the site is opened from (localhost, LAN IP or an ngrok tunnel).
+  MERCURE_PUBLIC_URL: /.well-known/mercure
 
 services:
   mariadb:
