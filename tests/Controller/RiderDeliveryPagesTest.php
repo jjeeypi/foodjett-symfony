@@ -69,6 +69,7 @@ class RiderDeliveryPagesTest extends RiderWebTestCase
         self::assertSelectorTextContains('.side-nav .nav-item.mobile-hidden', 'My account');
         self::assertSelectorNotExists('.side-nav a[href="/rider/finance"]');
         self::assertSelectorExists('.account-menu a[href="/rider/account"]');
+        self::assertSelectorExists('.account-menu a[href="/rider/reports"]', 'Reports stay one tap away on a phone.');
         self::assertSelectorExists('.account-menu a[href="/logout"]');
 
         $this->page('/rider/account');
