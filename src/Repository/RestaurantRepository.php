@@ -33,6 +33,57 @@ class RestaurantRepository extends ServiceEntityRepository
             ->orderBy('restaurant.name', 'ASC')->getQuery()->getResult();
     }
 
+    /**
+     * Approved restaurants for the search engine. Every term must appear in the name, cuisine or description.
+     * Best match first: the words typed together in the name, then a word of the name starting with a term,
+     * then a name containing it, then the cuisine, then the description.
+     *
+     * @param list<string> $terms lowercase letters and digits only, from SearchController::terms()
+     *
+     * @return list<Restaurant>
+     */
+    public function search(array $terms, int $limit = 10): array
+    {
+        $query = $this->createQueryBuilder('restaurant')
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
+            ->setMaxResults($limit);
+
+        $score = [];
+        foreach (array_values($terms) as $i => $term) {
+            $query->andWhere("(LOWER(restaurant.name) LIKE :any$i OR LOWER(restaurant.cuisineType) LIKE :any$i OR LOWER(restaurant.description) LIKE :any$i)")
+                ->setParameter("any$i", '%'.$term.'%')->setParameter("start$i", $term.'%')->setParameter("word$i", '% '.$term.'%');
+            $score[] = "CASE WHEN LOWER(restaurant.name) LIKE :start$i OR LOWER(restaurant.name) LIKE :word$i THEN 30 WHEN LOWER(restaurant.name) LIKE :any$i THEN 15 ELSE 0 END";
+            $score[] = "CASE WHEN LOWER(restaurant.cuisineType) LIKE :any$i THEN 8 ELSE 0 END";
+            $score[] = "CASE WHEN LOWER(restaurant.description) LIKE :any$i THEN 2 ELSE 0 END";
+        }
+        if ([] === $score) {
+            return [];
+        }
+        if (count($terms) > 1) {
+            $score[] = 'CASE WHEN LOWER(restaurant.name) LIKE :phrase THEN 50 ELSE 0 END';
+            $query->setParameter('phrase', '%'.implode(' ', $terms).'%');
+        }
+
+        return $query->addSelect('('.implode(' + ', $score).') AS HIDDEN relevance')
+            ->orderBy('relevance', 'DESC')->addOrderBy('restaurant.name', 'ASC')
+            ->getQuery()->getResult();
+    }
+
+    /**
+     * Names and cuisines of approved restaurants: the words "did you mean" can offer.
+     *
+     * @return list<string>
+     */
+    public function findSearchWords(): array
+    {
+        $rows = $this->createQueryBuilder('restaurant')
+            ->select('restaurant.name AS name', 'restaurant.cuisineType AS cuisine')
+            ->andWhere('restaurant.approvalStatus = :approved')->setParameter('approved', Restaurant::APPROVAL_APPROVED)
+            ->getQuery()->getArrayResult();
+
+        return array_values(array_filter([...array_column($rows, 'name'), ...array_column($rows, 'cuisine')]));
+    }
+
     public function findOneApproved(int|string $id): ?Restaurant
     {
         return $this->createQueryBuilder('restaurant')
